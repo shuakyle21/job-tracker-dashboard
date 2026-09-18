@@ -1,0 +1,591 @@
+{
+  "name": "Job Tracker — Gmail ingest",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "value": 15,
+              "unit": "minutes"
+            }
+          ]
+        },
+        "simple": false,
+        "maxResults": 25,
+        "filters": {
+          "q": "label:job-applications -label:tracker-processed",
+          "readStatus": "both",
+          "includeSpamTrash": false,
+          "includeDrafts": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        300
+      ],
+      "id": "gmail-trigger",
+      "name": "Poll Gmail",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_ME",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "removeItemsSeenInPreviousExecutions",
+        "logic": "removeItemsWithAlreadySeenKeyValues",
+        "dedupeValue": "={{ $json.id }}",
+        "options": {
+          "scope": "workflow",
+          "historySize": 10000
+        }
+      },
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ],
+      "id": "dedupe",
+      "name": "Skip Already Seen"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "// Body of the \"Parse Job Email\" Code node (mode: runOnceForEachItem).\n//\n// This file is the source of truth. scripts/build-n8n.mjs inlines it into\n// n8n/job-tracker-ingest.json, and scripts/verify.mjs fails the build if the\n// two drift apart. Test it outside n8n with: node scripts/test-parser.mjs\n//\n// Contract: reads $json (one Gmail message), returns { json: { ...row } }.\n// It never throws — an email it cannot classify comes back with\n// parsed:false and is routed to the needs-review tab rather than dropped.\n\nconst msg = $json;\nconst subject = String(msg.subject || '');\nconst from = String(msg.from?.value?.[0]?.address || msg.from?.text || msg.From || '');\nconst fromName = String(msg.from?.value?.[0]?.name || '');\nconst body = String(msg.text || msg.textAsHtml || msg.snippet || '');\n\n// Subject carries the strongest signal and the least boilerplate, so weight it\n// by searching it first; fall back to the body only when the subject is mute.\nconst hay = (subject + '\\n' + body).toLowerCase();\nconst subjectLower = subject.toLowerCase();\n\nfunction any(text, patterns) {\n  for (const p of patterns) if (p.test(text)) return true;\n  return false;\n}\n\n// --- status classification ------------------------------------------------\n// Order is load-bearing. A rejection that follows an interview says both\n// \"interview\" and \"unfortunately\"; the current status is rejected, so the\n// rejection test must run before the interview test. Stage evidence is\n// collected separately below so the funnel still gets credit for the interview.\nconst RULES = [\n  ['offer', [\n    /\\boffer of employment\\b/, /\\bpleased to offer\\b/, /\\bjob offer\\b/,\n    /\\bwe(?:'| a)re offering you\\b/, /\\boffer letter\\b/,\n  ]],\n  ['rejected', [\n    /\\bunfortunately\\b/, /\\bregret to inform\\b/, /\\bnot (?:be )?moving forward\\b/,\n    /\\bnot (?:been )?select(?:ed|ing)\\b/, /\\bdecided to (?:proceed|move forward) with (?:other|another)\\b/,\n    /\\bposition has been filled\\b/, /\\bwe(?:'| ha)ve decided not to\\b/,\n    /\\bno longer under consideration\\b/, /\\bwill not be proceeding\\b/,\n  ]],\n  ['interview scheduled', [\n    /\\binterview (?:is |has been )?(?:scheduled|confirmed|booked)\\b/,\n    /\\binvit(?:ation|e|ing) (?:you )?(?:to|for) an? (?:interview|call|chat)\\b/,\n    /\\bschedule (?:an?|your) (?:interview|call)\\b/, /\\bcalendly\\.com\\b/,\n    /\\bbook a time\\b/, /\\bpick a time\\b/, /\\bavailability for a (?:call|chat|interview)\\b/,\n  ]],\n  ['assessment', [\n    /\\b(?:online |skills? |technical )?assessment\\b/, /\\btake[- ]home\\b/,\n    /\\bcoding (?:challenge|test|exercise)\\b/, /\\bhackerrank\\b/, /\\bcodility\\b/,\n    /\\btestgorilla\\b/, /\\bcomplete (?:a|the|this) (?:short )?test\\b/,\n  ]],\n  ['talent pool', [\n    /\\btalent (?:pool|community|network)\\b/, /\\bkeep your (?:resume|cv|profile) on file\\b/,\n    /\\bfuture (?:opportunities|openings|roles)\\b/,\n  ]],\n  ['viewed by employer', [\n    /\\byour application was viewed\\b/, /\\bviewed your application\\b/,\n    /\\bapplication (?:was )?viewed\\b/, /\\brecruiter viewed\\b/,\n  ]],\n  ['in review', [\n    /\\bunder review\\b/, /\\breviewing your application\\b/, /\\bbeing reviewed\\b/,\n    /\\bshortlist(?:ed|ing)?\\b/, /\\bmoved to the next (?:stage|round)\\b/,\n    /\\bprogress(?:ed|ing) to\\b/,\n  ]],\n  ['applied', [\n    /\\bapplication (?:was |has been )?(?:sent|submitted|received)\\b/,\n    /\\bthank you for (?:applying|your application|your interest)\\b/,\n    /\\bwe(?:'| ha)ve received your application\\b/, /\\bapplication confirmation\\b/,\n    /\\bsuccessfully applied\\b/,\n  ]],\n];\n\nlet status = '';\nfor (const [name, patterns] of RULES) {\n  if (any(subjectLower, patterns) || any(hay, patterns)) { status = name; break; }\n}\n\n// --- furthest stage reached ----------------------------------------------\n// A rejection tells you an application ended, not how far it got. If the same\n// email mentions an interview or an assessment, that is evidence the funnel\n// should credit — this is the max_stage column the dashboard reads, filled in\n// automatically instead of by hand.\nconst STAGE_OF_STATUS = {\n  'applied': 1, 'no response': 1, 'closed / expired': 1, 'rejected': 1,\n  'viewed by employer': 2, 'in review': 2, 'talent pool': 2,\n  'assessment': 3, 'interview scheduled': 4, 'interviewed': 4, 'offer': 5,\n};\n\nlet stageEvidence = 1;\nif (any(hay, [/\\breview(?:ed|ing)?\\b/, /\\bviewed\\b/, /\\bshortlist/])) stageEvidence = 2;\nif (any(hay, [/\\bassessment\\b/, /\\btake[- ]home\\b/, /\\bcoding (?:challenge|test)\\b/])) stageEvidence = 3;\nif (any(hay, [/\\binterview(?:ed|ing)?\\b/, /\\bcalendly\\b/])) stageEvidence = 4;\nif (any(hay, [/\\boffer of employment\\b/, /\\boffer letter\\b/])) stageEvidence = 5;\n\nconst maxStage = Math.max(STAGE_OF_STATUS[status] || 1, stageEvidence);\n\n// --- company --------------------------------------------------------------\n// The From display name is the most reliable source, but ATS senders bury the\n// company in boilerplate. Strip the boilerplate rather than guess.\nlet company = fromName\n  .replace(/\\s+via\\s+LinkedIn\\s*$/i, '')\n  .replace(/^(?:no[- ]?reply|do[- ]?not[- ]?reply|notifications?|jobs?|careers?|recruiting|talent|hr)\\b[\\s@:-]*/i, '')\n  .replace(/\\b(?:careers?|recruiting|recruitment|talent(?:\\s+acquisition)?|hiring|hr|jobs?|team|no[- ]?reply)\\b/gi, '')\n  .replace(/[|()\\[\\]]/g, ' ')\n  .replace(/\\s{2,}/g, ' ')\n  .replace(/^[\\s,.\\-–—]+|[\\s,.\\-–—]+$/g, '')\n  .trim();\n\n// Fall back to the sending domain, minus the ATS hosts that tell you nothing\n// about who the employer is.\nconst ATS_DOMAINS = /^(?:.*\\.)?(?:linkedin|indeed|greenhouse|lever|workday(?:day)?|myworkday|jobstreet|glassdoor|ziprecruiter|smartrecruiters|ashbyhq|workable|bamboohr|onlinejobs|gmail|googlemail|outlook|yahoo)\\./i;\nif (!company) {\n  const domain = (from.split('@')[1] || '').toLowerCase();\n  if (domain && !ATS_DOMAINS.test(domain + '.')) {\n    company = domain.replace(/\\.(?:com|net|org|io|co|ph|ai|dev)(?:\\.[a-z]{2})?$/i, '');\n    company = company.charAt(0).toUpperCase() + company.slice(1);\n  }\n}\n\n// --- job title ------------------------------------------------------------\n// Subjects follow a handful of shapes. Peel the known prefixes, then take what\n// is left up to the first separator.\n// Subject lines stack boilerplate: \"Invitation to interview — Full Stack\n// Developer at Q2Q\". One pass over the lead-ins is not enough, because\n// stripping one exposes the next, so run the list until it stops shrinking.\n// Each pattern also eats a trailing separator, otherwise the split below\n// mistakes the leftover boilerplate for the job title.\nconst LEAD_INS = [\n  /^(?:re|fwd?)\\s*:\\s*/i,\n  /^invitation (?:to|for) (?:an? )?(?:interview|call|chat)\\s*(?:for|with)?\\s*[:\\u2014\\u2013-]?\\s*/i,\n  /^(?:your )?application (?:for|to|update(?: for)?|status(?: for)?|received(?: for)?|confirmation(?: for)?)\\s*[:\\u2014\\u2013-]?\\s*/i,\n  /^thank you for (?:applying|your (?:application|interest))(?: (?:to|in|for))?\\s*[:\\u2014\\u2013-]?\\s*/i,\n  /^(?:next steps?|update|interview|assessment|invitation)\\s*(?:on|for|regarding|about)?\\s*(?:your )?(?:application)?\\s*[:\\u2014\\u2013-]\\s*/i,\n  /^you(?:r)? (?:have )?applied (?:to|for)\\s*[:\\u2014\\u2013-]?\\s*/i,\n];\n\nlet title = subject.trim();\nlet shrinking = true;\nlet passes = 0;\nwhile (shrinking && passes < 4) {\n  const before = title;\n  for (const re of LEAD_INS) title = title.replace(re, '').trim();\n  shrinking = title.length < before.length;\n  passes = passes + 1;\n}\n\nconst atMatch = title.match(/^(.+?)\\s+(?:at|@|with|-|–|—|\\|)\\s+(.+)$/);\nif (atMatch) {\n  title = atMatch[1].trim();\n  // The right-hand side is usually the company; trust it over a stripped\n  // display name, which is often just \"Careers\".\n  const candidate = atMatch[2].replace(/[|()\\[\\]].*$/, '').trim();\n  if (candidate && candidate.length < 60 && (!company || /^careers?$/i.test(company))) {\n    company = candidate;\n  }\n}\ntitle = title.replace(/\\s*[|(].*$/, '').replace(/\\s{2,}/g, ' ').trim();\n\n// --- confidence and routing ----------------------------------------------\n// A row is only trustworthy enough to land in the tracker when the email said\n// something recognisable AND we know who sent it. Everything else goes to\n// needs-review, where a human decides in ten seconds.\nconst parsed = Boolean(status) && Boolean(company) && Boolean(title);\n\nlet confidence = 'low';\nif (status && company && title) confidence = 'high';\nelse if (status && (company || title)) confidence = 'medium';\n\n// Gmail gives an RFC-2822 date on some shapes and epoch milliseconds on\n// others, and a malformed header gives neither. new Date(garbage).toISOString()\n// throws, which would fail the execution and leave the email unlabelled — so it\n// would be re-polled and re-fail forever. Validate before formatting.\nconst receivedAt = msg.date || msg.internalDate;\nconst stamp = /^\\d+$/.test(String(receivedAt)) ? Number(receivedAt) : receivedAt;\nconst asDate = receivedAt ? new Date(stamp) : new Date();\nconst isoDate = Number.isNaN(asDate.getTime())\n  ? new Date().toISOString().slice(0, 10)\n  : asDate.toISOString().slice(0, 10);\n\nreturn {\n  json: {\n    message_id: String(msg.id || msg.messageId || ''),\n    thread_id: String(msg.threadId || ''),\n    received_at: isoDate,\n    company,\n    job_title: title,\n    status,\n    max_stage: maxStage,\n    source: /linkedin/i.test(from) ? 'LinkedIn'\n      : /indeed/i.test(from) ? 'Indeed'\n      : /jobstreet/i.test(from) ? 'JobStreet'\n      : /onlinejobs/i.test(from) ? 'OnlineJobs.ph'\n      : 'Email',\n    from_address: from,\n    subject,\n    parsed,\n    confidence,\n  },\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        300
+      ],
+      "id": "parse",
+      "name": "Parse Job Email"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "is-parsed",
+              "leftValue": "={{ $json.parsed }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        660,
+        300
+      ],
+      "id": "route",
+      "name": "Classified?"
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "12vBHjqoUXahuHW05HDO7spH3eIPcV60MLjOmi_HHrRM"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "inbox"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "message_id"
+          ],
+          "value": {
+            "message_id": "={{ $json.message_id }}",
+            "thread_id": "={{ $json.thread_id }}",
+            "received_at": "={{ $json.received_at }}",
+            "company": "={{ $json.company }}",
+            "job_title": "={{ $json.job_title }}",
+            "status": "={{ $json.status }}",
+            "max_stage": "={{ $json.max_stage }}",
+            "source": "={{ $json.source }}",
+            "confidence": "={{ $json.confidence }}"
+          },
+          "schema": [
+            {
+              "id": "message_id",
+              "displayName": "message_id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "thread_id",
+              "displayName": "thread_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "received_at",
+              "displayName": "received_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "job_title",
+              "displayName": "job_title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "max_stage",
+              "displayName": "max_stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "confidence",
+              "displayName": "confidence",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        900,
+        180
+      ],
+      "id": "sheets-inbox",
+      "name": "Write to Inbox",
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "12vBHjqoUXahuHW05HDO7spH3eIPcV60MLjOmi_HHrRM"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "needs-review"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "message_id"
+          ],
+          "value": {
+            "message_id": "={{ $json.message_id }}",
+            "thread_id": "={{ $json.thread_id }}",
+            "received_at": "={{ $json.received_at }}",
+            "from_address": "={{ $json.from_address }}",
+            "subject": "={{ $json.subject }}",
+            "status": "={{ $json.status }}",
+            "company": "={{ $json.company }}",
+            "job_title": "={{ $json.job_title }}",
+            "confidence": "={{ $json.confidence }}"
+          },
+          "schema": [
+            {
+              "id": "message_id",
+              "displayName": "message_id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "thread_id",
+              "displayName": "thread_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "received_at",
+              "displayName": "received_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "from_address",
+              "displayName": "from_address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "subject",
+              "displayName": "subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "job_title",
+              "displayName": "job_title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "confidence",
+              "displayName": "confidence",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        900,
+        420
+      ],
+      "id": "sheets-needs-review",
+      "name": "Write to Needs Review",
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "addLabels",
+        "messageId": "={{ $('Parse Job Email').item.json.message_id }}",
+        "labelIds": [
+          "REPLACE_WITH_TRACKER_PROCESSED_LABEL_ID"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1140,
+        300
+      ],
+      "id": "mark-handled",
+      "name": "Mark Email Processed",
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_ME",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.github.com/repos/REPLACE_OWNER/REPLACE_REPO/dispatches",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"event_type\": \"tracker-updated\"}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1360,
+        300
+      ],
+      "id": "rebuild",
+      "name": "Trigger Dashboard Rebuild",
+      "executeOnce": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "content": "## 1. Poll and dedupe\nQuery: `label:job-applications -label:tracker-processed`.\n\nA **Gmail filter** applies the first label (scope). This workflow applies the second (handled). Drop the scope label and the trigger polls your entire mailbox.\n\n**Remove Duplicates** is the second net: it catches a re-delivery in the window between the Sheets write and the label being applied.",
+        "width": 400,
+        "height": 280,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        20
+      ],
+      "id": "sticky-8",
+      "name": "Note 8"
+    },
+    {
+      "parameters": {
+        "content": "## 2. Classify\nPure function, no network. Source of truth is `n8n/parse-email.js` in the repo — it has tests. Edit it there and re-run `node scripts/build-n8n.mjs`, not here.",
+        "width": 380,
+        "height": 220,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        400,
+        60
+      ],
+      "id": "sticky-9",
+      "name": "Note 9"
+    },
+    {
+      "parameters": {
+        "content": "## 3. Store\nRows key on `message_id`, so re-running is an update, not a duplicate.\n\n`inbox` = classified. `needs-review` = everything else, with the subject so you can judge it in ten seconds.\n\nNeither tab is the tracker. The `data` tab stays yours.",
+        "width": 380,
+        "height": 260,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        820,
+        20
+      ],
+      "id": "sticky-10",
+      "name": "Note 10"
+    },
+    {
+      "parameters": {
+        "content": "## 4. Close the loop\nLabel is applied **after** the write — a crash loses a label, not a row.\n\nThe rebuild fires once per run and reaches GitHub Actions as a `repository_dispatch`, so the dashboard updates in seconds instead of waiting for the 6-hourly cron.",
+        "width": 400,
+        "height": 280,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        20
+      ],
+      "id": "sticky-11",
+      "name": "Note 11"
+    }
+  ],
+  "connections": {
+    "Poll Gmail": {
+      "main": [
+        [
+          {
+            "node": "Skip Already Seen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip Already Seen": {
+      "main": [
+        [
+          {
+            "node": "Parse Job Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Job Email": {
+      "main": [
+        [
+          {
+            "node": "Classified?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classified?": {
+      "main": [
+        [
+          {
+            "node": "Write to Inbox",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Write to Needs Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write to Inbox": {
+      "main": [
+        [
+          {
+            "node": "Mark Email Processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write to Needs Review": {
+      "main": [
+        [
+          {
+            "node": "Mark Email Processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Email Processed": {
+      "main": [
+        [
+          {
+            "node": "Trigger Dashboard Rebuild",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "job-tracker-dashboard"
+  },
+  "tags": []
+}

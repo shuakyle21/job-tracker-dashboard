@@ -1,0 +1,469 @@
+<title>Job Search Analytics</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  // TailAdmin's design tokens. Satoshi is not on Google Fonts, so Plus Jakarta Sans
+  // stands in for it — same geometric-grotesque character, and it loads from an
+  // allowed host.
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        fontFamily: { sans: ['"Plus Jakarta Sans"', "ui-sans-serif", "system-ui", "sans-serif"] },
+        colors: {
+          current: "currentColor",
+          primary: "#3C50E0",
+          secondary: "#80CAEE",
+          stroke: "#E2E8F0",
+          strokedark: "#2E3A47",
+          black: { DEFAULT: "#1C2434", 2: "#010101" },
+          body: "#64748B",
+          bodydark: "#AEB7C0",
+          bodydark1: "#DEE4EE",
+          bodydark2: "#8A99AF",
+          boxdark: "#24303F",
+          "boxdark-2": "#1A222C",
+          gray: { DEFAULT: "#EFF4FB", dark: "#333A48" },
+          whiten: "#F1F5F9",
+          whiter: "#F5F7FD",
+          success: "#219653",
+          danger: "#D34053",
+          warning: "#FFA70B",
+          meta: { 1: "#DC3545", 2: "#EFF2F7", 3: "#10B981", 4: "#313D4A", 5: "#259AE6", 6: "#FFBA00", 7: "#FF6766", 8: "#F0950C", 9: "#E5E7EB" },
+        },
+        boxShadow: {
+          default: "0px 8px 13px -3px rgba(0,0,0,0.07)",
+          card: "0px 1px 3px rgba(0,0,0,0.12)",
+        },
+      },
+    },
+  };
+</script>
+<style>
+  html { color-scheme: light dark; }
+  body { margin: 0; background: #F1F5F9; font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; }
+  html.dark body { background: #1A222C; }
+
+  /* Sankey is hand-drawn: ApexCharts has no Sankey type. Themed with tokens so it
+     follows the dashboard rather than carrying baked-in colours. */
+  .sk { --sk-flow:#3C50E0; --sk-loss:#8A99AF; --sk-node:#2A3BB7; --sk-ink:#1C2434; --sk-mut:#64748B; }
+  html.dark .sk { --sk-flow:#5D6FE8; --sk-loss:#48586A; --sk-node:#8B9AF0; --sk-ink:#EDF1F7; --sk-mut:#98A6B8; }
+  .sk svg { display:block; width:100%; height:auto; min-width:660px; }
+  .sk-flow { fill: var(--sk-flow); opacity:.85 }
+  .sk-loss { fill: var(--sk-loss); opacity:.30 }
+  .sk-node { fill: var(--sk-node) }
+  .sk-node-loss { fill: var(--sk-loss); opacity:.7 }
+  .sk-lab { fill: var(--sk-ink); font-size:12.5px; font-weight:500 }
+  .sk-num { fill: var(--sk-ink); font-size:13px; font-weight:700; font-variant-numeric:tabular-nums }
+  .sk-sub { fill: var(--sk-mut); font-size:11px }
+  .sk-empty { fill:none; stroke: var(--sk-mut); stroke-width:1.4; stroke-dasharray:3 3 }
+
+  .hdr { position: sticky; top: env(safe-area-inset-top, 0px); }
+  .apex-charts text { font-family: "Plus Jakarta Sans", sans-serif !important; }
+  .apexcharts-tooltip { box-shadow: 0 4px 14px rgba(0,0,0,.12) !important; }
+  .apexcharts-legend-text { font-family: "Plus Jakarta Sans", sans-serif !important; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important } }
+</style>
+
+<div class="font-sans text-body dark:text-bodydark">
+  <div class="flex min-h-screen">
+
+    <!-- sidebar -->
+    <aside class="hidden w-64 shrink-0 flex-col bg-black dark:bg-boxdark lg:flex">
+      <div class="flex items-center gap-2.5 px-6 py-6">
+        <span class="flex h-9 w-9 items-center justify-center rounded-md bg-primary">
+          <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round">
+            <path d="M4 19V10M10 19V5M16 19v-6M22 19h-20"/>
+          </svg>
+        </span>
+        <span class="text-base font-bold text-white">Job Search</span>
+      </div>
+      <nav class="px-4 pb-6">
+        <p class="mb-3 ml-3 text-xs font-semibold uppercase tracking-wider text-bodydark2">Analytics</p>
+        <ul class="flex flex-col gap-1.5 text-sm font-medium">
+          <li><a href="#overview" class="group flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1 hover:bg-graydark">Overview</a></li>
+          <li><a href="#flow" class="group flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1 hover:bg-graydark">Stage flow</a></li>
+          <li><a href="#funnel" class="group flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1 hover:bg-graydark">Funnel</a></li>
+          <li><a href="#channels" class="group flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1 hover:bg-graydark">Channels</a></li>
+          <li><a href="#cadence" class="group flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1 hover:bg-graydark">Cadence</a></li>
+          <li><a href="#ageing" class="group flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1 hover:bg-graydark">Ageing</a></li>
+        </ul>
+      </nav>
+      <div class="mt-auto px-6 pb-6 text-xs text-bodydark2">
+        <p class="font-semibold text-bodydark1">n8n → Sheets → Actions</p>
+        <p class="mt-1">Synced {{GENERATED_AT}}</p>
+      </div>
+    </aside>
+
+    <!-- main -->
+    <div class="flex min-w-0 flex-1 flex-col">
+
+      <header class="hdr z-40 flex items-center justify-between gap-4 border-b border-stroke bg-white px-4 py-4 shadow-card dark:border-strokedark dark:bg-boxdark md:px-6">
+        <div>
+          <h1 class="text-xl font-bold text-black dark:text-white">Job Search Analytics</h1>
+          <p class="mt-0.5 text-xs text-body dark:text-bodydark2">Synced {{GENERATED_AT}}</p>
+        </div>
+        <button id="themeBtn" type="button" aria-label="Toggle dark mode"
+          class="flex h-10 w-10 items-center justify-center rounded-full border border-stroke bg-gray text-body hover:text-primary dark:border-strokedark dark:bg-meta-4 dark:text-bodydark">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/>
+          </svg>
+        </button>
+      </header>
+
+      <main class="mx-auto w-full max-w-screen-2xl p-4 md:p-6">
+
+        <!-- stat tiles -->
+        <section id="overview" class="grid grid-cols-2 gap-4 md:gap-6 xl:grid-cols-4">
+          <div class="rounded-sm border border-stroke bg-white px-5 py-5 shadow-default dark:border-strokedark dark:bg-boxdark">
+            <div class="flex h-11 w-11 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4">
+              <svg class="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16v5H4zM4 15h16v5H4z"/></svg>
+            </div>
+            <div class="mt-4">
+              <h4 class="text-2xl font-bold tabular-nums text-black dark:text-white" data-stat="sent">—</h4>
+              <span class="text-sm font-medium">Applications sent</span>
+              <p class="mt-1 text-xs text-bodydark2" data-stat="unsentNote"></p>
+            </div>
+          </div>
+          <div class="rounded-sm border border-stroke bg-white px-5 py-5 shadow-default dark:border-strokedark dark:bg-boxdark">
+            <div class="flex h-11 w-11 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4">
+              <svg class="h-5 w-5 text-meta-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8l9 6 9-6M3 8v9h18V8"/></svg>
+            </div>
+            <div class="mt-4">
+              <h4 class="text-2xl font-bold tabular-nums text-black dark:text-white" data-stat="replyRate">—</h4>
+              <span class="text-sm font-medium">Reply rate</span>
+              <p class="mt-1 text-xs text-bodydark2" data-stat="replyNote"></p>
+            </div>
+          </div>
+          <div class="rounded-sm border border-stroke bg-white px-5 py-5 shadow-default dark:border-strokedark dark:bg-boxdark">
+            <div class="flex h-11 w-11 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4">
+              <svg class="h-5 w-5 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 12l3 3 5-6"/><circle cx="12" cy="12" r="9"/></svg>
+            </div>
+            <div class="mt-4">
+              <h4 class="text-2xl font-bold tabular-nums text-black dark:text-white" data-stat="interviews">—</h4>
+              <span class="text-sm font-medium">Interviews reached</span>
+              <p class="mt-1 text-xs text-bodydark2" data-stat="interviewNote"></p>
+            </div>
+          </div>
+          <div class="rounded-sm border border-stroke bg-white px-5 py-5 shadow-default dark:border-strokedark dark:bg-boxdark">
+            <div class="flex h-11 w-11 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4">
+              <svg class="h-5 w-5 text-danger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l9 16H3z"/><path d="M12 9v4M12 16h.01"/></svg>
+            </div>
+            <div class="mt-4">
+              <h4 class="text-2xl font-bold tabular-nums text-black dark:text-white" data-stat="ghostRate">—</h4>
+              <span class="text-sm font-medium">No reply at all</span>
+              <p class="mt-1 text-xs text-bodydark2" data-stat="ghostNote"></p>
+            </div>
+          </div>
+        </section>
+
+        <!-- secondary tiles -->
+        <section class="mt-4 grid grid-cols-2 gap-4 md:gap-6 xl:grid-cols-4">
+          <div class="rounded-sm border border-stroke bg-white px-5 py-4 shadow-default dark:border-strokedark dark:bg-boxdark">
+            <span class="text-xs font-semibold uppercase tracking-wider text-bodydark2">Still open</span>
+            <h4 class="mt-1 text-xl font-bold tabular-nums text-black dark:text-white" data-stat="open">—</h4>
+          </div>
+          <div class="rounded-sm border border-stroke bg-white px-5 py-4 shadow-default dark:border-strokedark dark:bg-boxdark">
+            <span class="text-xs font-semibold uppercase tracking-wider text-bodydark2">Built, not sent</span>
+            <h4 class="mt-1 text-xl font-bold tabular-nums text-warning" data-stat="unsent">—</h4>
+          </div>
+          <div class="rounded-sm border border-stroke bg-white px-5 py-4 shadow-default dark:border-strokedark dark:bg-boxdark">
+            <span class="text-xs font-semibold uppercase tracking-wider text-bodydark2">Follow-ups overdue</span>
+            <h4 class="mt-1 text-xl font-bold tabular-nums text-danger" data-stat="overdue">—</h4>
+          </div>
+          <div class="rounded-sm border border-stroke bg-white px-5 py-4 shadow-default dark:border-strokedark dark:bg-boxdark">
+            <span class="text-xs font-semibold uppercase tracking-wider text-bodydark2">Due within 7 days</span>
+            <h4 class="mt-1 text-xl font-bold tabular-nums text-meta-5" data-stat="dueWeek">—</h4>
+          </div>
+        </section>
+
+        <!-- sankey -->
+        <section id="flow" class="mt-4 rounded-sm border border-stroke bg-white p-5 shadow-default dark:border-strokedark dark:bg-boxdark md:mt-6">
+          <h2 class="mb-4 text-lg font-semibold text-black dark:text-white">Stage flow</h2>
+          <div class="sk overflow-x-auto">
+{{SANKEY}}
+          </div>
+        </section>
+
+        <!-- funnel + status -->
+        <section class="mt-4 grid grid-cols-1 gap-4 md:mt-6 md:gap-6 xl:grid-cols-12">
+          <div id="funnel" class="rounded-sm border border-stroke bg-white p-5 shadow-default dark:border-strokedark dark:bg-boxdark xl:col-span-7">
+            <h2 class="mb-2 text-lg font-semibold text-black dark:text-white">Funnel</h2>
+            <div id="chartFunnel"></div>
+          </div>
+          <div class="rounded-sm border border-stroke bg-white p-5 shadow-default dark:border-strokedark dark:bg-boxdark xl:col-span-5">
+            <h2 class="mb-2 text-lg font-semibold text-black dark:text-white">Status mix</h2>
+            <div id="chartStatus"></div>
+          </div>
+        </section>
+
+        <!-- channels + cadence -->
+        <section class="mt-4 grid grid-cols-1 gap-4 md:mt-6 md:gap-6 xl:grid-cols-12">
+          <div id="channels" class="rounded-sm border border-stroke bg-white p-5 shadow-default dark:border-strokedark dark:bg-boxdark xl:col-span-7">
+            <h2 class="mb-2 text-lg font-semibold text-black dark:text-white">Channels — sent vs replied</h2>
+            <div id="chartChannels"></div>
+          </div>
+          <div id="cadence" class="rounded-sm border border-stroke bg-white p-5 shadow-default dark:border-strokedark dark:bg-boxdark xl:col-span-5">
+            <h2 class="mb-2 text-lg font-semibold text-black dark:text-white">Applications per month</h2>
+            <div id="chartMonthly"></div>
+          </div>
+        </section>
+
+        <!-- ageing + setup + quality -->
+        <section class="mt-4 grid grid-cols-1 gap-4 md:mt-6 md:gap-6 xl:grid-cols-12">
+          <div id="ageing" class="rounded-sm border border-stroke bg-white p-5 shadow-default dark:border-strokedark dark:bg-boxdark xl:col-span-4">
+            <h2 class="mb-2 text-lg font-semibold text-black dark:text-white">Ageing of open applications</h2>
+            <div id="chartAgeing"></div>
+          </div>
+          <div class="rounded-sm border border-stroke bg-white p-5 shadow-default dark:border-strokedark dark:bg-boxdark xl:col-span-4">
+            <h2 class="mb-2 text-lg font-semibold text-black dark:text-white">Work setup</h2>
+            <div id="chartSetup"></div>
+          </div>
+          <div class="rounded-sm border border-stroke bg-white p-5 shadow-default dark:border-strokedark dark:bg-boxdark xl:col-span-4">
+            <h2 class="mb-2 text-lg font-semibold text-black dark:text-white">Application quality</h2>
+            <div id="chartQuality"></div>
+          </div>
+        </section>
+
+        <footer class="py-6 text-xs text-bodydark2">
+          Built from the tracker's published feed tab. Aggregates only.
+        </footer>
+      </main>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/3.54.1/apexcharts.min.js"></script>
+<script>
+(function () {
+  const D = {{DATA_JSON}};
+  const root = document.documentElement;
+
+  /* ---- theme: the artifact host stamps data-theme, or leaves it to the OS ---- */
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  function isDark() {
+    const t = root.getAttribute("data-theme");
+    if (t === "dark") return true;
+    if (t === "light") return false;
+    return root.classList.contains("dark-forced") || mq.matches;
+  }
+  function syncClass() { root.classList.toggle("dark", isDark()); }
+
+  document.getElementById("themeBtn").addEventListener("click", () => {
+    root.setAttribute("data-theme", isDark() ? "light" : "dark");
+    syncClass(); renderAll();
+  });
+  mq.addEventListener("change", () => { syncClass(); renderAll(); });
+  new MutationObserver(() => { syncClass(); renderAll(); })
+    .observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+
+  /* ---- palette ---- */
+  const P = {
+    primary: "#3C50E0", primaryDark: "#5D6FE8",
+    steps:      ["#1E2B8F", "#3C50E0", "#5D6FE8", "#8B9AF0", "#B9C2F7"],
+    stepsDark:  ["#8B9AF0", "#6C7CEA", "#5D6FE8", "#4A5CE3", "#3C50E0"],
+    success: "#219653", warning: "#FFA70B", danger: "#D34053",
+    info: "#259AE6", amber: "#F0950C", neutral: "#8A99AF", neutralDark: "#5A6B7F",
+  };
+  const fmtPct = (v) => v === null ? "—" : (100 * v).toFixed(1) + "%";
+
+  /* ---- stat tiles ---- */
+  const set = (k, v) => { const el = document.querySelector(`[data-stat="${k}"]`); if (el) el.textContent = v; };
+  set("sent", D.sent);
+  set("unsentNote", D.unsent ? D.unsent + " built but never sent" : "all rows submitted");
+  set("replyRate", fmtPct(D.replyRate));
+  set("replyNote", `${D.replied} of ${D.sent} answered`);
+  set("interviews", D.reached[3]);
+  set("interviewNote", fmtPct(D.interviewRate) + " of sent");
+  set("ghostRate", fmtPct(D.ghostRate));
+  set("ghostNote", `${D.noReply} with no response`);
+  set("open", D.open);
+  set("unsent", D.unsent);
+  set("overdue", D.followUps.overdue);
+  set("dueWeek", D.followUps.dueToday + D.followUps.dueWeek);
+
+  /* ---- status → colour.
+     An explicit map, not a regex cascade: the cascade collapsed Applied, No Response,
+     Closed/Expired and Talent Pool into one grey, which made four legend entries
+     indistinguishable. Greens read as progress, ambers as in-flight, red as a no,
+     and the silence family gets its own separable steps. ---- */
+  const STATUS_COLOR = {
+    "offer":                    "#219653",
+    "interviewed":              "#10B981",
+    "interview scheduled":      "#34D399",
+    "assessment":               "#FFA70B",
+    "in review":                "#259AE6",
+    "viewed by employer":       "#80CAEE",
+    "talent pool":              "#6B7FD7",
+    "materials ready — verify": "#F0950C",
+    "draft / to apply":         "#C99A5B",
+    "rejected":                 "#D34053",
+    "applied":                  "#98A6AD",
+    "no response":              "#64748B",
+    "closed / expired":         "#C3CBD6",
+    "withdrawn":                "#313D4A",
+  };
+  const statusColor = (s) => STATUS_COLOR[s.toLowerCase()] ?? P.neutral;
+
+  const charts = [];
+  function mount(el, opts) {
+    const c = new ApexCharts(document.querySelector(el), opts);
+    c.render(); charts.push(c);
+  }
+
+  function renderAll() {
+    charts.splice(0).forEach(c => c.destroy());
+    const dark = isDark();
+    const ink = dark ? "#AEB7C0" : "#64748B";
+    const grid = dark ? "#2E3A47" : "#E2E8F0";
+    const steps = dark ? P.stepsDark : P.steps;
+
+    const base = {
+      chart: { fontFamily: '"Plus Jakarta Sans", sans-serif', foreColor: ink, toolbar: { show: false }, animations: { enabled: true, speed: 400 } },
+      grid: { borderColor: grid, strokeDashArray: 4 },
+      tooltip: { theme: dark ? "dark" : "light" },
+      dataLabels: { enabled: false },
+    };
+
+    /* funnel — single series, so no legend; every bar carries its value */
+    mount("#chartFunnel", {
+      ...base,
+      chart: { ...base.chart, type: "bar", height: 300 },
+      series: [{ name: "Applications", data: D.reached }],
+      xaxis: { categories: ["Applied", "Replied", "Assessment", "Interview", "Offer"],
+               max: Math.ceil(D.reached[0] * 1.2), axisBorder: { show: false }, axisTicks: { show: false } },
+      // position:"top" on a horizontal bar means "past the bar end", which keeps the
+      // label in ink on the card instead of dark-on-dark inside the fill.
+      plotOptions: { bar: { horizontal: true, borderRadius: 4, borderRadiusApplication: "end",
+        barHeight: "60%", distributed: true, dataLabels: { position: "top" } } },
+      colors: steps,
+      legend: { show: false },
+      dataLabels: {
+        enabled: true, textAnchor: "start", offsetX: 8,
+        formatter: (v) => v + "  ·  " + (D.reached[0] ? (100 * v / D.reached[0]).toFixed(1) : 0) + "%",
+        style: { fontSize: "12px", fontWeight: 700, colors: [dark ? "#EDF1F7" : "#1C2434"] },
+        background: { enabled: false },
+      },
+    });
+
+    /* status mix — donut, legend plus labels so identity is never colour-alone */
+    mount("#chartStatus", {
+      ...base,
+      chart: { ...base.chart, type: "donut", height: 320 },
+      series: D.byStatus.map(s => s.count),
+      labels: D.byStatus.map(s => s.status),
+      colors: D.byStatus.map(s => statusColor(s.status)),
+      stroke: { width: 2, colors: [dark ? "#24303F" : "#FFFFFF"] },
+      legend: { position: "bottom", fontSize: "12px", markers: { radius: 3 }, itemMargin: { horizontal: 6, vertical: 2 } },
+      plotOptions: { pie: { donut: { size: "62%", labels: { show: true,
+        total: { show: true, label: "rows", fontSize: "12px", color: ink,
+                 formatter: () => D.total } } } } },
+    });
+
+    /* channels — stacked, because "replied" is a subset of "sent". Two grouped bars
+       implied they were independent quantities; stacking makes the bar length the
+       true send volume and the split the reply rate. Channels with nothing actually
+       sent are dropped: an all-zero row is noise, and the unsent count has its own tile. */
+    const ch = D.channels.filter(c => c.sent >= 2);
+    mount("#chartChannels", {
+      ...base,
+      chart: { ...base.chart, type: "bar", height: Math.max(300, ch.length * 40 + 60), stacked: true },
+      series: [
+        { name: "Replied", data: ch.map(c => c.replied) },
+        { name: "No reply", data: ch.map(c => c.sent - c.replied) },
+      ],
+      xaxis: { categories: ch.map(c => c.name), axisBorder: { show: false }, axisTicks: { show: false } },
+      plotOptions: { bar: { horizontal: true, borderRadius: 3, borderRadiusApplication: "end", barHeight: "68%" } },
+      colors: [dark ? P.primaryDark : P.primary, dark ? "#3A4657" : "#DDE3EB"],
+      legend: { position: "top", horizontalAlign: "right", fontSize: "12px", markers: { radius: 3 } },
+      tooltip: { ...base.tooltip, y: { formatter: (v, o) => {
+        const c = ch[o.dataPointIndex];
+        return o.seriesIndex === 0 && c.rate !== null
+          ? `${v} of ${c.sent}  (${Math.round(100 * c.rate)}%)`
+          : `${v} of ${c.sent}`;
+      } } },
+    });
+
+    /* cadence — single series area */
+    mount("#chartMonthly", {
+      ...base,
+      chart: { ...base.chart, type: "area", height: 320 },
+      series: [{ name: "Applications", data: D.monthly.map(m => m.count) }],
+      xaxis: {
+        categories: D.monthly.map(m => {
+          const [y, mm] = m.month.split("-");
+          return new Date(Date.UTC(+y, +mm - 1, 1)).toLocaleString("en", { month: "short", timeZone: "UTC" });
+        }),
+        axisBorder: { show: false }, axisTicks: { show: false },
+      },
+      // monotoneCubic, not smooth: a plain spline overshoots between points and dipped
+      // the May–Jul stretch below zero, drawing counts that do not exist.
+      yaxis: { min: 0, forceNiceScale: true },
+      stroke: { curve: "monotoneCubic", width: 2.5 },
+      fill: { type: "gradient", gradient: { shadeIntensity: 1, opacityFrom: .35, opacityTo: .02, stops: [0, 95] } },
+      colors: [dark ? P.primaryDark : P.primary],
+      markers: { size: 4, strokeWidth: 2, strokeColors: dark ? "#24303F" : "#fff" },
+      legend: { show: false },
+    });
+
+    /* ageing — single series, sequential ramp by bucket age */
+    mount("#chartAgeing", {
+      ...base,
+      chart: { ...base.chart, type: "bar", height: 300 },
+      series: [{ name: "Open applications", data: D.ageing.map(a => a.count) }],
+      xaxis: { categories: D.ageing.map(a => a.label), axisBorder: { show: false }, axisTicks: { show: false } },
+      plotOptions: { bar: { borderRadius: 4, borderRadiusApplication: "end", columnWidth: "52%",
+        distributed: true, dataLabels: { position: "top" } } },
+      colors: dark ? ["#8B9AF0", "#6C7CEA", "#F0950C", "#E07B39", "#D34053"]
+                   : ["#B9C2F7", "#5D6FE8", "#FFA70B", "#F0950C", "#D34053"],
+      legend: { show: false },
+      // position:"top" puts the number above the column; offsetY alone left it inside.
+      dataLabels: { enabled: true, offsetY: -20, style: { fontSize: "12px", fontWeight: 700, colors: [ink] } },
+    });
+
+    /* work setup — donut. Slice labels as well as a legend, so a reader never has to
+       resolve a slice by colour alone. */
+    mount("#chartSetup", {
+      ...base,
+      chart: { ...base.chart, type: "donut", height: 330 },
+      series: D.workSetup.map(s => s.count),
+      labels: D.workSetup.map(s => s.label),
+      colors: [dark ? P.primaryDark : P.primary, P.info, P.amber, dark ? P.neutralDark : P.neutral],
+      stroke: { width: 2, colors: [dark ? "#24303F" : "#FFFFFF"] },
+      legend: { position: "bottom", fontSize: "12px", markers: { radius: 3 }, itemMargin: { horizontal: 6, vertical: 2 } },
+      dataLabels: { enabled: true, formatter: (_p, o) => D.workSetup[o.seriesIndex].count,
+        style: { fontSize: "12px", fontWeight: 700 }, dropShadow: { enabled: false } },
+      plotOptions: { pie: { donut: { size: "58%" } } },
+      responsive: [{ breakpoint: 99999, options: { legend: { show: true, position: "bottom" } } }],
+    });
+
+    /* quality — three magnitudes compared, so bars, not rings. The radial version hid
+       every value until hover and stacked three arcs a reader had to decode. */
+    const q = [
+      { k: "Resume attached", v: D.quality.resume },
+      { k: "Cover letter", v: D.quality.cover },
+      { k: "Tailored to the ad", v: D.quality.tailored },
+    ];
+    mount("#chartQuality", {
+      ...base,
+      chart: { ...base.chart, type: "bar", height: 330 },
+      series: [{ name: "Applications", data: q.map(x => x.v) }],
+      xaxis: { categories: q.map(x => x.k), max: Math.ceil(D.total * 1.28), axisBorder: { show: false },
+               axisTicks: { show: false }, labels: { show: false } },
+      plotOptions: { bar: { horizontal: true, borderRadius: 4, borderRadiusApplication: "end",
+        barHeight: "46%", distributed: true, dataLabels: { position: "top" } } },
+      colors: [dark ? P.primaryDark : P.primary, P.info, P.success],
+      legend: { show: false },
+      dataLabels: {
+        enabled: true, textAnchor: "start", offsetX: 8,
+        formatter: (v) => `${v}  ·  ${D.total ? Math.round(100 * v / D.total) : 0}%`,
+        style: { fontSize: "12px", fontWeight: 700, colors: [dark ? "#EDF1F7" : "#1C2434"] },
+      },
+      tooltip: { ...base.tooltip, y: { formatter: (v) => `${v} of ${D.total} rows` } },
+    });
+  }
+
+  syncClass();
+  renderAll();
+})();
+</script>

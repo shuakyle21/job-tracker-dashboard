@@ -1,0 +1,29 @@
+# Only needed if your reverse proxy runs in Docker and cannot reach /srv/dashboard
+# on the host — for example Traefik with no host bind mounts.
+#
+# If your proxy is Caddy or Nginx on the host, skip this entirely and let the proxy
+# serve /srv/dashboard/current directly. One less container to keep alive.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dashboard.yml up -d
+
+services:
+  dashboard:
+    image: nginx:1.27-alpine
+    container_name: dashboard
+    restart: unless-stopped
+    volumes:
+      # :ro — the container has no business writing here. Deploys happen over SSH.
+      - /srv/dashboard/current:/usr/share/nginx/html:ro
+    networks:
+      - proxy
+    labels:
+      # Traefik example. Delete if you use Caddy or Nginx.
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`dashboard.example.com`)"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls.certresolver=le"
+      - "traefik.http.services.dashboard.loadbalancer.server.port=80"
+
+networks:
+  proxy:
+    external: true

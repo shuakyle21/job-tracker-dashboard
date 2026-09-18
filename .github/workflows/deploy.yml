@@ -1,0 +1,121 @@
+name: Build and deploy
+
+on:
+  # Data refresh. Minute 17 rather than 0 on purpose: GitHub's scheduler is busiest
+  # on the hour and jobs queued then run latest. Treat this as "a few times a day",
+  # never "at exactly this time" — Actions cron is best-effort.
+  schedule:
+    - cron: "17 */6 * * *"
+
+  # Code changes.
+  push:
+    branches: [main]
+    paths:
+      - "scripts/**"
+      - "templates/**"
+      - ".github/workflows/deploy.yml"
+
+  # Manual run from the Actions tab — how you'll test the first deploy.
+  workflow_dispatch:
+
+  # Event-driven refresh. n8n POSTs here after it writes new rows, so the dashboard
+  # updates within seconds of an email arriving instead of waiting for the cron.
+  repository_dispatch:
+    types: [tracker-updated]
+
+permissions:
+  contents: write   # to commit data/summary.json
+
+# A scheduled run and a dispatch can overlap. Let the newer one win rather than
+# racing two rsyncs into the same release directory.
+concurrency:
+  group: deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # Gate. Builds against the fixture and asserts the funnel invariants, the
+      # drop-off arithmetic and the privacy boundary. Nothing reaches the VPS if
+      # this fails.
+      - name: Verify
+        run: node scripts/verify.mjs
+
+      - name: Build from the live feed
+        env:
+          FEED_CSV_URL: ${{ secrets.FEED_CSV_URL }}
+        run: node scripts/build.mjs
+
+      # Committing aggregates does three jobs: git history becomes the time series,
+      # repo activity keeps the cron alive (GitHub disables schedules after 60 days
+      # of inactivity), and you keep a plain-text record if the Sheet is ever lost.
+      - name: Commit summary if it changed
+        run: |
+          if [[ -n "$(git status --porcelain data/summary.json)" ]]; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/summary.json
+            git commit -m "chore: refresh tracker summary [skip ci]"
+            git push
+          else
+            echo "No change in aggregates."
+          fi
+
+      # Host key comes from a secret, not from StrictHostKeyChecking=no. Disabling
+      # the check means the first connection of every run trusts whatever answers —
+      # which is the whole attack. Pin it once with ssh-keyscan instead.
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      # Trailing slash on dist/ matters: with it, the *contents* are copied into
+      # staging/. Without it you get staging/dist/. --delete keeps staging an exact
+      # mirror so a removed file actually disappears.
+      - name: Upload build to staging
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
+        run: |
+          rsync -az --delete \
+            -e "ssh -p $SSH_PORT -i ~/.ssh/id_ed25519" \
+            dist/ "$SSH_USER@$SSH_HOST:/srv/dashboard/staging/"
+
+      # The swap lives on the server so the workflow stays dumb and the server owns
+      # its own layout. activate.sh copies staging into a timestamped release and
+      # moves the `current` symlink atomically.
+      - name: Activate release
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
+        run: |
+          ssh -p "$SSH_PORT" -i ~/.ssh/id_ed25519 "$SSH_USER@$SSH_HOST" \
+            "/srv/dashboard/bin/activate.sh ${GITHUB_SHA::7}"
+
+      # Deploying without checking is just copying files. Fail the run if the live
+      # page does not come back 200 with the expected marker in it.
+      - name: Smoke test the live URL
+        env:
+          PUBLIC_URL: ${{ secrets.PUBLIC_URL }}
+        run: |
+          code=$(curl -sS -o /tmp/live.html -w '%{http_code}' --retry 3 --retry-delay 3 "$PUBLIC_URL")
+          echo "HTTP $code"
+          [[ "$code" == "200" ]] || { echo "Bad status"; exit 1; }
+          grep -q 'Job Search Analytics' /tmp/live.html || { echo "Page served but content is wrong"; exit 1; }
+          grep -q 'apexcharts' /tmp/live.html || { echo "Chart bundle missing from the page"; exit 1; }
+          echo "Live page looks right."

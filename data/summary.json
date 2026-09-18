@@ -1,0 +1,359 @@
+{
+  "generatedAt": "2026-09-18T13:07:24.855Z",
+  "total": 97,
+  "sent": 93,
+  "unsent": 4,
+  "replied": 46,
+  "noReply": 47,
+  "open": 59,
+  "replyRate": 0.4946236559139785,
+  "interviewRate": 0.03225806451612903,
+  "ghostRate": 0.5053763440860215,
+  "reached": [
+    97,
+    31,
+    12,
+    3,
+    0
+  ],
+  "atStage": [
+    66,
+    19,
+    9,
+    3,
+    0
+  ],
+  "dropComposition": [
+    [
+      {
+        "status": "Applied",
+        "count": 35
+      },
+      {
+        "status": "Rejected",
+        "count": 15
+      },
+      {
+        "status": "Closed / Expired",
+        "count": 7
+      },
+      {
+        "status": "No Response",
+        "count": 5
+      },
+      {
+        "status": "Materials Ready — VERIFY",
+        "count": 4
+      }
+    ],
+    [
+      {
+        "status": "In Review",
+        "count": 10
+      },
+      {
+        "status": "Viewed by Employer",
+        "count": 4
+      },
+      {
+        "status": "Talent Pool",
+        "count": 3
+      },
+      {
+        "status": "Rejected",
+        "count": 2
+      }
+    ],
+    [
+      {
+        "status": "Assessment",
+        "count": 9
+      }
+    ],
+    [
+      {
+        "status": "Rejected",
+        "count": 2
+      },
+      {
+        "status": "Interviewed",
+        "count": 1
+      }
+    ],
+    []
+  ],
+  "usedExplicitStage": true,
+  "byStatus": [
+    {
+      "status": "Applied",
+      "count": 35
+    },
+    {
+      "status": "Rejected",
+      "count": 19
+    },
+    {
+      "status": "In Review",
+      "count": 10
+    },
+    {
+      "status": "Assessment",
+      "count": 9
+    },
+    {
+      "status": "Closed / Expired",
+      "count": 7
+    },
+    {
+      "status": "No Response",
+      "count": 5
+    },
+    {
+      "status": "Viewed by Employer",
+      "count": 4
+    },
+    {
+      "status": "Materials Ready — VERIFY",
+      "count": 4
+    },
+    {
+      "status": "Talent Pool",
+      "count": 3
+    },
+    {
+      "status": "Interviewed",
+      "count": 1
+    }
+  ],
+  "channels": [
+    {
+      "name": "Jobstreet",
+      "sent": 35,
+      "replied": 8,
+      "unsent": 0,
+      "rate": 0.22857142857142856
+    },
+    {
+      "name": "LinkedIn",
+      "sent": 20,
+      "replied": 9,
+      "unsent": 1,
+      "rate": 0.45
+    },
+    {
+      "name": "Direct Email",
+      "sent": 6,
+      "replied": 3,
+      "unsent": 0,
+      "rate": 0.5
+    },
+    {
+      "name": "Indeed",
+      "sent": 4,
+      "replied": 1,
+      "unsent": 0,
+      "rate": 0.25
+    },
+    {
+      "name": "Direct / AppSheet",
+      "sent": 4,
+      "replied": 4,
+      "unsent": 0,
+      "rate": 1
+    },
+    {
+      "name": "Platform",
+      "sent": 3,
+      "replied": 3,
+      "unsent": 0,
+      "rate": 1
+    },
+    {
+      "name": "Direct / ATS",
+      "sent": 3,
+      "replied": 3,
+      "unsent": 0,
+      "rate": 1
+    },
+    {
+      "name": "Direct / Careers",
+      "sent": 2,
+      "replied": 2,
+      "unsent": 0,
+      "rate": 1
+    },
+    {
+      "name": "Direct / Pinpoint ATS",
+      "sent": 2,
+      "replied": 2,
+      "unsent": 0,
+      "rate": 1
+    },
+    {
+      "name": "Kalibrr",
+      "sent": 2,
+      "replied": 2,
+      "unsent": 0,
+      "rate": 1
+    },
+    {
+      "name": "Lever",
+      "sent": 2,
+      "replied": 0,
+      "unsent": 0,
+      "rate": 0
+    },
+    {
+      "name": "Direct / Freshteam",
+      "sent": 1,
+      "replied": 1,
+      "unsent": 0,
+      "rate": 1
+    },
+    {
+      "name": "Direct / Workable",
+      "sent": 1,
+      "replied": 1,
+      "unsent": 0,
+      "rate": 1
+    },
+    {
+      "name": "CGI / Njoyn",
+      "sent": 1,
+      "replied": 1,
+      "unsent": 0,
+      "rate": 1
+    },
+    {
+      "name": "Direct / Platform",
+      "sent": 1,
+      "replied": 1,
+      "unsent": 0,
+      "rate": 1
+    },
+    {
+      "name": "Direct / Avature ATS",
+      "sent": 1,
+      "replied": 1,
+      "unsent": 0,
+      "rate": 1
+    },
+    {
+      "name": "Direct / Teamtailor",
+      "sent": 1,
+      "replied": 1,
+      "unsent": 0,
+      "rate": 1
+    },
+    {
+      "name": "Direct / BambooHR",
+      "sent": 1,
+      "replied": 1,
+      "unsent": 0,
+      "rate": 1
+    },
+    {
+      "name": "Direct",
+      "sent": 1,
+      "replied": 1,
+      "unsent": 0,
+      "rate": 1
+    },
+    {
+      "name": "Workable",
+      "sent": 1,
+      "replied": 0,
+      "unsent": 0,
+      "rate": 0
+    },
+    {
+      "name": "Torre.ai",
+      "sent": 1,
+      "replied": 1,
+      "unsent": 0,
+      "rate": 1
+    },
+    {
+      "name": "Direct / Recruiter",
+      "sent": 0,
+      "replied": 0,
+      "unsent": 2,
+      "rate": null
+    },
+    {
+      "name": "LinkedIn / Direct",
+      "sent": 0,
+      "replied": 0,
+      "unsent": 1,
+      "rate": null
+    }
+  ],
+  "monthly": [
+    {
+      "month": "2026-05",
+      "count": 8
+    },
+    {
+      "month": "2026-06",
+      "count": 4
+    },
+    {
+      "month": "2026-07",
+      "count": 6
+    },
+    {
+      "month": "2026-08",
+      "count": 52
+    },
+    {
+      "month": "2026-09",
+      "count": 27
+    }
+  ],
+  "workSetup": [
+    {
+      "label": "Remote",
+      "count": 73
+    },
+    {
+      "label": "Hybrid",
+      "count": 8
+    },
+    {
+      "label": "Onsite",
+      "count": 16
+    }
+  ],
+  "ageing": [
+    {
+      "label": "0–7d",
+      "count": 7
+    },
+    {
+      "label": "8–14d",
+      "count": 7
+    },
+    {
+      "label": "15–30d",
+      "count": 22
+    },
+    {
+      "label": "31–60d",
+      "count": 23
+    },
+    {
+      "label": "60d+",
+      "count": 0
+    }
+  ],
+  "followUps": {
+    "overdue": 0,
+    "dueToday": 0,
+    "dueWeek": 11
+  },
+  "quality": {
+    "resume": 95,
+    "cover": 7,
+    "tailored": 5
+  }
+}

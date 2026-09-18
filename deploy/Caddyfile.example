@@ -1,0 +1,41 @@
+# Add this block to the Caddyfile you already use for n8n.
+# Caddy gets a Let's Encrypt certificate automatically on first request — no certbot,
+# no renewal cron. Reload with:  docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
+
+dashboard.example.com {
+	# Serve the symlink, not a release directory. activate.sh swaps what it points at.
+	root * /srv/dashboard/current
+	file_server
+
+	encode zstd gzip
+
+	header {
+		# The page embeds its own data and pulls two scripts from CDNs. Nothing else
+		# should load, and nothing should frame it.
+		Content-Security-Policy "default-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'none'; base-uri 'none'; frame-ancestors 'none'"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		# The dashboard is rebuilt on a schedule; a stale copy for a few minutes is
+		# fine, but never serve yesterday's.
+		Cache-Control "public, max-age=300, must-revalidate"
+	}
+
+	# Optional: keep it off search engines even though it carries no names.
+	header /* X-Robots-Tag "noindex, nofollow"
+
+	log {
+		output file /var/log/caddy/dashboard.log
+		format console
+	}
+}
+
+# --- Basic auth, if you would rather not have it public at all -------------------
+# Generate the hash:  docker compose exec caddy caddy hash-password
+#
+# dashboard.example.com {
+# 	basic_auth {
+# 		shua $2a$14$...replace...
+# 	}
+# 	root * /srv/dashboard/current
+# 	file_server
+# }
