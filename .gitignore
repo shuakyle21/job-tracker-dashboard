@@ -6,10 +6,12 @@ node_modules/
 .DS_Store
 *.log
 
-# Never commit a real feed export — sample-feed.csv is the de-identified fixture
-# and is the only CSV that belongs in git.
+# Never commit a real feed export — sample-feed.json is the de-identified fixture
+# and is the only feed export that belongs in git.
 feed-*.csv
+feed-*.json
 *-private.csv
+*-private.json
 
 # Deploy key. Generated during setup, added to GitHub as a secret, then deleted
 # from the laptop (DEPLOY.md 2.6). Ignored so a slip can't publish it.

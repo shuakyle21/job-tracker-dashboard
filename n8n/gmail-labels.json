@@ -1,0 +1,15 @@
+{
+  "scope": "Label_1523943501121152783",
+  "processed": "Label_13",
+  "status": {
+    "Applied": "Label_14",
+    "Viewed": "Label_15",
+    "In Review": "Label_16",
+    "Assessment": "Label_17",
+    "Interview": "Label_18",
+    "Offer": "Label_19",
+    "Rejected": "Label_20",
+    "Talent Pool": "Label_21",
+    "Needs Review": "Label_22"
+  }
+}

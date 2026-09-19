@@ -5,7 +5,7 @@ them and you still have something running.
 
 1. **Git** — publish the repo.
 2. **VPS** — serve the dashboard, with atomic releases and one-command rollback.
-3. **n8n** — feed the Sheet from Gmail and trigger rebuilds.
+3. **n8n**: label job mail in Gmail, fill the Airtable base from it, and trigger rebuilds.
 
 Command blocks are paste-ready. `$` lines run on your laptop, `#` lines on the VPS.
 
@@ -22,7 +22,7 @@ gh repo create job-tracker-dashboard --public --source=. --push
 ```
 
 Public is fine and deliberate. Nothing identifying is in the repo: the build reads a
-de-identified `feed` tab, `sample-feed.csv` has dates and statuses but no companies, and
+de-identified `Feed` table, `sample-feed.json` has dates and statuses but no companies, and
 `scripts/verify.mjs` fails the build if a company name or email address ever shows up in
 the output. That check is the reason you can leave the repo public without thinking about
 it again.
@@ -67,7 +67,7 @@ The web server needs `current` to exist before it will start.
 
 ```bash
 # laptop
-FEED_CSV_URL=./sample-feed.csv node scripts/build.mjs
+FEED_FIXTURE=./sample-feed.json node scripts/build.mjs
 rsync -az --delete dist/ deploy@VPS:/srv/dashboard/staging/
 ssh deploy@VPS '/srv/dashboard/bin/activate.sh seed'
 ```
@@ -104,7 +104,9 @@ address — which is the entire attack it's meant to prevent.
 
 | Secret | Value |
 |---|---|
-| `FEED_CSV_URL` | published CSV URL of the `feed` tab |
+| `AIRTABLE_API_KEY` | personal access token scoped to `data.records:read` on this base |
+| `AIRTABLE_BASE_ID` | the base ID (`appXXXXXXXXXXXXXX`), from **Help ▸ API documentation** |
+| `AIRTABLE_TABLE_NAME` | optional — only if the tracker table isn't named `Feed` |
 | `SSH_PRIVATE_KEY` | contents of `./deploy_key` |
 | `SSH_KNOWN_HOSTS` | contents of `known_hosts.txt` |
 | `SSH_HOST` | VPS hostname or IP |
@@ -138,114 +140,106 @@ handshake.
 
 ## 3. n8n
 
-### 3.1 Two new tabs
+### 3.1 Airtable tables
 
-n8n does not write to your `data` tab. It writes to two new ones, and you stay the only
-thing that edits the tracker.
+n8n writes to three tables in the same base.
 
-Create `inbox` with these headers in `A1:I1`:
+**`Inbox`**: one row per classified email:
 
 ```
-message_id  thread_id  received_at  company  job_title  status  max_stage  source  confidence
+message_id  thread_id  received_at  company  job_title  status  max_stage  source  confidence  job_platform
 ```
 
-Create `needs-review` with these headers in `A1:I1`:
+**`Needs Review`**: one row per email the parser couldn't classify:
 
 ```
 message_id  thread_id  received_at  from_address  subject  status  company  job_title  confidence
 ```
 
-Why a separate tab instead of writing straight into the tracker: an email tells you about
-a *message*, not an *application*. Two emails about the same job are two messages. Keying
-rows on `message_id` makes every write idempotent — a re-poll updates the same row instead
-of adding a duplicate — but it means `inbox` is a log, not a row-per-application. You read
-it, you decide, you update `data`. That's a deliberate trade: the automation gets to be
-provably correct because it isn't allowed to guess.
+`message_id` should be the primary field in both. Every field can be Single line text except
+`max_stage`, which is a Number. Both tables are upserted on `message_id`, so a re-poll updates
+the same row instead of adding a duplicate. They are a *message* log: two emails about one job
+are two rows.
 
-To see what's new without scrolling, put this anywhere on the `data` tab:
+**`Feed`**: the tracker. Add three fields to it:
 
-```
-=FILTER(inbox!A2:I, ISNA(MATCH(inbox!A2:A, data!U33:U, 0)), inbox!A2:A<>"")
-```
-
-Paste the `message_id` into column `U` of a `data` row once you've filed it, and it stops
-showing up.
-
-### 3.2 Two Gmail labels
-
-The trigger query is `label:job-applications -label:tracker-processed`. Two labels, one
-job each — don't merge them.
-
-| Label | Applied by | Means |
+| Field | Type | Written by |
 |---|---|---|
-| `job-applications` | a Gmail filter | in scope |
-| `tracker-processed` | the workflow | already handled |
+| `Job Platform` | Single select: JobStreet, LinkedIn, Indeed, Kalibrr, OnlineJobs.ph, Torre, Company Website, Direct Email, Other | n8n, when empty |
+| `Company` | Single line text | n8n, when empty |
+| `Application Key` | Single line text | n8n: `company|job title` lowercased, or `platform|job title` when the board hides the employer (Indeed) |
 
-Create both: Gmail ▸ Settings ▸ Labels ▸ Create new label.
+Each classified email also upserts Feed on `Application Key`, so every application gets one
+row that fills itself in. The merge (`n8n/merge-feed.js`, tested by
+`scripts/test-merge-feed.mjs`) only moves a row forward:
 
-**Why the scoping label exists.** Without it the trigger polls your whole mailbox. Every
-newsletter and receipt gets its full body fetched, parsed, written to `needs-review` and
-labelled — a junk drawer in the sheet and litter in Gmail. Gmail filters run server-side
-for free, so the narrowing belongs there, where n8n never has to see the mail at all.
+- `Date Applied` keeps the earliest date seen.
+- `Max Stage` keeps the highest stage seen.
+- `Status` only advances. A late "thanks for applying" never overwrites "Interviewed".
+  "Rejected" outranks every status except "Offer".
+- `Job Platform`, `Company`, `Source` and `Job Role` are only filled when empty, so your edits
+  win.
 
-### 3.2a The Gmail filter
+Rows you add by hand without an `Application Key` are left alone. `Company`, `Job Role` and
+`Application Key` identify employers, and `build.mjs` never reads them: `verify.mjs` fails if
+`FIELD_MAP` ever includes one.
 
-Gmail ▸ Settings ▸ Filters and blocked addresses ▸ **Create a new filter**. Put this in
-**Has the words**:
+### 3.2 Gmail labels
 
-```
-from:(linkedin.com OR jobstreet.com OR indeed.com OR onlinejobs.ph OR greenhouse.io OR lever.co OR myworkday.com OR ashbyhq.com OR smartrecruiters.com OR workable.com OR bamboohr.com) OR subject:("thank you for applying" OR "thanks for applying" OR "application received" OR "application was sent" OR "your application" OR "application update" OR "application status" OR "interview" OR "assessment" OR "offer of employment" OR "not moving forward" OR "regret to inform")
-```
+Create these labels (Gmail ▸ Settings ▸ Labels), then put their ids in `n8n/gmail-labels.json`:
 
-Create filter → tick **Apply the label** → `job-applications` → and tick **Also apply
-filter to matching conversations**.
+| Label | Means |
+|---|---|
+| `Job Application` | in scope: yours, applied by hand or by a filter, and also applied by the workflow |
+| `Job Application/Processed` | already handled; the trigger query excludes it |
+| `Job Application/Applied`, `/Viewed`, `/In Review`, `/Assessment`, `/Interview`, `/Offer`, `/Rejected`, `/Talent Pool`, `/Needs Review` | the status the parser read from that email |
 
-That last checkbox is how you backfill. It retro-labels everything already in your
-mailbox, and n8n drains it 25 messages per poll until it catches up. Skip it and only
-future mail gets tracked.
+The ids come from the Gmail API (`users.labels.list`) or the n8n Gmail node's label dropdown.
+`verify.mjs` fails if any status the parser can produce has no id.
 
-**Tuning it.** Too broad and noise reaches `needs-review`; too narrow and applications go
-missing — and missing is the expensive direction, because you never find out. Start broad.
-Once `needs-review` has a week of rows, look at what's actually landing there and tighten
-the filter, not the parser. Adding a sender to the Gmail filter is a UI click; changing the
-parser is a code change, a test, a regenerate and a re-import.
+**The trigger query** is mail under `Job Application` **or** mail containing a confirmation phrase
+("thank you for applying", "received your application", "successfully submitted", "your
+application was sent", "has viewed your application", …), minus `Job Application/Processed`.
+The phrases are the auto-labelling: a confirmation nobody labelled is picked up, processed,
+and gets `Job Application` like everything else. The full query is `JOB_MAIL_QUERY` in
+`scripts/build-n8n.mjs`.
 
-The parser is the second filter anyway: anything inside `job-applications` it can't
-classify still lands in `needs-review` rather than corrupting the tracker.
+**Never leave the query without a positive scope.** Without one, the trigger polls your whole
+mailbox, and every newsletter gets a full body fetch, a `Needs Review` row and a label.
 
-### 3.3 Import
+**Tuning.** Noise that matches a phrase lands in `Needs Review` labelled
+`Job Application/Needs Review`. If a sender keeps showing up there, narrow the phrases. If an
+application shape is misclassified, add it as a parser test case first
+(`scripts/test-parser.mjs`), then fix `n8n/parse-email.js`.
 
-n8n ▸ Workflows ▸ Import from File → `n8n/job-tracker-ingest.json`.
+### 3.3 Import or deploy
 
-Then fill in the four things the file can't know:
+n8n ▸ Workflows ▸ Import from File → `n8n/job-tracker-ingest.json`. The base, table and label
+ids are already filled in. Credentials are not:
 
 | Node | What to set |
 |---|---|
-| **Poll Gmail** | pick your Gmail credential |
-| **Write to Inbox** / **Write to Needs Review** | pick your Google Sheets credential |
-| **Mark Email Processed** | same Gmail credential; pick `tracker-processed` from the label dropdown |
-| **Trigger Dashboard Rebuild** | change `REPLACE_OWNER/REPLACE_REPO` in the URL |
+| **Poll Gmail**, **Fetch Job Mail**, **Mark Email Processed** | your Gmail credential |
+| **Write to Inbox**, **Write to Needs Review**, **Find Feed Row**, **Upsert Feed** | an Airtable personal access token with `data.records:read` and `data.records:write` on this base. This is a *second* token: the `AIRTABLE_API_KEY` secret in §2.6 is read-only and belongs to the dashboard build |
+| **Trigger Dashboard Rebuild** | a Header Auth credential. Name: `Authorization`. Value: `Bearer github_pat_...`, a fine-grained PAT with **Contents: read and write** on this repo only |
 
-For the rebuild node's auth, create a **Header Auth** credential:
+### 3.4 Backfill, test, then enable
 
-- Name: `Authorization`
-- Value: `Bearer ghp_...` — a fine-grained PAT with **Contents: read and write** on this
-  repo only
-
-### 3.4 Test before you enable it
-
-Open **Poll Gmail** and hit *Fetch Test Event*, then run the workflow manually once.
+The Gmail trigger only sees mail that arrives after the workflow is activated. To process what
+is already in your mailbox, open **Backfill (manual)** and click *Execute workflow*. It runs the
+trigger's query (up to 500 messages) through the same dedupe, writes and labels.
 
 Check, in order:
 
-1. `inbox` got rows and the statuses look right.
-2. `needs-review` got the rest — newsletters, recruiter spam.
-3. Those emails now carry the `tracker-processed` label.
-4. GitHub Actions shows a run triggered by `repository_dispatch`.
+1. `Inbox` has rows with sensible statuses and `job_platform` filled in.
+2. `Feed` has one row per application, not one per email, with `Job Platform` set.
+3. `Needs Review` has the rest.
+4. Those emails carry `Job Application`, `Job Application/Processed` and a status label.
+5. GitHub Actions shows a run triggered by `repository_dispatch`.
 
-Run it a second time. Nothing should change: no new rows, no second Actions run. If rows
-duplicate, the matching column got lost on import — reopen both Sheets nodes and confirm
-*Column to match on* is `message_id`.
+Run the backfill a second time. Nothing should change: no new rows and no new labels. If rows
+duplicate, the matching field was lost on import. Reopen the Airtable nodes and confirm
+*Column to match on* is `message_id`, or `Application Key` for **Upsert Feed**.
 
 Then activate it.
 
@@ -288,10 +282,11 @@ same email can never fool it twice.
 | Deploy green, page unchanged | nginx without `disable_symlinks off;` |
 | `Permission denied` on activate | forgot `chmod +x` in 2.2 |
 | Smoke test fails, files are there | web server not pointed at `/srv/dashboard/current` |
-| Rows duplicating in `inbox` | matching column lost on import (3.4) |
-| Same emails reprocessed every poll | `tracker-processed` not applied, or not excluded in the query |
-| `needs-review` full of newsletters | Gmail filter too broad — tighten the filter, not the parser (3.2a) |
-| Applications not showing up at all | Gmail filter too narrow, or you skipped *Also apply to matching conversations* |
+| Rows duplicating in `Inbox` or `Feed` | matching field lost on import (3.4) |
+| Same emails reprocessed every poll | `Job Application/Processed` not applied, or not excluded in the query |
+| `Needs Review` full of newsletters | trigger phrases too broad — narrow `JOB_MAIL_QUERY` (3.2) |
+| `401`/`403` from Airtable | personal access token missing the right scope, or scoped to the wrong base |
+| Applications not showing up at all | not under `Job Application` and no trigger phrase matches, or the backfill was never run (3.4) |
 | Workflow stopped after ~a week | OAuth app still in Testing mode (3.5) |
 | Scheduled builds stopped after ~2 months | GitHub disables cron after 60 days of repo inactivity; the `summary.json` commit exists to prevent this |
 | Charts blank, numbers fine | ApexCharts didn't load from cdnjs; the Sankey still renders because it's server-side SVG |

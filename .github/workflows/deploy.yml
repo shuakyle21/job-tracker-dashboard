@@ -50,12 +50,15 @@ jobs:
 
       - name: Build from the live feed
         env:
-          FEED_CSV_URL: ${{ secrets.FEED_CSV_URL }}
+          AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
+          AIRTABLE_BASE_ID: ${{ secrets.AIRTABLE_BASE_ID }}
+          AIRTABLE_TABLE_NAME: ${{ secrets.AIRTABLE_TABLE_NAME }}
         run: node scripts/build.mjs
 
       # Committing aggregates does three jobs: git history becomes the time series,
       # repo activity keeps the cron alive (GitHub disables schedules after 60 days
-      # of inactivity), and you keep a plain-text record if the Sheet is ever lost.
+      # of inactivity), and you keep a plain-text record if the Airtable base is
+      # ever lost.
       - name: Commit summary if it changed
         run: |
           if [[ -n "$(git status --porcelain data/summary.json)" ]]; then

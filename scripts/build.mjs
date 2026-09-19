@@ -1,18 +1,20 @@
 #!/usr/bin/env node
 /**
- * Build the job-search analytics dashboard from the Sheet's published "feed" tab.
+ * Build the job-search analytics dashboard from the Airtable "Feed" table.
  *
- * Reads : FEED_CSV_URL     a published-to-web CSV of the de-identified feed tab
+ * Reads : AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_TABLE_NAME (default "Feed")
+ *         — or FEED_FIXTURE, a local Airtable list-records JSON file, for
+ *         development and CI, where no live Airtable credentials exist.
  * Writes: dist/index.html  standalone page for GitHub Pages
  *         dist/artifact.html  same body, no <html>/<head> skeleton, for publishing
  *                             as a Claude artifact (the host supplies the skeleton)
  *         data/summary.json aggregate counts only, committed each run
  *
- * Every metric on the dashboard is derived from the nine feed columns and nothing
+ * Every metric on the dashboard is derived from the nine feed fields and nothing
  * else. If a number cannot be computed from the n8n output, it does not appear.
  *
- * Design rule: nothing identifying reaches dist/ or data/. The feed tab carries no
- * company names, job titles, contacts, links, notes or salary.
+ * Design rule: nothing identifying reaches dist/ or data/. The Feed table carries
+ * no company names, job titles, contacts, links, notes or salary.
  *
  * Zero dependencies. Node 20+.
  */
@@ -26,65 +28,81 @@ const ROOT = join(dirname(new URL(import.meta.url).pathname), "..");
  * 1. Fetch
  * ================================================================== */
 
-async function fetchFeed(url) {
-  if (!url) {
+/**
+ * Maps Airtable field names (the "Feed" table, human-maintained) to the
+ * snake_case keys aggregate() reads. Keeping the Airtable side friendly for a
+ * human editing the base, and the internal side stable so nothing downstream
+ * of fetchFeedRecords() has to change.
+ */
+const FIELD_MAP = {
+  "Date Applied": "date_applied",
+  "Source": "source",
+  "Work Setup": "work_setup",
+  "Status": "status",
+  "Resume": "resume",
+  "Cover Letter": "cover_letter",
+  "Tailored": "tailored",
+  "Next Follow Up": "next_follow_up",
+  "Max Stage": "max_stage",
+};
+
+async function fetchFeedRecords() {
+  // Local fixture instead of a live call, for development and for the
+  // verify.mjs gate, which must pass with no Airtable credentials in the
+  // sandbox:
+  //   FEED_FIXTURE=./sample-feed.json node scripts/build.mjs
+  const fixture = process.env.FEED_FIXTURE;
+  if (fixture) {
+    const raw = await readFile(fixture, "utf8");
+    return JSON.parse(raw).records;
+  }
+
+  const apiKey = process.env.AIRTABLE_API_KEY;
+  const baseId = process.env.AIRTABLE_BASE_ID;
+  const table = process.env.AIRTABLE_TABLE_NAME || "Feed";
+
+  if (!apiKey || !baseId) {
     throw new Error(
-      "FEED_CSV_URL is not set.\n" +
-      "Publish the Sheet's `feed` tab (File > Share > Publish to web > feed > CSV)\n" +
-      "and put the URL in the repo secret FEED_CSV_URL. See README step 3."
+      "AIRTABLE_API_KEY / AIRTABLE_BASE_ID are not set, and FEED_FIXTURE is not set either.\n" +
+      "For a fixture build: FEED_FIXTURE=./sample-feed.json node scripts/build.mjs\n" +
+      "For a real build: set AIRTABLE_API_KEY and AIRTABLE_BASE_ID (AIRTABLE_TABLE_NAME\n" +
+      "defaults to \"Feed\") as repo secrets. See README step 3."
     );
   }
 
-  // Local path instead of a URL, for development against a saved fixture:
-  //   FEED_CSV_URL=./sample-feed.csv node scripts/build.mjs
-  if (!/^https?:\/\//i.test(url)) return readFile(url, "utf8");
+  // Airtable paginates at 100 records per page; keep following `offset`
+  // until the response omits it.
+  const records = [];
+  let offset;
+  do {
+    const url = new URL(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(table)}`);
+    url.searchParams.set("pageSize", "100");
+    if (offset) url.searchParams.set("offset", offset);
 
-  const res = await fetch(url, { redirect: "follow" });
-  if (!res.ok) throw new Error(`Feed fetch failed: ${res.status} ${res.statusText}`);
-  const text = await res.text();
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${apiKey}` } });
+    if (!res.ok) {
+      throw new Error(`Airtable fetch failed: ${res.status} ${res.statusText} (table "${table}")`);
+    }
+    const body = await res.json();
+    records.push(...body.records);
+    offset = body.offset;
+  } while (offset);
 
-  // An unpublished sheet returns an HTML error page with a 200 status, so check
-  // the body rather than trusting the status code.
-  if (text.trimStart().startsWith("<")) {
-    throw new Error("Feed returned HTML, not CSV — the tab is probably no longer published.");
-  }
-  return text;
+  return records;
 }
 
 /* ================================================================== *
  * 2. Parse
  * ================================================================== */
 
-/** Minimal RFC-4180 parser: quoted fields, embedded commas and newlines, "" escapes. */
-function parseCSV(text) {
-  const rows = [];
-  let row = [], field = "", inQuotes = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (inQuotes) {
-      if (c === '"') {
-        if (text[i + 1] === '"') { field += '"'; i++; }
-        else inQuotes = false;
-      } else field += c;
-      continue;
+function toRecords(airtableRecords) {
+  return airtableRecords.map((rec) => {
+    const out = {};
+    for (const [airtableField, key] of Object.entries(FIELD_MAP)) {
+      const v = rec.fields[airtableField];
+      out[key] = v === undefined || v === null ? "" : String(v);
     }
-    if (c === '"') inQuotes = true;
-    else if (c === ",") { row.push(field); field = ""; }
-    else if (c === "\n") { row.push(field); rows.push(row); row = []; field = ""; }
-    else if (c !== "\r") field += c;
-  }
-  if (field !== "" || row.length) { row.push(field); rows.push(row); }
-  return rows.filter(r => r.some(cell => cell.trim() !== ""));
-}
-
-function toRecords(rows) {
-  const [header, ...body] = rows;
-  const keys = header.map(h => h.trim().toLowerCase().replace(/\s+/g, "_"));
-  return body.map(cells => {
-    const rec = {};
-    keys.forEach((k, i) => { rec[k] = (cells[i] ?? "").trim(); });
-    return rec;
+    return out;
   });
 }
 
@@ -375,13 +393,14 @@ const FOOT = `
 `;
 
 async function main() {
-  const csv = await fetchFeed(process.env.FEED_CSV_URL);
-  const records = toRecords(parseCSV(csv));
+  const raw = await fetchFeedRecords();
 
-  if (!records.length) throw new Error("Feed parsed to zero rows — check the feed tab's formula.");
-  if (!("status" in records[0])) {
-    throw new Error(`Feed has no "status" column. Columns found: ${Object.keys(records[0]).join(", ")}`);
+  if (!raw.length) throw new Error("Feed table returned zero records — check AIRTABLE_BASE_ID/AIRTABLE_TABLE_NAME.");
+  if (!("Status" in raw[0].fields)) {
+    throw new Error(`Feed table has no "Status" field. Fields found: ${Object.keys(raw[0].fields).join(", ")}`);
   }
+
+  const records = toRecords(raw);
 
   const agg = aggregate(records);
   const template = await readFile(join(ROOT, "templates/dashboard.html"), "utf8");

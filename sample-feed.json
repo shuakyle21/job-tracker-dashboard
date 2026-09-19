@@ -1,0 +1,1280 @@
+{
+  "records": [
+    {
+      "id": "rec00000000000001",
+      "createdTime": "2026-05-01T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-05-01",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote",
+        "Status": "No Response",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec00000000000002",
+      "createdTime": "2026-05-02T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-05-02",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote",
+        "Status": "No Response",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec00000000000003",
+      "createdTime": "2026-05-02T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-05-02",
+        "Source": "Direct / Careers",
+        "Work Setup": "Remote",
+        "Status": "Rejected",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec00000000000004",
+      "createdTime": "2026-05-03T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-05-03",
+        "Source": "Direct / Pinpoint ATS",
+        "Work Setup": "Remote",
+        "Status": "Rejected",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec00000000000005",
+      "createdTime": "2026-05-01T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-05-01",
+        "Source": "Direct / Freshteam",
+        "Work Setup": "Remote",
+        "Status": "Rejected",
+        "Resume": true,
+        "Cover Letter": true,
+        "Tailored": false,
+        "Max Stage": 4
+      }
+    },
+    {
+      "id": "rec00000000000006",
+      "createdTime": "2026-05-20T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-05-20",
+        "Source": "LinkedIn",
+        "Work Setup": "Onsite - Manila",
+        "Status": "No Response",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec00000000000007",
+      "createdTime": "2026-05-20T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-05-20",
+        "Source": "Direct / Workable",
+        "Work Setup": "Remote",
+        "Status": "Rejected",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec00000000000008",
+      "createdTime": "2026-05-20T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-05-20",
+        "Source": "Platform",
+        "Work Setup": "Remote",
+        "Status": "Rejected",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec00000000000009",
+      "createdTime": "2026-06-04T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-06-04",
+        "Source": "Direct Email",
+        "Work Setup": "Onsite - Davao",
+        "Status": "Closed / Expired",
+        "Resume": true,
+        "Cover Letter": true,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000000a",
+      "createdTime": "2026-06-04T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-06-04",
+        "Source": "LinkedIn",
+        "Work Setup": "Remote",
+        "Status": "Talent Pool",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000000b",
+      "createdTime": "2026-06-04T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-06-04",
+        "Source": "LinkedIn",
+        "Work Setup": "Remote",
+        "Status": "Rejected",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000000c",
+      "createdTime": "2026-06-04T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-06-04",
+        "Source": "Direct Email",
+        "Work Setup": "Hybrid",
+        "Status": "No Response",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000000d",
+      "createdTime": "2026-07-28T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-07-28",
+        "Source": "Direct Email",
+        "Work Setup": "Remote",
+        "Status": "Talent Pool",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000000e",
+      "createdTime": "2026-07-30T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-07-30",
+        "Source": "CGI / Njoyn",
+        "Work Setup": "Hybrid",
+        "Status": "In Review",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000000f",
+      "createdTime": "2026-07-30T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-07-30",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote",
+        "Status": "Rejected",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false,
+        "Max Stage": 2
+      }
+    },
+    {
+      "id": "rec0000000000000g",
+      "createdTime": "2026-07-30T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-07-30",
+        "Source": "LinkedIn",
+        "Work Setup": "Remote",
+        "Status": "Rejected",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000000h",
+      "createdTime": "2026-07-31T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-07-31",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000000i",
+      "createdTime": "2026-07-31T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-07-31",
+        "Source": "Indeed",
+        "Work Setup": "Remote",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000000j",
+      "createdTime": "2026-08-01T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-01",
+        "Source": "LinkedIn",
+        "Work Setup": "Remote",
+        "Status": "Viewed by Employer",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000000k",
+      "createdTime": "2026-08-02T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-02",
+        "Source": "LinkedIn",
+        "Work Setup": "Hybrid",
+        "Status": "Rejected",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000000l",
+      "createdTime": "2026-08-02T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-02",
+        "Source": "LinkedIn",
+        "Work Setup": "Remote",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000000m",
+      "createdTime": "2026-08-02T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-02",
+        "Source": "Kalibrr",
+        "Work Setup": "Remote",
+        "Status": "Rejected",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000000n",
+      "createdTime": "2026-08-03T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-03",
+        "Source": "Indeed",
+        "Work Setup": "Onsite",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000000o",
+      "createdTime": "2026-08-04T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-04",
+        "Source": "Indeed",
+        "Work Setup": "Remote",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000000p",
+      "createdTime": "2026-08-04T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-04",
+        "Source": "LinkedIn",
+        "Work Setup": "Remote",
+        "Status": "Rejected",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000000q",
+      "createdTime": "2026-08-05T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-05",
+        "Source": "Direct Email",
+        "Work Setup": "Remote",
+        "Status": "In Review",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000000r",
+      "createdTime": "2026-08-07T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-07",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote",
+        "Status": "Viewed by Employer",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000000s",
+      "createdTime": "2026-08-08T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-08",
+        "Source": "Lever",
+        "Work Setup": "Remote",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000000t",
+      "createdTime": "2026-08-10T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-10",
+        "Source": "Indeed",
+        "Work Setup": "Remote",
+        "Status": "Rejected",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000000u",
+      "createdTime": "2026-08-10T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-10",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000000v",
+      "createdTime": "2026-08-10T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-10",
+        "Source": "LinkedIn",
+        "Work Setup": "Onsite - Davao",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000000w",
+      "createdTime": "2026-08-10T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-10",
+        "Source": "LinkedIn / Direct",
+        "Work Setup": "Remote",
+        "Status": "Materials Ready — VERIFY",
+        "Resume": true,
+        "Cover Letter": true,
+        "Tailored": true
+      }
+    },
+    {
+      "id": "rec0000000000000x",
+      "createdTime": "2026-08-11T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-11",
+        "Source": "LinkedIn",
+        "Work Setup": "Remote",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000000y",
+      "createdTime": "2026-08-11T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-11",
+        "Source": "LinkedIn",
+        "Work Setup": "Remote",
+        "Status": "Rejected",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000000z",
+      "createdTime": "2026-08-13T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-13",
+        "Source": "Direct / Platform",
+        "Work Setup": "Remote",
+        "Status": "In Review",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec00000000000010",
+      "createdTime": "2026-08-13T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-13",
+        "Source": "Platform",
+        "Work Setup": "Remote",
+        "Status": "Assessment",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false,
+        "Next Follow Up": "2026-09-22"
+      }
+    },
+    {
+      "id": "rec00000000000011",
+      "createdTime": "2026-08-14T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-14",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec00000000000012",
+      "createdTime": "2026-08-14T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-14",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec00000000000013",
+      "createdTime": "2026-08-14T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-14",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote",
+        "Status": "Rejected",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec00000000000014",
+      "createdTime": "2026-08-15T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-15",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote - AU",
+        "Status": "Rejected",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec00000000000015",
+      "createdTime": "2026-08-15T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-15",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote - AU",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec00000000000016",
+      "createdTime": "2026-08-15T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-15",
+        "Source": "LinkedIn",
+        "Work Setup": "Remote - US",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec00000000000017",
+      "createdTime": "2026-08-16T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-16",
+        "Source": "Platform",
+        "Work Setup": "Remote",
+        "Status": "Assessment",
+        "Resume": false,
+        "Cover Letter": false,
+        "Tailored": false,
+        "Next Follow Up": "2026-09-25"
+      }
+    },
+    {
+      "id": "rec00000000000018",
+      "createdTime": "2026-08-17T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-17",
+        "Source": "Direct / Careers",
+        "Work Setup": "Onsite - Manila",
+        "Status": "In Review",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec00000000000019",
+      "createdTime": "2026-08-17T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-17",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote - AU",
+        "Status": "Closed / Expired",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000001a",
+      "createdTime": "2026-08-17T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-17",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote",
+        "Status": "Closed / Expired",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000001b",
+      "createdTime": "2026-08-17T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-17",
+        "Source": "LinkedIn",
+        "Work Setup": "Remote",
+        "Status": "Materials Ready — VERIFY",
+        "Resume": true,
+        "Cover Letter": true,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000001c",
+      "createdTime": "2026-08-17T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-17",
+        "Source": "LinkedIn",
+        "Work Setup": "Onsite - NCR",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000001d",
+      "createdTime": "2026-08-18T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-18",
+        "Source": "LinkedIn",
+        "Work Setup": "Onsite - Mandaluyong",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000001e",
+      "createdTime": "2026-08-19T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-19",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote",
+        "Status": "Closed / Expired",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000001f",
+      "createdTime": "2026-08-20T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-20",
+        "Source": "Direct / ATS",
+        "Work Setup": "Remote",
+        "Status": "In Review",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000001g",
+      "createdTime": "2026-08-23T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-23",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000001h",
+      "createdTime": "2026-08-23T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-23",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000001i",
+      "createdTime": "2026-08-24T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-24",
+        "Source": "Direct Email",
+        "Work Setup": "Onsite - Region XII",
+        "Status": "No Response",
+        "Resume": true,
+        "Cover Letter": true,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000001j",
+      "createdTime": "2026-08-26T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-26",
+        "Source": "Direct / Pinpoint ATS",
+        "Work Setup": "Remote",
+        "Status": "Assessment",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000001k",
+      "createdTime": "2026-08-27T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-27",
+        "Source": "Direct / Avature ATS",
+        "Work Setup": "Onsite - Singapore",
+        "Status": "Assessment",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000001l",
+      "createdTime": "2026-08-27T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-27",
+        "Source": "LinkedIn",
+        "Work Setup": "Remote",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000001m",
+      "createdTime": "2026-08-28T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-28",
+        "Source": "Jobstreet",
+        "Work Setup": "Hybrid",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000001n",
+      "createdTime": "2026-08-28T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-28",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote",
+        "Status": "Rejected",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000001o",
+      "createdTime": "2026-08-29T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-29",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote",
+        "Status": "Closed / Expired",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000001p",
+      "createdTime": "2026-08-29T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-29",
+        "Source": "Jobstreet",
+        "Work Setup": "Hybrid",
+        "Status": "Closed / Expired",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000001q",
+      "createdTime": "2026-08-29T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-29",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000001r",
+      "createdTime": "2026-08-29T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-29",
+        "Source": "Direct / ATS",
+        "Work Setup": "Remote",
+        "Status": "Rejected",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false,
+        "Max Stage": 4
+      }
+    },
+    {
+      "id": "rec0000000000001s",
+      "createdTime": "2026-08-29T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-29",
+        "Source": "LinkedIn",
+        "Work Setup": "Remote",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000001t",
+      "createdTime": "2026-08-30T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-30",
+        "Source": "Jobstreet",
+        "Work Setup": "Onsite",
+        "Status": "Assessment",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false,
+        "Next Follow Up": "2026-09-22"
+      }
+    },
+    {
+      "id": "rec0000000000001u",
+      "createdTime": "2026-08-30T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-30",
+        "Source": "LinkedIn",
+        "Work Setup": "Remote - APAC",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000001v",
+      "createdTime": "2026-08-31T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-31",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote - AU",
+        "Status": "Closed / Expired",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000001w",
+      "createdTime": "2026-08-31T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-31",
+        "Source": "Lever",
+        "Work Setup": "Remote",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000001x",
+      "createdTime": "2026-08-31T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-31",
+        "Source": "Direct / Teamtailor",
+        "Work Setup": "Remote",
+        "Status": "Assessment",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false,
+        "Next Follow Up": "2026-09-22"
+      }
+    },
+    {
+      "id": "rec0000000000001y",
+      "createdTime": "2026-08-30T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-08-30",
+        "Source": "Direct / ATS",
+        "Work Setup": "Remote",
+        "Status": "Assessment",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000001z",
+      "createdTime": "2026-09-01T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-01",
+        "Source": "Jobstreet",
+        "Work Setup": "Onsite - Imus",
+        "Status": "Talent Pool",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec00000000000020",
+      "createdTime": "2026-09-01T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-01",
+        "Source": "LinkedIn",
+        "Work Setup": "Onsite",
+        "Status": "Rejected",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false,
+        "Max Stage": 2
+      }
+    },
+    {
+      "id": "rec00000000000021",
+      "createdTime": "2026-09-02T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-02",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false,
+        "Next Follow Up": "2026-09-22"
+      }
+    },
+    {
+      "id": "rec00000000000022",
+      "createdTime": "2026-09-02T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-02",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote",
+        "Status": "Viewed by Employer",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false,
+        "Next Follow Up": "2026-09-22"
+      }
+    },
+    {
+      "id": "rec00000000000023",
+      "createdTime": "2026-09-02T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-02",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec00000000000024",
+      "createdTime": "2026-09-02T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-02",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote - AU",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec00000000000025",
+      "createdTime": "2026-09-02T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-02",
+        "Source": "Direct / AppSheet",
+        "Work Setup": "Hybrid",
+        "Status": "In Review",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec00000000000026",
+      "createdTime": "2026-09-02T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-02",
+        "Source": "Direct / AppSheet",
+        "Work Setup": "Hybrid",
+        "Status": "In Review",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec00000000000027",
+      "createdTime": "2026-09-02T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-02",
+        "Source": "Direct / AppSheet",
+        "Work Setup": "Onsite - NCR",
+        "Status": "In Review",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec00000000000028",
+      "createdTime": "2026-09-02T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-02",
+        "Source": "Direct / AppSheet",
+        "Work Setup": "Onsite - Davao",
+        "Status": "In Review",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec00000000000029",
+      "createdTime": "2026-09-04T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-04",
+        "Source": "Direct Email",
+        "Work Setup": "Remote - US hours",
+        "Status": "Interviewed",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false,
+        "Next Follow Up": "2026-09-21"
+      }
+    },
+    {
+      "id": "rec0000000000002a",
+      "createdTime": "2026-09-04T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-04",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000002b",
+      "createdTime": "2026-09-04T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-04",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000002c",
+      "createdTime": "2026-09-07T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-07",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000002d",
+      "createdTime": "2026-09-08T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-08",
+        "Source": "Direct / BambooHR",
+        "Work Setup": "Remote",
+        "Status": "In Review",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000002e",
+      "createdTime": "2026-09-09T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-09",
+        "Source": "Direct",
+        "Work Setup": "Onsite - Koronadal",
+        "Status": "Assessment",
+        "Resume": false,
+        "Cover Letter": false,
+        "Tailored": false,
+        "Next Follow Up": "2026-09-21"
+      }
+    },
+    {
+      "id": "rec0000000000002f",
+      "createdTime": "2026-09-11T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-11",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": true,
+        "Tailored": true
+      }
+    },
+    {
+      "id": "rec0000000000002g",
+      "createdTime": "2026-09-11T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-11",
+        "Source": "Direct / Recruiter",
+        "Work Setup": "Remote",
+        "Status": "Materials Ready — VERIFY",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": true,
+        "Next Follow Up": "2026-09-21"
+      }
+    },
+    {
+      "id": "rec0000000000002h",
+      "createdTime": "2026-09-14T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-14",
+        "Source": "LinkedIn",
+        "Work Setup": "Remote",
+        "Status": "Viewed by Employer",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000002i",
+      "createdTime": "2026-09-15T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-15",
+        "Source": "Workable",
+        "Work Setup": "Remote (London-Singapore band)",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": true
+      }
+    },
+    {
+      "id": "rec0000000000002j",
+      "createdTime": "2026-09-15T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-15",
+        "Source": "LinkedIn",
+        "Work Setup": "Remote",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000002k",
+      "createdTime": "2026-09-10T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-10",
+        "Source": "Torre.ai",
+        "Work Setup": "Remote",
+        "Status": "Assessment",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false,
+        "Next Follow Up": "2026-09-21"
+      }
+    },
+    {
+      "id": "rec0000000000002l",
+      "createdTime": "2026-09-17T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-17",
+        "Source": "Jobstreet",
+        "Work Setup": "Hybrid",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000002m",
+      "createdTime": "2026-09-17T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-17",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000002n",
+      "createdTime": "2026-09-17T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-17",
+        "Source": "Jobstreet",
+        "Work Setup": "Remote - UK hours",
+        "Status": "Applied",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000002o",
+      "createdTime": "2026-09-17T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-17",
+        "Source": "Kalibrr",
+        "Work Setup": "Onsite",
+        "Status": "Rejected",
+        "Resume": true,
+        "Cover Letter": false,
+        "Tailored": false
+      }
+    },
+    {
+      "id": "rec0000000000002p",
+      "createdTime": "2026-09-17T00:00:00.000Z",
+      "fields": {
+        "Date Applied": "2026-09-17",
+        "Source": "Direct / Recruiter",
+        "Work Setup": "Remote",
+        "Status": "Materials Ready — VERIFY",
+        "Resume": true,
+        "Cover Letter": true,
+        "Tailored": true,
+        "Next Follow Up": "2026-09-21"
+      }
+    }
+  ]
+}

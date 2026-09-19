@@ -9,7 +9,7 @@
  * invariants that a broken aggregation cannot satisfy.
  *
  *   node scripts/verify.mjs            # fixture only (no network, no secret)
- *   node scripts/verify.mjs --live     # also build once against FEED_CSV_URL
+ *   node scripts/verify.mjs --live     # also build once against AIRTABLE_API_KEY/AIRTABLE_BASE_ID
  */
 
 import { readFile, rm } from "node:fs/promises";
@@ -30,9 +30,19 @@ function check(name, condition, detail = "") {
   }
 }
 
-async function build(feed) {
+async function build(overrides) {
   await rm(join(ROOT, "dist"), { recursive: true, force: true });
-  await run("node", ["scripts/build.mjs"], { cwd: ROOT, env: { ...process.env, FEED_CSV_URL: feed } });
+  // Blank out every ingestion env var first so a leftover value from the
+  // caller's shell can't silently override the mode this call asks for.
+  const env = {
+    ...process.env,
+    FEED_FIXTURE: "",
+    AIRTABLE_API_KEY: "",
+    AIRTABLE_BASE_ID: "",
+    AIRTABLE_TABLE_NAME: "",
+    ...overrides,
+  };
+  await run("node", ["scripts/build.mjs"], { cwd: ROOT, env });
 }
 
 async function assertBuildOutput(label) {
@@ -90,12 +100,19 @@ async function assertBuildOutput(label) {
     !/<!doctype|<html|<body/i.test(artifact));
 
   // --- the privacy boundary ------------------------------------------
-  // The feed tab is de-identified by construction, but a widened feed would leak
-  // silently. Fail the build instead.
+  // The Feed table is de-identified by construction, but a widened feed would
+  // leak silently. Fail the build instead. Airtable field names change (Title
+  // Case, spaces) but company names and emails would still match these
+  // patterns however the source field was renamed.
   const forbidden = [/@[a-z0-9.-]+\.(com|ph|org|net|co)\b/i, /\bInc\.\b/, /\bLtd\b/, /\bCorporation\b/];
   const hits = forbidden.filter(re => re.test(artifact.replace(/wght@\d+/g, "")));
   check("no company names or emails in the published output",
     hits.length === 0, hits.map(String).join(", "));
+
+  // Airtable base/table IDs and API keys are config, not analytics — they must
+  // never reach a page the build can also publish as a public GitHub Pages site.
+  check("no Airtable API endpoints or credentials leak into the published output",
+    !/api\.airtable\.com/i.test(artifact) && !/\bAIRTABLE_API_KEY\b/.test(artifact));
 
   return summary;
 }
@@ -110,6 +127,12 @@ async function assertIngestWorkflow() {
     await run("node", ["scripts/test-parser.mjs"], { cwd: ROOT });
   } catch { parserOk = false; }
   check("parser tests pass", parserOk);
+
+  let mergeOk = true;
+  try {
+    await run("node", ["scripts/test-merge-feed.mjs"], { cwd: ROOT });
+  } catch { mergeOk = false; }
+  check("Feed merge tests pass", mergeOk);
 
   // The workflow JSON is generated. If someone edits it in the n8n UI and
   // re-exports over this file, the tested parser and the running parser part
@@ -127,37 +150,92 @@ async function assertIngestWorkflow() {
   check("embedded parser is the tested file",
     byName["Parse Job Email"]?.parameters.jsCode === parserFile);
 
+  const mergeFile = await readFile(join(ROOT, "n8n/merge-feed.js"), "utf8");
+  check("embedded Feed merge is the tested file",
+    byName["Merge Into Feed"]?.parameters.jsCode === mergeFile);
+
   // Exactly-once. The Gmail query must exclude the label the workflow applies,
   // or the label is decoration and every poll reprocesses every email.
   const q = byName["Poll Gmail"]?.parameters.filters?.q ?? "";
-  check("Gmail query excludes the processed label", /-label:tracker-processed/.test(q), q);
+  check("Gmail query excludes the processed label", /-label:job-application-processed\b/.test(q), q);
 
   // Without a positive scope the trigger polls the whole mailbox — every
   // newsletter gets a full body fetch, a needs-review row and a label. This
   // shipped once; it does not ship again.
-  check("Gmail query is scoped to job mail", /(?:^|\s)label:job-applications\b/.test(q), q);
+  check("Gmail query is scoped to job mail", /(?:^|[\s(])label:job-application(?!-)\b/.test(q), q);
+
+  // The backfill must see exactly what the trigger sees, or it processes a
+  // different set of mail than production would.
+  check("backfill uses the trigger's query",
+    byName["Fetch Job Mail"]?.parameters.filters?.q === q);
+
+  // Every sub-label the parser can choose must exist as a Gmail label id, or
+  // addLabels fails for that email and it is re-polled forever.
+  const labels = JSON.parse(await readFile(join(ROOT, "n8n/gmail-labels.json"), "utf8"));
+  const statusBlock = parserFile.match(/const STATUS_LABELS = \{([\s\S]*?)\};/)?.[1] ?? "";
+  const labelNames = [...statusBlock.matchAll(/:\s*'([^']+)'/g)].map((m) => m[1]).concat("Needs Review");
+  const missing = labelNames.filter((n) => !/^Label_\w+$/.test(labels.status[n] ?? ""));
+  check("every parser status_label has a Gmail label id", labelNames.length > 1 && missing.length === 0, missing.join(", "));
+
+  const markIds = byName["Mark Email Processed"]?.parameters.labelIds ?? [];
+  check("processed email gets scope, processed and status labels",
+    markIds[0]?.includes(labels.scope) && /\.parsed\b/.test(markIds[0])
+      && markIds[1] === labels.processed && /status_label/.test(markIds[2] ?? ""));
 
   // The label must be applied after the rows are written. Inverted, a crash
-  // between the two consumes the email without producing its row.
+  // between the two consumes the email without producing its row. On the
+  // classified branch the last write is the Feed upsert.
   const labelSources = Object.entries(wf.connections)
     .filter(([, c]) => c.main.some((o) => o.some((t) => t.node === "Mark Email Processed")))
     .map(([s]) => s);
-  check("label is applied after both sheet writes",
-    labelSources.includes("Write to Inbox") && labelSources.includes("Write to Needs Review"),
+  check("label is applied after all Airtable writes",
+    labelSources.length === 2 && labelSources.includes("Upsert Feed") && labelSources.includes("Write to Needs Review"),
     labelSources.join(", "));
 
   check("unclassified email has its own branch",
     wf.connections["Classified?"]?.main[1]?.[0]?.node === "Write to Needs Review");
 
-  check("rows key on message_id in both tabs",
+  check("rows key on message_id in both tables",
     ["Write to Inbox", "Write to Needs Review"].every(
       (n) => byName[n]?.parameters.columns.matchingColumns?.[0] === "message_id"));
+
+  // The whole point of the migration: writes must actually go to Airtable, via
+  // an upsert (so message_id keeps its dedupe-on-re-poll behaviour), not a
+  // leftover or reintroduced Google Sheets node.
+  check("both writes target Airtable via upsert",
+    ["Write to Inbox", "Write to Needs Review"].every(
+      (n) => byName[n]?.type === "n8n-nodes-base.airtable" && byName[n]?.parameters.operation === "upsert"));
+
+  // One Feed row per application: the upsert key must be the application,
+  // not the message, or every follow-up email becomes a new tracker row.
+  check("Feed is upserted on Application Key",
+    byName["Upsert Feed"]?.type === "n8n-nodes-base.airtable"
+      && byName["Upsert Feed"]?.parameters.operation === "upsert"
+      && byName["Upsert Feed"]?.parameters.columns.matchingColumns?.join() === "Application Key");
+
+  check("Feed row lookup survives a miss",
+    byName["Find Feed Row"]?.alwaysOutputData === true
+      && wf.connections["Find Feed Row"]?.main[0]?.[0]?.node === "Merge Into Feed"
+      && wf.connections["Merge Into Feed"]?.main[0]?.[0]?.node === "Upsert Feed");
+
+  check("Inbox and Needs Review write to distinct Airtable tables",
+    byName["Write to Inbox"]?.parameters.table?.value !== byName["Write to Needs Review"]?.parameters.table?.value);
+
+  // Feed now carries employer names for n8n's benefit. The dashboard must
+  // never read them — FIELD_MAP is the whitelist that guarantees it.
+  const buildSrc = await readFile(join(ROOT, "scripts/build.mjs"), "utf8");
+  const fieldMap = buildSrc.match(/const FIELD_MAP = \{([\s\S]*?)\};/)?.[1] ?? "";
+  check("build never reads Feed's identifying fields",
+    fieldMap.length > 0 && !/"(?:Company|Job Role|Application Key)"/.test(fieldMap));
+
+  check("no Google Sheets nodes remain in the workflow",
+    !wf.nodes.some((n) => n.type === "n8n-nodes-base.googleSheets"));
 
   // One rebuild per run, not one per email.
   check("rebuild fires once per run", byName["Trigger Dashboard Rebuild"]?.executeOnce === true);
 
   // Every node the trigger cannot reach is a node that never runs.
-  const reachable = new Set(["Poll Gmail"]);
+  const reachable = new Set(["Poll Gmail", "Backfill (manual)"]);
   for (let i = 0; i < wf.nodes.length; i++) {
     for (const [src, conn] of Object.entries(wf.connections)) {
       if (!reachable.has(src)) continue;
@@ -176,7 +254,7 @@ async function assertIngestWorkflow() {
 }
 
 console.log("Verifying build\n");
-await build("./sample-feed.csv");
+await build({ FEED_FIXTURE: "./sample-feed.json" });
 const fixture = await assertBuildOutput("Fixture build");
 await assertIngestWorkflow();
 
@@ -189,15 +267,19 @@ check("reply rate is 49.5%", Math.round(fixture.replyRate * 1000) === 495);
 check("five months of history", fixture.monthly.length === 5);
 
 if (process.argv.includes("--live")) {
-  if (!process.env.FEED_CSV_URL) {
-    console.error("\n--live needs FEED_CSV_URL set");
+  if (!process.env.AIRTABLE_API_KEY || !process.env.AIRTABLE_BASE_ID) {
+    console.error("\n--live needs AIRTABLE_API_KEY and AIRTABLE_BASE_ID set");
     process.exit(1);
   }
-  await build(process.env.FEED_CSV_URL);
+  await build({
+    AIRTABLE_API_KEY: process.env.AIRTABLE_API_KEY,
+    AIRTABLE_BASE_ID: process.env.AIRTABLE_BASE_ID,
+    AIRTABLE_TABLE_NAME: process.env.AIRTABLE_TABLE_NAME || "",
+  });
   const live = await assertBuildOutput("Live feed build");
   check("live feed returned rows", live.total > 0);
   // Rebuild from the fixture so dist/ is deterministic if anything reads it after.
-  await build("./sample-feed.csv");
+  await build({ FEED_FIXTURE: "./sample-feed.json" });
 }
 
 console.log(failures ? `\n${failures} check(s) failed\n` : "\nAll checks passed\n");

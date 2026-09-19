@@ -138,6 +138,160 @@ const cases = [
     // low, not medium. The row still reaches needs-review with its subject.
     want: { parsed: false, confidence: "low", status: "applied" },
   },
+  // --- real sender shapes from the "Job Application" label (names changed) ---
+  {
+    name: "JobStreet submitted",
+    input: email({
+      subject: "Your application was successfully submitted",
+      from: { value: [{ address: "noreply@e.jobstreet.com", name: "Jobstreet" }] },
+      text: "Hi Alex, your application for Software Automation Developer was successfully submitted to Deltaworks Systems (Philippines), Ltd.\nView your application",
+    }),
+    want: { status: "applied", job_title: "Software Automation Developer", company: "Deltaworks Systems (Philippines), Ltd.",
+      job_platform: "JobStreet", status_label: "Applied", parsed: true },
+  },
+  {
+    name: "JobStreet viewed",
+    input: email({
+      subject: "Acme Group has viewed your application for AI Developer",
+      from: { value: [{ address: "noreply@e.jobstreet.com", name: "Jobstreet" }] },
+      text: "You're getting noticed! Acme Group viewed your application for AI Developer.",
+    }),
+    want: { status: "viewed by employer", company: "Acme Group", job_title: "AI Developer", status_label: "Viewed", max_stage: 2 },
+  },
+  {
+    name: "LinkedIn sent (title on the next line)",
+    input: email({
+      subject: "Alex, your application was sent to Quikly Staffing",
+      from: { value: [{ address: "jobs-noreply@linkedin.com", name: "LinkedIn" }] },
+      text: "Your application was sent to Quikly Staffing\n\nBackend Software Developer (Remote)\nQuikly Staffing\nPhilippines\nView job: https://example.test",
+    }),
+    want: { status: "applied", company: "Quikly Staffing", job_title: "Backend Software Developer (Remote)",
+      job_platform: "LinkedIn", parsed: true },
+  },
+  {
+    // Indeed's confirmation never names the employer. The board identifies it,
+    // so it is still a tracker row rather than needs-review.
+    name: "Indeed application, no company",
+    input: email({
+      subject: "Indeed Application: REMOTE - Full Stack Engineer",
+      from: { value: [{ address: "indeedapply@indeed.com", name: "Indeed Apply" }] },
+      text: "Your application has been submitted. Good luck!",
+    }),
+    want: { status: "applied", job_title: "REMOTE - Full Stack Engineer", company: "", job_platform: "Indeed", parsed: true },
+  },
+  {
+    name: "Workable ATS",
+    input: email({
+      subject: "Thanks for applying to CentralCo",
+      from: { value: [{ address: "noreply@candidates.workablemail.com", name: "CentralCo" }] },
+      text: "Your application for the Product Engineer job was submitted successfully.",
+    }),
+    want: { status: "applied", job_title: "Product Engineer", company: "CentralCo", job_platform: "Company Website", parsed: true },
+  },
+  {
+    name: "Lever ATS",
+    input: email({
+      subject: "Thank you for your application to Binaryco",
+      from: { value: [{ address: "no-reply@hire.lever.co", name: "Binaryco" }] },
+      text: "Hi Alex, Thank you for your interest in Binaryco! We have received your application for Junior Software Engineer, and we are delighted.",
+    }),
+    want: { status: "applied", job_title: "Junior Software Engineer", company: "Binaryco", parsed: true },
+  },
+  {
+    name: "Ashby ATS (title and company in one sentence)",
+    input: email({
+      subject: "Thanks for applying to Rasaco!",
+      from: { value: [{ address: "no-reply@ashbyhq.com", name: "" }] },
+      text: "Hi Alex, Thank you for applying for the Builder Cohort role at Rasaco! We appreciate your interest.",
+    }),
+    want: { status: "applied", job_title: "Builder Cohort", company: "Rasaco", parsed: true },
+  },
+  {
+    name: "BambooHR ATS",
+    input: email({
+      subject: "Thank you for applying at Brightlives Productions!",
+      from: { value: [{ address: "notifications@app.bamboohr.com", name: "Brightlives Productions" }] },
+      text: "Thank you for your interest in Brightlives Productions and for taking the time to apply for the Automation & Workflow Specialist position.",
+    }),
+    want: { status: "applied", job_title: "Automation & Workflow Specialist", company: "Brightlives Productions", parsed: true },
+  },
+  {
+    name: "Teamtailor ATS",
+    input: email({
+      subject: "We have received your application!",
+      from: { value: [{ address: "ena@spotter.na.teamtailor-mail.com", name: "Spotterco" }] },
+      text: "Thank you for your application. We will review your application for Remote Machine Learning Engineer shortly, and get back to you.",
+    }),
+    want: { status: "applied", job_title: "Remote Machine Learning Engineer", company: "Spotterco", parsed: true },
+  },
+  {
+    // Manatal mail comes from a recruiter's personal name; the body names the employer.
+    name: "Manatal ATS, recruiter as sender",
+    input: email({
+      subject: "Your Application to Backend Developer",
+      from: { value: [{ address: "kim.santos@mail.manatal.com", name: "Kim Santos" }] },
+      text: "Thank you for your interest in joining Clarkco Outsourcing, the coolest workplace! This is to confirm that we have received your application for Backend Developer. If shortlisted we will call.",
+    }),
+    want: { status: "applied", job_title: "Backend Developer", company: "Clarkco Outsourcing", parsed: true },
+  },
+  {
+    name: "application you sent yourself",
+    input: email({
+      subject: "Application for Junior Developer Position",
+      labelIds: ["IMPORTANT", "SENT"],
+      from: { value: [{ address: "me@gmail.com", name: "Alex" }] },
+      to: { value: [{ address: "talents@meetmilla.com" }] },
+      text: "Hello Milla Labs Team, I'm writing to express my interest in the Junior Developer position.",
+    }),
+    want: { status: "applied", job_title: "Junior Developer", company: "Meetmilla", job_platform: "Direct Email",
+      status_label: "Applied", parsed: true },
+  },
+  {
+    name: "SENT detected from the labels [{id}] shape",
+    input: email({
+      subject: "Application for Data Analyst",
+      labels: [{ id: "SENT", name: "SENT" }],
+      from: { value: [{ address: "me@gmail.com", name: "Alex" }] },
+      to: { value: [{ address: "hr@northwind.ph" }] },
+    }),
+    want: { status: "applied", job_platform: "Direct Email", company: "Northwind" },
+  },
+  {
+    name: "rejection in the subject",
+    input: email({
+      subject: "Your application for the Software Developer role was not selected.",
+      from: { value: [{ address: "no-reply@emaptaco.com", name: "" }] },
+      text: "Thank you for taking the time to apply for the Software Developer opportunity.",
+    }),
+    want: { status: "rejected", job_title: "Software Developer", status_label: "Rejected" },
+  },
+  {
+    name: "LinkedIn viewed",
+    input: email({
+      subject: "Your application was viewed by Webwave Digital",
+      from: { value: [{ address: "jobs-noreply@linkedin.com", name: "LinkedIn" }] },
+      text: "Your application was viewed by Webwave Digital\n\nData Ops Developer\nWebwave Digital",
+    }),
+    want: { status: "viewed by employer", company: "Webwave Digital", job_platform: "LinkedIn", status_label: "Viewed" },
+  },
+  {
+    name: "Kalibrr sent",
+    input: email({
+      subject: "Application sent to Technical Consultant at DIRECO BUSINESS TECH INC.!",
+      from: { value: [{ address: "support@kalibrr.com", name: "Kalibrr" }] },
+      text: "Application sent! Your application has been successfully submitted.",
+    }),
+    want: { status: "applied", job_title: "Technical Consultant", company: "DIRECO BUSINESS TECH INC.", job_platform: "Kalibrr", parsed: true },
+  },
+  {
+    name: "unparsed mail is labelled Needs Review",
+    input: email({
+      subject: "Your weekly digest",
+      from: { value: [{ address: "digest@medium.com", name: "Medium Daily Digest" }] },
+      text: "Here are stories we think you will like.",
+    }),
+    want: { status_label: "Needs Review", job_platform: "Company Website" },
+  },
   {
     name: "date is normalised to ISO",
     input: email({ subject: "Thank you for applying to Portcast", date: "2026-08-03T22:45:10.000Z",

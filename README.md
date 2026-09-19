@@ -1,36 +1,60 @@
 # Job search dashboard — self-updating build
 
-Turns the Google Sheet job-application tracker into an analytics dashboard that rebuilds itself
+Turns an Airtable job-application tracker into an analytics dashboard that rebuilds itself
 on a schedule and deploys to a VPS. Aggregate figures only: no company names, job titles,
-contacts, links, notes or salary ever leave the Sheet.
+contacts, links, notes or salary ever leave the base.
 
 **Setting it up? Go to [DEPLOY.md](DEPLOY.md).** This file explains what the thing is and how it
 works; DEPLOY.md is the runbook.
 
-**Stack:** [TailAdmin](https://tailadmin.com/) design tokens on the Tailwind play CDN, seven
-[ApexCharts](https://apexcharts.com/) charts, and one hand-drawn inline-SVG Sankey (ApexCharts has
-no Sankey type). No build step, no `npm install`, no framework.
+**Database: [Airtable](https://airtable.com/).** The tracker itself — the `Feed` table — and
+n8n's message-level ingest log (`Inbox`, `Needs Review`) all live in one Airtable base.
+`scripts/build.mjs` reads `Feed` straight from Airtable's REST API
+(`api.airtable.com/v0/{baseId}/{tableName}`); nothing in this project reads from a spreadsheet
+CSV export.
 
-**Charts, all derived from the nine feed columns and nothing else:** stage-flow Sankey · funnel ·
+**Stack:** Airtable for storage, [TailAdmin](https://tailadmin.com/) design tokens on the
+Tailwind play CDN, seven [ApexCharts](https://apexcharts.com/) charts, and one hand-drawn
+inline-SVG Sankey (ApexCharts has no Sankey type). No build step, no `npm install`, no framework.
+
+**Charts, all derived from the nine `Feed` table fields and nothing else:** stage-flow Sankey · funnel ·
 status mix donut · channel reply rates (stacked) · applications per month · ageing of open
 applications · work-setup split · application quality. Eight stat tiles above them.
 
 Satoshi, TailAdmin's typeface, is not on Google Fonts, so Plus Jakarta Sans stands in for it.
 
 ```
-Gmail ──▶ n8n ──▶ inbox tab ──▶ you ──▶ data tab ──▶ Actions ──▶ VPS
-          │       needs-review          (the tracker)   │        (nginx/Caddy,
-          │                                             │         atomic releases)
-          └── repository_dispatch ──────────────────────▶┘
-                                            │
-                                            └──▶ data/summary.json committed each run
-                                                 (git history = the time series)
+Gmail ──▶ n8n ──▶ Inbox / Needs Review (message log)
+  ▲        │  └───▶ Feed table (one row per application) ──▶ Actions ──▶ VPS
+  │        │                                                  ▲        (nginx/Caddy,
+  └ labels ┘── repository_dispatch ───────────────────────────┘         atomic releases)
+                                                    │
+                                                    └──▶ data/summary.json committed each run
+                                                         (git history = the time series)
 ```
 
-n8n classifies each email and writes it to `inbox` or `needs-review`, keyed on the Gmail message
-id so a re-poll updates the same row instead of duplicating it. It never writes to `data` — an
-email is about a *message*, not an *application*, and two emails about one job are two messages.
-You still own the tracker; the automation just stops you from missing anything.
+n8n reads mail under your **Job Application** Gmail label, plus confirmations nobody labelled
+yet, found by phrases like "thank you for applying" and "received your application". It
+classifies each email:
+
+- **Inbox** or **Needs Review** get one row per message, upserted on the Gmail message id.
+- **Feed** gets one row per application, keyed on company + job title. The row carries its
+  **Job Platform**: JobStreet, LinkedIn, Indeed, Kalibrr, OnlineJobs.ph, Torre, Company Website
+  or Direct Email.
+
+Feed rows only ever move forward. Dates keep the earliest value and stages the highest, and a
+status is never regressed by a late email. So you can still edit the tracker by hand. Each
+email is then labelled `Job Application`, `Job Application/Processed` and a status sub-label
+(`/Applied`, `/Viewed`, `/Interview`, `/Rejected`, …).
+
+**Everything lives in one Airtable base**:
+
+- `Feed` is the tracker `scripts/build.mjs` reads. n8n fills it and you can correct it.
+- `Inbox` and `Needs Review` are n8n's message-level log, so you can always see which email
+  produced a Feed change. Airtable
+also fixes a real Google Sheets pain point this project used to have: date fields come back as
+plain ISO-8601 strings from the API regardless of anyone's locale settings, so there's no more
+`TEXT(..., "yyyy-mm-dd")` formula workaround to get right.
 
 ---
 
@@ -48,62 +72,70 @@ The full reasoning, including failure modes and the later stages, is in the proj
 
 ## Setup — about 10 minutes
 
-### 1. Rename the data tab to `data`
+### 1. Create the Airtable base
 
-Open the tracker Sheet. The tab created by the CSV import has a long name; double-click it and
-rename it to exactly `data`. The formula in the next step references it by name.
+Create a base named something like "Job Tracker". Inside it, create a table named exactly
+**`Feed`** — this is both your tracker and the privacy boundary: it holds only the columns the
+dashboard needs, so a leaked API key scoped to this table alone can't expose company names,
+contacts or notes, because they were never in it.
 
-### 2. Add a `feed` tab
+Give `Feed` these nine fields, with these exact names and types:
 
-This is the privacy boundary. The `feed` tab holds only the columns the dashboard needs, so the
-published CSV cannot leak anything even if its URL escapes.
+| Field | Type |
+|---|---|
+| `Date Applied` | Date (ISO 8601 / "Friendly" doesn't matter — the API always returns ISO) |
+| `Source` | Single line text |
+| `Work Setup` | Single line text |
+| `Status` | Single select or single line text |
+| `Resume` | Checkbox |
+| `Cover Letter` | Checkbox |
+| `Tailored` | Checkbox |
+| `Next Follow Up` | Date |
+| `Max Stage` | Number |
 
-Create a new tab named `feed`. Put these nine headers in `A1:I1`:
+This is the table you fill in by hand as you apply — same data you'd have put in a spreadsheet
+row, just in Airtable.
 
-```
-date_applied   source   work_setup   status   resume   cover_letter   tailored   next_follow_up   max_stage
-```
+### 2. Create a personal access token
 
-Then paste this single formula into `A2`:
+Airtable ▸ your account ▸ **Developer hub ▸ Personal access tokens ▸ Create token**.
 
-```
-=IFERROR(FILTER(
-  {ARRAYFORMULA(IF(data!B33:B500="","",TEXT(data!B33:B500,"yyyy-mm-dd"))),
-   data!E33:E500, data!F33:F500, data!G33:G500,
-   data!H33:H500, data!I33:I500, data!J33:J500,
-   ARRAYFORMULA(IF(data!N33:N500="","",TEXT(data!N33:N500,"yyyy-mm-dd"))),
-   data!T33:T500},
-  data!C33:C500<>""), "")
-```
+- Scopes: `data.records:read`
+- Access: this one base only
 
-The `TEXT(..., "yyyy-mm-dd")` wrappers are not decoration. A published CSV renders dates in the
-Sheet's locale, so `17/09/2026` or `9/17/2026` depending on settings — and the build parses
-`YYYY-MM` to group by month. Forcing ISO here kills a silent bug that would only show up as a
-mysteriously empty "applications per month" chart.
+Copy the token (`pat...`) — Airtable only shows it once.
 
-### 3. Publish only the `feed` tab
-
-**File ▸ Share ▸ Publish to web** → pick **feed** (not "Entire document") → **Comma-separated
-values (.csv)** → Publish. Copy the URL.
-
-Double-check the dropdown says `feed`. Publishing the entire document publishes your row-level
-data.
-
-### 4. Add the URL as a repo secret
+### 3. Add the secrets
 
 **Settings ▸ Secrets and variables ▸ Actions ▸ New repository secret**
 
-- Name: `FEED_CSV_URL`
-- Value: the URL from step 3
+| Secret | Value |
+|---|---|
+| `AIRTABLE_API_KEY` | the personal access token from step 2 |
+| `AIRTABLE_BASE_ID` | the base ID from the base's API docs (**Help ▸ API documentation**), looks like `appXXXXXXXXXXXXXX` |
 
-It goes in a secret rather than the source not because the contents are sensitive — the feed tab
-is de-identified — but so the URL isn't trivially scrapeable and can be rotated.
+`AIRTABLE_TABLE_NAME` is optional and defaults to `Feed` — only set it if you named the table
+something else.
 
-### 5. Set up the VPS and the rest of the secrets
+### 4. Set up the VPS and the rest of the secrets
 
 [DEPLOY.md](DEPLOY.md) §2 — release layout, `activate.sh`, the deploy key, the web server
 config. Then **Actions ▸ Build and deploy ▸ Run workflow**. The run ends by curling your public
 URL and fails if the page isn't actually up.
+
+### 5. n8n and the ingest tables
+
+[DEPLOY.md](DEPLOY.md) §3 covers:
+
+- the Airtable tables and fields n8n writes to (`Inbox`, `Needs Review` and Feed's
+  `Job Platform` / `Company` / `Application Key`)
+- the Gmail labels
+- importing `n8n/job-tracker-ingest.json` and running the one-off backfill
+
+> **Coming from the old Google Sheets version of this project?** The Sheets-specific setup
+> (publish-to-web CSV, `feed` formula, `FEED_CSV_URL`) no longer applies — it's superseded by the
+> Airtable steps above. See the git history before this migration if you need the old steps for
+> reference.
 
 ---
 
@@ -112,8 +144,9 @@ URL and fails if the page isn't actually up.
 A rejection tells you an application ended, not how far it got. With no extra information the
 build has to credit every rejection to the application stage, which understates the funnel.
 
-Put a number 1–5 in column **T** of the `data` tab for any row where the rejection hid a deeper
-stage. Everything else can stay blank — the build falls back to inferring the stage from Status.
+Put a number 1–5 in the `Max Stage` field of the `Feed` table for any row where the rejection hid
+a deeper stage. Everything else can stay blank — the build falls back to inferring the stage from
+Status.
 
 | Stage | Meaning |
 |---|---|
@@ -141,16 +174,17 @@ With those four filled in, the funnel reads `97 → 31 → 12 → 3 → 0`. With
 
 ```bash
 # build against the checked-in fixture — no network, no secret
-FEED_CSV_URL=./sample-feed.csv node scripts/build.mjs
+FEED_FIXTURE=./sample-feed.json node scripts/build.mjs
 open dist/index.html
 
-# build against the real feed
-FEED_CSV_URL='https://docs.google.com/.../pub?output=csv' node scripts/build.mjs
+# build against the real base
+AIRTABLE_API_KEY=pat... AIRTABLE_BASE_ID=app... node scripts/build.mjs
 ```
 
-`sample-feed.csv` is a de-identified snapshot of the real 97 rows — dates, sources and statuses
-only. It exists so the build is testable without touching the Sheet, and so a change to the
-aggregation logic can be diffed against known-good output.
+`sample-feed.json` is a de-identified snapshot of the real 97 rows — dates, sources and statuses
+only, shaped exactly like Airtable's list-records API response (`{ "records": [{ "id", "fields":
+{...} }] }`). It exists so the build is testable without touching the base, and so a change to
+the aggregation logic can be diffed against known-good output.
 
 No `npm install`. Node 20+ only, zero dependencies.
 
@@ -160,16 +194,17 @@ No `npm install`. Node 20+ only, zero dependencies.
 
 | File | Does what |
 |---|---|
-| `scripts/build.mjs` | fetch → parse CSV → aggregate → lay out the Sankey → fill the template |
+| `scripts/build.mjs` | fetch from Airtable → aggregate → lay out the Sankey → fill the template |
 | `templates/dashboard.html` | TailAdmin markup, Tailwind config, chart code; three `{{PLACEHOLDER}}` slots |
 | `.github/workflows/deploy.yml` | verify, build, commit the summary, rsync to the VPS, activate, smoke-test |
-| `scripts/verify.mjs` | 31 pre-deploy checks: funnel arithmetic, the privacy boundary, n8n invariants |
+| `scripts/verify.mjs` | 32+ pre-deploy checks: funnel arithmetic, the privacy boundary, n8n invariants |
 | `scripts/build-n8n.mjs` | generates the importable n8n workflow from the tested parser |
 | `scripts/test-parser.mjs` | runs the email classifier against real email shapes, outside n8n |
 | `n8n/parse-email.js` | the classifier — **edit this, never the JSON** |
 | `n8n/job-tracker-ingest.json` | generated; import into n8n |
 | `deploy/activate.sh`, `deploy/rollback.sh` | release swap and rollback on the VPS |
 | `data/summary.json` | aggregate counts, rewritten and committed every run |
+| `sample-feed.json` | de-identified fixture, Airtable list-records shape, for local dev and CI |
 | `dist/index.html` | standalone page for Pages (git-ignored) |
 | `dist/artifact.html` | same body without the `<html>` skeleton, for publishing as a Claude artifact |
 
@@ -183,15 +218,21 @@ a feed that parses to zero rows, or a feed missing its `status` column all exit 
 
 ## Troubleshooting
 
-**"Feed returned HTML, not CSV"** — the tab was unpublished, or the URL points at the document
-rather than the CSV export. Re-do step 3. Google returns a `200` with an HTML error page here,
-which is why the build checks the body instead of trusting the status code.
+**"AIRTABLE_API_KEY / AIRTABLE_BASE_ID are not set"** — set both secrets (step 3), or run locally
+against the fixture with `FEED_FIXTURE=./sample-feed.json`.
 
-**"Feed parsed to zero rows"** — the `feed` formula is referencing the wrong tab name, or the
-data tab isn't called `data`. Check step 1.
+**"Airtable fetch failed: 401/403"** — the personal access token doesn't have `data.records:read`
+on this base, or was scoped to the wrong base. Recreate it (step 2).
 
-**Month chart is empty but everything else works** — dates are coming through in a non-ISO
-locale format. The `TEXT()` wrappers in step 2 are missing.
+**"Feed table returned zero records"** — `AIRTABLE_BASE_ID` or `AIRTABLE_TABLE_NAME` points at
+the wrong base/table, or the `Feed` table really is empty.
+
+**"Feed table has no 'Status' field"** — a field was renamed or deleted in Airtable. Field names
+in the `Feed` table must match step 1 exactly (case-sensitive).
+
+**Month chart is empty but everything else works** — `Date Applied` isn't a Date field in
+Airtable (it's Single line text with a non-ISO value), so `date_applied` doesn't match
+`YYYY-MM-DD`. Fix the field type in step 1.
 
 **Scheduled runs stopped after a couple of months** — GitHub disables cron on repos with 60 days
 of no activity. The `data/summary.json` commit exists partly to prevent this; if you removed that
@@ -213,7 +254,7 @@ but treat it as "a few times a day", never "on the hour".
 
 | Stage | What | Why it's later |
 |---|---|---|
-| 4 | Row-per-application in `inbox` | needs company/title matching, which is fuzzy. Keying on `message_id` is provably correct; matching applications is a guess, and a guess that writes to your tracker is worse than a log you skim. |
+| 4 | Row-per-application in `Inbox` | needs company/title matching, which is fuzzy. Keying on `message_id` is provably correct; matching applications is a guess, and a guess that writes to your tracker is worse than a log you skim. |
 | 5 | Commit row-level history | needs the privacy decision revisited; aggregates already give a time series |
 | 6 | Time-in-stage analytics, true time-based Sankey | needs ~4 weeks of committed history before the numbers mean anything |
 
