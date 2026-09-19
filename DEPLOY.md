@@ -5,7 +5,7 @@ them and you still have something running.
 
 1. **Git** — publish the repo.
 2. **VPS** — serve the dashboard, with atomic releases and one-command rollback.
-3. **n8n** — feed the Sheet from Gmail and trigger rebuilds.
+3. **n8n** — feed the Airtable base from Gmail and trigger rebuilds.
 
 Command blocks are paste-ready. `$` lines run on your laptop, `#` lines on the VPS.
 
@@ -22,7 +22,7 @@ gh repo create job-tracker-dashboard --public --source=. --push
 ```
 
 Public is fine and deliberate. Nothing identifying is in the repo: the build reads a
-de-identified `feed` tab, `sample-feed.csv` has dates and statuses but no companies, and
+de-identified `Feed` table, `sample-feed.json` has dates and statuses but no companies, and
 `scripts/verify.mjs` fails the build if a company name or email address ever shows up in
 the output. That check is the reason you can leave the repo public without thinking about
 it again.
@@ -67,7 +67,7 @@ The web server needs `current` to exist before it will start.
 
 ```bash
 # laptop
-FEED_CSV_URL=./sample-feed.csv node scripts/build.mjs
+FEED_FIXTURE=./sample-feed.json node scripts/build.mjs
 rsync -az --delete dist/ deploy@VPS:/srv/dashboard/staging/
 ssh deploy@VPS '/srv/dashboard/bin/activate.sh seed'
 ```
@@ -104,7 +104,9 @@ address — which is the entire attack it's meant to prevent.
 
 | Secret | Value |
 |---|---|
-| `FEED_CSV_URL` | published CSV URL of the `feed` tab |
+| `AIRTABLE_API_KEY` | personal access token scoped to `data.records:read` on this base |
+| `AIRTABLE_BASE_ID` | the base ID (`appXXXXXXXXXXXXXX`), from **Help ▸ API documentation** |
+| `AIRTABLE_TABLE_NAME` | optional — only if the tracker table isn't named `Feed` |
 | `SSH_PRIVATE_KEY` | contents of `./deploy_key` |
 | `SSH_KNOWN_HOSTS` | contents of `known_hosts.txt` |
 | `SSH_HOST` | VPS hostname or IP |
@@ -138,38 +140,37 @@ handshake.
 
 ## 3. n8n
 
-### 3.1 Two new tabs
+### 3.1 Two new Airtable tables
 
-n8n does not write to your `data` tab. It writes to two new ones, and you stay the only
-thing that edits the tracker.
+n8n does not write to your `Feed` table. It writes to two new ones, in the same base, and
+you stay the only thing that edits the tracker.
 
-Create `inbox` with these headers in `A1:I1`:
+Create a table named `Inbox` with these fields:
 
 ```
 message_id  thread_id  received_at  company  job_title  status  max_stage  source  confidence
 ```
 
-Create `needs-review` with these headers in `A1:I1`:
+Create a table named `Needs Review` with these fields:
 
 ```
 message_id  thread_id  received_at  from_address  subject  status  company  job_title  confidence
 ```
 
-Why a separate tab instead of writing straight into the tracker: an email tells you about
+`message_id` should be each table's primary field, and every field can be Single line text
+except `max_stage` (Number) — the n8n workflow's Airtable node upserts against `message_id`
+regardless of field type, but a plain text primary field is the simplest thing that can't
+silently coerce an ID.
+
+Why a separate table instead of writing straight into the tracker: an email tells you about
 a *message*, not an *application*. Two emails about the same job are two messages. Keying
-rows on `message_id` makes every write idempotent — a re-poll updates the same row instead
-of adding a duplicate — but it means `inbox` is a log, not a row-per-application. You read
-it, you decide, you update `data`. That's a deliberate trade: the automation gets to be
-provably correct because it isn't allowed to guess.
+rows on `message_id` (via Airtable's upsert operation) makes every write idempotent — a
+re-poll updates the same row instead of adding a duplicate — but it means `Inbox` is a log,
+not a row-per-application. You read it, you decide, you update `Feed`. That's a deliberate
+trade: the automation gets to be provably correct because it isn't allowed to guess.
 
-To see what's new without scrolling, put this anywhere on the `data` tab:
-
-```
-=FILTER(inbox!A2:I, ISNA(MATCH(inbox!A2:A, data!U33:U, 0)), inbox!A2:A<>"")
-```
-
-Paste the `message_id` into column `U` of a `data` row once you've filed it, and it stops
-showing up.
+To see what's new without scrolling, add a `Filed` checkbox field to `Inbox` and filter the
+default view to `Filed = false`. Tick it once you've copied a row's details into `Feed`.
 
 ### 3.2 Two Gmail labels
 
@@ -184,8 +185,8 @@ job each — don't merge them.
 Create both: Gmail ▸ Settings ▸ Labels ▸ Create new label.
 
 **Why the scoping label exists.** Without it the trigger polls your whole mailbox. Every
-newsletter and receipt gets its full body fetched, parsed, written to `needs-review` and
-labelled — a junk drawer in the sheet and litter in Gmail. Gmail filters run server-side
+newsletter and receipt gets its full body fetched, parsed, written to `Needs Review` and
+labelled — a junk drawer in Airtable and litter in Gmail. Gmail filters run server-side
 for free, so the narrowing belongs there, where n8n never has to see the mail at all.
 
 ### 3.2a The Gmail filter
@@ -222,9 +223,14 @@ Then fill in the four things the file can't know:
 | Node | What to set |
 |---|---|
 | **Poll Gmail** | pick your Gmail credential |
-| **Write to Inbox** / **Write to Needs Review** | pick your Google Sheets credential |
+| **Write to Inbox** / **Write to Needs Review** | pick your Airtable Personal Access Token credential (a *second* token, scoped to `data.records:write` on this base — the `AIRTABLE_API_KEY` secret in §2.6 is read-only and belongs only to the dashboard build) |
 | **Mark Email Processed** | same Gmail credential; pick `tracker-processed` from the label dropdown |
 | **Trigger Dashboard Rebuild** | change `REPLACE_OWNER/REPLACE_REPO` in the URL |
+
+The two Airtable nodes also need their `base`/`table` resource locators repointed at your real
+base and the `Inbox` / `Needs Review` tables — the generator hard-codes placeholder IDs
+(`appJobTrackerIngest01` etc.) the same way it always hard-coded the old spreadsheet ID, because
+a resource locator in `id` mode imports ready to click, where `list` mode imports blank.
 
 For the rebuild node's auth, create a **Header Auth** credential:
 
@@ -238,14 +244,14 @@ Open **Poll Gmail** and hit *Fetch Test Event*, then run the workflow manually o
 
 Check, in order:
 
-1. `inbox` got rows and the statuses look right.
-2. `needs-review` got the rest — newsletters, recruiter spam.
+1. `Inbox` got rows and the statuses look right.
+2. `Needs Review` got the rest — newsletters, recruiter spam.
 3. Those emails now carry the `tracker-processed` label.
 4. GitHub Actions shows a run triggered by `repository_dispatch`.
 
 Run it a second time. Nothing should change: no new rows, no second Actions run. If rows
-duplicate, the matching column got lost on import — reopen both Sheets nodes and confirm
-*Column to match on* is `message_id`.
+duplicate, the matching field got lost on import — reopen both Airtable nodes and confirm
+the upsert's *Column to match on* is `message_id`.
 
 Then activate it.
 
@@ -288,9 +294,10 @@ same email can never fool it twice.
 | Deploy green, page unchanged | nginx without `disable_symlinks off;` |
 | `Permission denied` on activate | forgot `chmod +x` in 2.2 |
 | Smoke test fails, files are there | web server not pointed at `/srv/dashboard/current` |
-| Rows duplicating in `inbox` | matching column lost on import (3.4) |
+| Rows duplicating in `Inbox` | matching field lost on import (3.4) |
 | Same emails reprocessed every poll | `tracker-processed` not applied, or not excluded in the query |
-| `needs-review` full of newsletters | Gmail filter too broad — tighten the filter, not the parser (3.2a) |
+| `Needs Review` full of newsletters | Gmail filter too broad — tighten the filter, not the parser (3.2a) |
+| `401`/`403` from Airtable | personal access token missing the right scope, or scoped to the wrong base |
 | Applications not showing up at all | Gmail filter too narrow, or you skipped *Also apply to matching conversations* |
 | Workflow stopped after ~a week | OAuth app still in Testing mode (3.5) |
 | Scheduled builds stopped after ~2 months | GitHub disables cron after 60 days of repo inactivity; the `summary.json` commit exists to prevent this |

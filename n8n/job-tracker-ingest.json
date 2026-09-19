@@ -107,17 +107,18 @@
     },
     {
       "parameters": {
-        "resource": "sheet",
-        "operation": "appendOrUpdate",
-        "documentId": {
+        "authentication": "airtableTokenApi",
+        "resource": "record",
+        "operation": "upsert",
+        "base": {
           "__rl": true,
           "mode": "id",
-          "value": "12vBHjqoUXahuHW05HDO7spH3eIPcV60MLjOmi_HHrRM"
+          "value": "appJobTrackerIngest01"
         },
-        "sheetName": {
+        "table": {
           "__rl": true,
-          "mode": "name",
-          "value": "inbox"
+          "mode": "id",
+          "value": "tblIngestInbox0000001"
         },
         "columns": {
           "mappingMode": "defineBelow",
@@ -220,35 +221,42 @@
           ]
         },
         "options": {
-          "cellFormat": "USER_ENTERED"
+          "typecast": true
         }
       },
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.7,
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
       "position": [
         900,
         180
       ],
-      "id": "sheets-inbox",
+      "id": "airtable-tblIngestInbox0000001",
       "name": "Write to Inbox",
       "onError": "continueRegularOutput",
       "retryOnFail": true,
       "maxTries": 3,
-      "waitBetweenTries": 2000
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "REPLACE_ME",
+          "name": "Airtable account"
+        }
+      }
     },
     {
       "parameters": {
-        "resource": "sheet",
-        "operation": "appendOrUpdate",
-        "documentId": {
+        "authentication": "airtableTokenApi",
+        "resource": "record",
+        "operation": "upsert",
+        "base": {
           "__rl": true,
           "mode": "id",
-          "value": "12vBHjqoUXahuHW05HDO7spH3eIPcV60MLjOmi_HHrRM"
+          "value": "appJobTrackerIngest01"
         },
-        "sheetName": {
+        "table": {
           "__rl": true,
-          "mode": "name",
-          "value": "needs-review"
+          "mode": "id",
+          "value": "tblIngestNeedsReview1"
         },
         "columns": {
           "mappingMode": "defineBelow",
@@ -351,21 +359,27 @@
           ]
         },
         "options": {
-          "cellFormat": "USER_ENTERED"
+          "typecast": true
         }
       },
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.7,
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
       "position": [
         900,
         420
       ],
-      "id": "sheets-needs-review",
+      "id": "airtable-tblIngestNeedsReview1",
       "name": "Write to Needs Review",
       "onError": "continueRegularOutput",
       "retryOnFail": true,
       "maxTries": 3,
-      "waitBetweenTries": 2000
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "REPLACE_ME",
+          "name": "Airtable account"
+        }
+      }
     },
     {
       "parameters": {
@@ -429,7 +443,7 @@
     },
     {
       "parameters": {
-        "content": "## 1. Poll and dedupe\nQuery: `label:job-applications -label:tracker-processed`.\n\nA **Gmail filter** applies the first label (scope). This workflow applies the second (handled). Drop the scope label and the trigger polls your entire mailbox.\n\n**Remove Duplicates** is the second net: it catches a re-delivery in the window between the Sheets write and the label being applied.",
+        "content": "## 1. Poll and dedupe\nQuery: `label:job-applications -label:tracker-processed`.\n\nA **Gmail filter** applies the first label (scope). This workflow applies the second (handled). Drop the scope label and the trigger polls your entire mailbox.\n\n**Remove Duplicates** is the second net: it catches a re-delivery in the window between the Airtable write and the label being applied.",
         "width": 400,
         "height": 280,
         "color": 4
@@ -461,7 +475,7 @@
     },
     {
       "parameters": {
-        "content": "## 3. Store\nRows key on `message_id`, so re-running is an update, not a duplicate.\n\n`inbox` = classified. `needs-review` = everything else, with the subject so you can judge it in ten seconds.\n\nNeither tab is the tracker. The `data` tab stays yours.",
+        "content": "## 3. Store\nRows key on `message_id` via Airtable's upsert operation, so re-running is an update, not a duplicate.\n\n`Inbox` = classified. `Needs Review` = everything else, with the subject so you can judge it in ten seconds.\n\nNeither table is the tracker. The `Feed` table (a separate base/table the dashboard build reads) stays yours.",
         "width": 380,
         "height": 260,
         "color": 5

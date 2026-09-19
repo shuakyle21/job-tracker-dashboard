@@ -1,6 +1,6 @@
 # job-tracker-dashboard
 
-Turns a Google Sheet of job applications into an analytics dashboard. Gmail → n8n → Sheet →
+Turns an Airtable base of job applications into an analytics dashboard. Gmail → n8n → Airtable →
 GitHub Actions → VPS. Zero dependencies, Node 20+, no `npm install`.
 
 Read `DEPLOY.md` for setup. `README.md` explains what it is.
@@ -8,11 +8,11 @@ Read `DEPLOY.md` for setup. `README.md` explains what it is.
 ## Commands
 
 ```bash
-node scripts/verify.mjs                              # the gate — run before every commit
-FEED_CSV_URL=./sample-feed.csv node scripts/build.mjs # build against the fixture
-node scripts/test-parser.mjs                          # email classifier tests only
-node scripts/build-n8n.mjs                            # regenerate the n8n workflow
-node scripts/verify.mjs --live                        # also build against the real feed
+node scripts/verify.mjs                                 # the gate — run before every commit
+FEED_FIXTURE=./sample-feed.json node scripts/build.mjs   # build against the fixture
+node scripts/test-parser.mjs                             # email classifier tests only
+node scripts/build-n8n.mjs                               # regenerate the n8n workflow
+AIRTABLE_API_KEY=... AIRTABLE_BASE_ID=... node scripts/verify.mjs --live  # also build against the real base
 ```
 
 `verify.mjs` runs the parser tests and regenerates the workflow as part of its own checks, so
@@ -35,21 +35,23 @@ without reading the comment above it.
 
 **The parser must never throw.** It runs per-item in n8n; an exception fails the execution, the
 email never gets labelled, and it is re-polled and re-fails forever. Unparseable input returns
-`parsed: false` and routes to the needs-review tab.
+`parsed: false` and routes to the Needs Review table.
 
 **Nothing identifying may reach `dist/`.** `verify.mjs` greps the built output for company names
 and email addresses and fails the build. That check is why the repo can be public. Don't widen
-the published `feed` tab without revisiting it.
+the `Feed` table (or rename its fields into something the privacy grep doesn't cover) without
+revisiting it.
 
-**Don't commit** `dist/`, `deploy_key*`, `known_hosts.txt`, or any real feed CSV.
-`sample-feed.csv` is the de-identified fixture and is the only CSV that belongs in git.
+**Don't commit** `dist/`, `deploy_key*`, `known_hosts.txt`, real Airtable credentials, or any real
+feed export. `sample-feed.json` is the de-identified fixture (an Airtable list-records response
+shape) and is the only feed data that belongs in git.
 
 ## Layout
 
 | Path | What |
 |---|---|
-| `scripts/build.mjs` | fetch CSV → aggregate → lay out the Sankey → fill the template |
-| `scripts/verify.mjs` | 32 pre-deploy checks (arithmetic, privacy, n8n invariants) |
+| `scripts/build.mjs` | fetch from Airtable (or `FEED_FIXTURE`) → aggregate → lay out the Sankey → fill the template |
+| `scripts/verify.mjs` | 32+ pre-deploy checks (arithmetic, privacy, n8n invariants) |
 | `scripts/build-n8n.mjs` | generates the n8n workflow from the parser |
 | `scripts/test-parser.mjs` | runs the classifier outside n8n |
 | `templates/dashboard.html` | TailAdmin markup + chart code; three `{{PLACEHOLDER}}` slots |
@@ -58,6 +60,7 @@ the published `feed` tab without revisiting it.
 | `deploy/activate.sh` | atomic release swap on the VPS |
 | `deploy/rollback.sh` | symlink move back to a previous release |
 | `data/summary.json` | aggregates, committed each run — git history is the time series |
+| `sample-feed.json` | de-identified fixture: Airtable list-records shape for the `Feed` table |
 
 ## Two things that bit us already
 

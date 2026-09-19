@@ -17,15 +17,19 @@ import { dirname, join } from "node:path";
 const ROOT = join(dirname(new URL(import.meta.url).pathname), "..");
 const parserSource = await readFile(join(ROOT, "n8n/parse-email.js"), "utf8");
 
-// The live tracker. Hard-coded on purpose: a resource locator in `id` mode
-// imports ready to run, where `list` mode imports blank and has to be picked
-// by hand in two separate nodes.
-const SPREADSHEET_ID = "12vBHjqoUXahuHW05HDO7spH3eIPcV60MLjOmi_HHrRM";
+// The live base and its two ingest tables. Hard-coded on purpose: a resource
+// locator in `id` mode imports ready to run, where `list` mode imports blank
+// and has to be picked by hand in two separate nodes. These are distinct from
+// the "Feed" table scripts/build.mjs reads — Feed is the human-curated
+// tracker; Inbox/Needs Review are n8n's message-level ingest log.
+const BASE_ID = "appJobTrackerIngest01";
+const INBOX_TABLE_ID = "tblIngestInbox0000001";
+const REVIEW_TABLE_ID = "tblIngestNeedsReview1";
 
 // n8n expressions are plain strings that begin with "=".
 const ex = (s) => `=${s}`;
 
-// Both sheets take the same shape, so build the resourceMapper once. The row
+// Both tables take the same shape, so build the resourceMapper once. The row
 // key is message_id: one Gmail message produces exactly one row, forever. That
 // makes a re-poll a no-op update rather than a duplicate, which is the whole
 // dedupe story at the storage layer.
@@ -55,22 +59,23 @@ const REVIEW_FIELDS = [
   "status", "company", "job_title", "confidence",
 ];
 
-function sheetNode(name, tab, fields, position) {
+function airtableNode(name, tableId, fields, position) {
   return {
     parameters: {
-      resource: "sheet",
-      operation: "appendOrUpdate",
-      documentId: { __rl: true, mode: "id", value: SPREADSHEET_ID },
-      sheetName: { __rl: true, mode: "name", value: tab },
+      authentication: "airtableTokenApi",
+      resource: "record",
+      operation: "upsert",
+      base: { __rl: true, mode: "id", value: BASE_ID },
+      table: { __rl: true, mode: "id", value: tableId },
       columns: columns(fields),
-      options: { cellFormat: "USER_ENTERED" },
+      options: { typecast: true },
     },
-    type: "n8n-nodes-base.googleSheets",
-    typeVersion: 4.7,
+    type: "n8n-nodes-base.airtable",
+    typeVersion: 2.1,
     position,
-    id: `sheets-${tab}`,
+    id: `airtable-${tableId}`,
     name,
-    // A Sheets hiccup must not strand the email unlabelled and un-rebuilt.
+    // An Airtable hiccup must not strand the email unlabelled and un-rebuilt.
     // Continuing on error keeps the chain moving; the execution log still shows
     // the failure, and the next poll retries the row because the label was the
     // thing that would have excluded it.
@@ -78,6 +83,7 @@ function sheetNode(name, tab, fields, position) {
     retryOnFail: true,
     maxTries: 3,
     waitBetweenTries: 2000,
+    credentials: { airtableTokenApi: { id: "REPLACE_ME", name: "Airtable account" } },
   };
 }
 
@@ -93,7 +99,7 @@ const nodes = [
         // `job-applications` is applied by a Gmail filter and means "this is in
         // scope". Without it the trigger polls the entire mailbox: every
         // newsletter and receipt gets its full body fetched, parsed, dumped
-        // into needs-review and labelled — noise in the sheet and litter in
+        // into needs-review and labelled — noise in Airtable and litter in
         // Gmail. Gmail filters run server-side for free, so the narrowing
         // belongs there, not here.
         //
@@ -155,13 +161,13 @@ const nodes = [
     id: "route",
     name: "Classified?",
   },
-  sheetNode("Write to Inbox", "inbox", INBOX_FIELDS, [900, 180]),
-  sheetNode("Write to Needs Review", "needs-review", REVIEW_FIELDS, [900, 420]),
+  airtableNode("Write to Inbox", INBOX_TABLE_ID, INBOX_FIELDS, [900, 180]),
+  airtableNode("Write to Needs Review", REVIEW_TABLE_ID, REVIEW_FIELDS, [900, 420]),
   {
     parameters: {
       resource: "message",
       operation: "addLabels",
-      // $json here is the Sheets API response, not the email — the message id
+      // $json here is the Airtable API response, not the email — the message id
       // has to come from the parser explicitly. This is the single most common
       // way a workflow like this breaks after someone inserts a node.
       messageId: ex("{{ $('Parse Job Email').item.json.message_id }}"),
@@ -209,9 +215,9 @@ const nodes = [
 ];
 
 const stickies = [
-  ["## 1. Poll and dedupe\nQuery: `label:job-applications -label:tracker-processed`.\n\nA **Gmail filter** applies the first label (scope). This workflow applies the second (handled). Drop the scope label and the trigger polls your entire mailbox.\n\n**Remove Duplicates** is the second net: it catches a re-delivery in the window between the Sheets write and the label being applied.", [-40, 20], 400, 280, 4],
+  ["## 1. Poll and dedupe\nQuery: `label:job-applications -label:tracker-processed`.\n\nA **Gmail filter** applies the first label (scope). This workflow applies the second (handled). Drop the scope label and the trigger polls your entire mailbox.\n\n**Remove Duplicates** is the second net: it catches a re-delivery in the window between the Airtable write and the label being applied.", [-40, 20], 400, 280, 4],
   ["## 2. Classify\nPure function, no network. Source of truth is `n8n/parse-email.js` in the repo — it has tests. Edit it there and re-run `node scripts/build-n8n.mjs`, not here.", [400, 60], 380, 220, 3],
-  ["## 3. Store\nRows key on `message_id`, so re-running is an update, not a duplicate.\n\n`inbox` = classified. `needs-review` = everything else, with the subject so you can judge it in ten seconds.\n\nNeither tab is the tracker. The `data` tab stays yours.", [820, 20], 380, 260, 5],
+  ["## 3. Store\nRows key on `message_id` via Airtable's upsert operation, so re-running is an update, not a duplicate.\n\n`Inbox` = classified. `Needs Review` = everything else, with the subject so you can judge it in ten seconds.\n\nNeither table is the tracker. The `Feed` table (a separate base/table the dashboard build reads) stays yours.", [820, 20], 380, 260, 5],
   ["## 4. Close the loop\nLabel is applied **after** the write — a crash loses a label, not a row.\n\nThe rebuild fires once per run and reaches GitHub Actions as a `repository_dispatch`, so the dashboard updates in seconds instead of waiting for the 6-hourly cron.", [1100, 20], 400, 280, 6],
 ];
 

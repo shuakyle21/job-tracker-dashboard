@@ -9,7 +9,7 @@
  * invariants that a broken aggregation cannot satisfy.
  *
  *   node scripts/verify.mjs            # fixture only (no network, no secret)
- *   node scripts/verify.mjs --live     # also build once against FEED_CSV_URL
+ *   node scripts/verify.mjs --live     # also build once against AIRTABLE_API_KEY/AIRTABLE_BASE_ID
  */
 
 import { readFile, rm } from "node:fs/promises";
@@ -30,9 +30,19 @@ function check(name, condition, detail = "") {
   }
 }
 
-async function build(feed) {
+async function build(overrides) {
   await rm(join(ROOT, "dist"), { recursive: true, force: true });
-  await run("node", ["scripts/build.mjs"], { cwd: ROOT, env: { ...process.env, FEED_CSV_URL: feed } });
+  // Blank out every ingestion env var first so a leftover value from the
+  // caller's shell can't silently override the mode this call asks for.
+  const env = {
+    ...process.env,
+    FEED_FIXTURE: "",
+    AIRTABLE_API_KEY: "",
+    AIRTABLE_BASE_ID: "",
+    AIRTABLE_TABLE_NAME: "",
+    ...overrides,
+  };
+  await run("node", ["scripts/build.mjs"], { cwd: ROOT, env });
 }
 
 async function assertBuildOutput(label) {
@@ -90,12 +100,19 @@ async function assertBuildOutput(label) {
     !/<!doctype|<html|<body/i.test(artifact));
 
   // --- the privacy boundary ------------------------------------------
-  // The feed tab is de-identified by construction, but a widened feed would leak
-  // silently. Fail the build instead.
+  // The Feed table is de-identified by construction, but a widened feed would
+  // leak silently. Fail the build instead. Airtable field names change (Title
+  // Case, spaces) but company names and emails would still match these
+  // patterns however the source field was renamed.
   const forbidden = [/@[a-z0-9.-]+\.(com|ph|org|net|co)\b/i, /\bInc\.\b/, /\bLtd\b/, /\bCorporation\b/];
   const hits = forbidden.filter(re => re.test(artifact.replace(/wght@\d+/g, "")));
   check("no company names or emails in the published output",
     hits.length === 0, hits.map(String).join(", "));
+
+  // Airtable base/table IDs and API keys are config, not analytics — they must
+  // never reach a page the build can also publish as a public GitHub Pages site.
+  check("no Airtable API endpoints or credentials leak into the published output",
+    !/api\.airtable\.com/i.test(artifact) && !/\bAIRTABLE_API_KEY\b/.test(artifact));
 
   return summary;
 }
@@ -142,16 +159,29 @@ async function assertIngestWorkflow() {
   const labelSources = Object.entries(wf.connections)
     .filter(([, c]) => c.main.some((o) => o.some((t) => t.node === "Mark Email Processed")))
     .map(([s]) => s);
-  check("label is applied after both sheet writes",
+  check("label is applied after both Airtable writes",
     labelSources.includes("Write to Inbox") && labelSources.includes("Write to Needs Review"),
     labelSources.join(", "));
 
   check("unclassified email has its own branch",
     wf.connections["Classified?"]?.main[1]?.[0]?.node === "Write to Needs Review");
 
-  check("rows key on message_id in both tabs",
+  check("rows key on message_id in both tables",
     ["Write to Inbox", "Write to Needs Review"].every(
       (n) => byName[n]?.parameters.columns.matchingColumns?.[0] === "message_id"));
+
+  // The whole point of the migration: writes must actually go to Airtable, via
+  // an upsert (so message_id keeps its dedupe-on-re-poll behaviour), not a
+  // leftover or reintroduced Google Sheets node.
+  check("both writes target Airtable via upsert",
+    ["Write to Inbox", "Write to Needs Review"].every(
+      (n) => byName[n]?.type === "n8n-nodes-base.airtable" && byName[n]?.parameters.operation === "upsert"));
+
+  check("Inbox and Needs Review write to distinct Airtable tables",
+    byName["Write to Inbox"]?.parameters.table?.value !== byName["Write to Needs Review"]?.parameters.table?.value);
+
+  check("no Google Sheets nodes remain in the workflow",
+    !wf.nodes.some((n) => n.type === "n8n-nodes-base.googleSheets"));
 
   // One rebuild per run, not one per email.
   check("rebuild fires once per run", byName["Trigger Dashboard Rebuild"]?.executeOnce === true);
@@ -176,7 +206,7 @@ async function assertIngestWorkflow() {
 }
 
 console.log("Verifying build\n");
-await build("./sample-feed.csv");
+await build({ FEED_FIXTURE: "./sample-feed.json" });
 const fixture = await assertBuildOutput("Fixture build");
 await assertIngestWorkflow();
 
@@ -189,15 +219,19 @@ check("reply rate is 49.5%", Math.round(fixture.replyRate * 1000) === 495);
 check("five months of history", fixture.monthly.length === 5);
 
 if (process.argv.includes("--live")) {
-  if (!process.env.FEED_CSV_URL) {
-    console.error("\n--live needs FEED_CSV_URL set");
+  if (!process.env.AIRTABLE_API_KEY || !process.env.AIRTABLE_BASE_ID) {
+    console.error("\n--live needs AIRTABLE_API_KEY and AIRTABLE_BASE_ID set");
     process.exit(1);
   }
-  await build(process.env.FEED_CSV_URL);
+  await build({
+    AIRTABLE_API_KEY: process.env.AIRTABLE_API_KEY,
+    AIRTABLE_BASE_ID: process.env.AIRTABLE_BASE_ID,
+    AIRTABLE_TABLE_NAME: process.env.AIRTABLE_TABLE_NAME || "",
+  });
   const live = await assertBuildOutput("Live feed build");
   check("live feed returned rows", live.total > 0);
   // Rebuild from the fixture so dist/ is deterministic if anything reads it after.
-  await build("./sample-feed.csv");
+  await build({ FEED_FIXTURE: "./sample-feed.json" });
 }
 
 console.log(failures ? `\n${failures} check(s) failed\n` : "\nAll checks passed\n");
