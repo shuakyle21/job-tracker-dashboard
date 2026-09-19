@@ -248,11 +248,13 @@ const nodes = [
       // has to come from the parser explicitly. This is the single most common
       // way a workflow like this breaks after someone inserts a node.
       messageId: ex("{{ $('Parse Job Email').item.json.message_id }}"),
-      // "Job Application" (so keyword-matched mail joins the label),
-      // "Job Application/Processed" (so it is never polled again), and the
-      // status sub-label the parser chose.
+      // "Job Application" (so keyword-matched mail joins the label) — but
+      // only for mail the parser recognised: a newsletter that happened to
+      // say "thank you for applying" must not join a label you curate. Every
+      // email gets "Job Application/Processed" (so it is never polled again)
+      // and the status sub-label the parser chose.
       labelIds: [
-        LABELS.scope,
+        ex(`{{ $('Parse Job Email').item.json.parsed ? ${JSON.stringify(LABELS.scope)} : ${JSON.stringify(LABELS.processed)} }}`),
         LABELS.processed,
         ex(`{{ (${JSON.stringify(LABELS.status)})[$('Parse Job Email').item.json.status_label] || ${JSON.stringify(LABELS.status["Needs Review"])} }}`),
       ],

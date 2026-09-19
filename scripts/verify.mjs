@@ -179,7 +179,8 @@ async function assertIngestWorkflow() {
 
   const markIds = byName["Mark Email Processed"]?.parameters.labelIds ?? [];
   check("processed email gets scope, processed and status labels",
-    markIds[0] === labels.scope && markIds[1] === labels.processed && /status_label/.test(markIds[2] ?? ""));
+    markIds[0]?.includes(labels.scope) && /\.parsed\b/.test(markIds[0])
+      && markIds[1] === labels.processed && /status_label/.test(markIds[2] ?? ""));
 
   // The label must be applied after the rows are written. Inverted, a crash
   // between the two consumes the email without producing its row. On the

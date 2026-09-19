@@ -34,7 +34,9 @@ const RANK = {
 // Feed's Source select predates Job Platform and uses its own spellings.
 const SOURCE_OF_PLATFORM = {
   'JobStreet': 'Jobstreet', 'LinkedIn': 'LinkedIn', 'Indeed': 'Indeed', 'Kalibrr': 'Kalibrr',
-  'OnlineJobs.ph': 'OnlineJobs.ph', 'Torre': 'Torre.ai', 'Company Website': 'Direct / Careers',
+  // Only choices Source already has: a new option would silently add a
+  // channel to the dashboard. OnlineJobs.ph has none, so it is a "Platform".
+  'OnlineJobs.ph': 'Platform', 'Torre': 'Torre.ai', 'Company Website': 'Direct / Careers',
   'Direct Email': 'Direct Email',
 };
 

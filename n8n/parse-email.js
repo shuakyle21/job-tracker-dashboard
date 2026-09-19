@@ -82,7 +82,12 @@ const RULES = [
 
 // Gmail marks mail you sent with SENT. An outgoing email under the job label
 // is you applying directly — there is no reply to classify.
-const labelIds = Array.isArray(msg.labelIds) ? msg.labelIds : [];
+// The trigger and the getAll node don't agree on the shape: labelIds is an
+// array of ids on some, labels an array of {id, name} on others. Read both.
+const labelIds = [
+  ...(Array.isArray(msg.labelIds) ? msg.labelIds : []),
+  ...(Array.isArray(msg.labels) ? msg.labels.map((l) => (l && (l.id || l.name)) || '') : []),
+];
 const isSent = labelIds.includes('SENT');
 
 let status = '';

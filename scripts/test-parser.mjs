@@ -247,6 +247,16 @@ const cases = [
       status_label: "Applied", parsed: true },
   },
   {
+    name: "SENT detected from the labels [{id}] shape",
+    input: email({
+      subject: "Application for Data Analyst",
+      labels: [{ id: "SENT", name: "SENT" }],
+      from: { value: [{ address: "me@gmail.com", name: "Alex" }] },
+      to: { value: [{ address: "hr@northwind.ph" }] },
+    }),
+    want: { status: "applied", job_platform: "Direct Email", company: "Northwind" },
+  },
+  {
     name: "rejection in the subject",
     input: email({
       subject: "Your application for the Software Developer role was not selected.",
