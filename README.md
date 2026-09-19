@@ -24,24 +24,34 @@ applications · work-setup split · application quality. Eight stat tiles above 
 Satoshi, TailAdmin's typeface, is not on Google Fonts, so Plus Jakarta Sans stands in for it.
 
 ```
-Gmail ──▶ n8n ──▶ Inbox table ──▶ you ──▶ Feed table ──▶ Actions ──▶ VPS
-          │       Needs Review           (the tracker)   │        (nginx/Caddy,
-          │                                              │         atomic releases)
-          └── repository_dispatch ───────────────────────▶┘
-                                             │
-                                             └──▶ data/summary.json committed each run
-                                                  (git history = the time series)
+Gmail ──▶ n8n ──▶ Inbox / Needs Review (message log)
+  ▲        │  └───▶ Feed table (one row per application) ──▶ Actions ──▶ VPS
+  │        │                                                  ▲        (nginx/Caddy,
+  └ labels ┘── repository_dispatch ───────────────────────────┘         atomic releases)
+                                                    │
+                                                    └──▶ data/summary.json committed each run
+                                                         (git history = the time series)
 ```
 
-n8n classifies each email and writes it to the `Inbox` or `Needs Review` table (an upsert keyed
-on the Gmail message id, so a re-poll updates the same row instead of duplicating it). It never
-writes to `Feed` — an email is about a *message*, not an *application*, and two emails about one
-job are two messages. You still own the tracker; the automation just stops you from missing
-anything.
+n8n reads mail under your **Job Application** Gmail label, plus confirmations nobody labelled
+yet, found by phrases like "thank you for applying" and "received your application". It
+classifies each email:
 
-**Everything lives in one Airtable base** — `Feed` (the tracker you maintain and the table
-`scripts/build.mjs` reads), plus `Inbox` and `Needs Review` (n8n's message-level ingest log,
-separate tables so an automated write can never silently overwrite something you typed). Airtable
+- **Inbox** or **Needs Review** get one row per message, upserted on the Gmail message id.
+- **Feed** gets one row per application, keyed on company + job title. The row carries its
+  **Job Platform**: JobStreet, LinkedIn, Indeed, Kalibrr, OnlineJobs.ph, Torre, Company Website
+  or Direct Email.
+
+Feed rows only ever move forward. Dates keep the earliest value and stages the highest, and a
+status is never regressed by a late email. So you can still edit the tracker by hand. Each
+email is then labelled `Job Application`, `Job Application/Processed` and a status sub-label
+(`/Applied`, `/Viewed`, `/Interview`, `/Rejected`, …).
+
+**Everything lives in one Airtable base**:
+
+- `Feed` is the tracker `scripts/build.mjs` reads. n8n fills it and you can correct it.
+- `Inbox` and `Needs Review` are n8n's message-level log, so you can always see which email
+  produced a Feed change. Airtable
 also fixes a real Google Sheets pain point this project used to have: date fields come back as
 plain ISO-8601 strings from the API regardless of anyone's locale settings, so there's no more
 `TEXT(..., "yyyy-mm-dd")` formula workaround to get right.
@@ -115,8 +125,12 @@ URL and fails if the page isn't actually up.
 
 ### 5. n8n and the ingest tables
 
-[DEPLOY.md](DEPLOY.md) §3 covers the two extra Airtable tables (`Inbox`, `Needs Review`) that
-n8n writes to, and importing `n8n/job-tracker-ingest.json`.
+[DEPLOY.md](DEPLOY.md) §3 covers:
+
+- the Airtable tables and fields n8n writes to (`Inbox`, `Needs Review` and Feed's
+  `Job Platform` / `Company` / `Application Key`)
+- the Gmail labels
+- importing `n8n/job-tracker-ingest.json` and running the one-off backfill
 
 > **Coming from the old Google Sheets version of this project?** The Sheets-specific setup
 > (publish-to-web CSV, `feed` formula, `FEED_CSV_URL`) no longer applies — it's superseded by the

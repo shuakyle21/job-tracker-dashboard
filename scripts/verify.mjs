@@ -220,6 +220,13 @@ async function assertIngestWorkflow() {
   check("Inbox and Needs Review write to distinct Airtable tables",
     byName["Write to Inbox"]?.parameters.table?.value !== byName["Write to Needs Review"]?.parameters.table?.value);
 
+  // Feed now carries employer names for n8n's benefit. The dashboard must
+  // never read them — FIELD_MAP is the whitelist that guarantees it.
+  const buildSrc = await readFile(join(ROOT, "scripts/build.mjs"), "utf8");
+  const fieldMap = buildSrc.match(/const FIELD_MAP = \{([\s\S]*?)\};/)?.[1] ?? "";
+  check("build never reads Feed's identifying fields",
+    fieldMap.length > 0 && !/"(?:Company|Job Role|Application Key)"/.test(fieldMap));
+
   check("no Google Sheets nodes remain in the workflow",
     !wf.nodes.some((n) => n.type === "n8n-nodes-base.googleSheets"));
 
