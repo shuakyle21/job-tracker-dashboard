@@ -215,8 +215,20 @@ async function assertIngestWorkflow() {
 
   check("Feed row lookup survives a miss",
     byName["Find Feed Row"]?.alwaysOutputData === true
-      && wf.connections["Find Feed Row"]?.main[0]?.[0]?.node === "Merge Into Feed"
-      && wf.connections["Merge Into Feed"]?.main[0]?.[0]?.node === "Upsert Feed");
+      && wf.connections["Find Feed Row"]?.main[0]?.[0]?.node === "Merge Into Feed");
+
+  // Find Feed Row must only ever see one email per call: a multi-item batch
+  // where every search misses collapses to one output item paired with every
+  // input, which throws "Multiple matches" in Merge Into Feed (hit at 36
+  // emails in production). Loop Feed Rows pins batch size to 1 so the
+  // collapse can't happen, done -> Upsert Feed and loop -> Find Feed Row.
+  check("Feed row lookup runs one email at a time",
+    byName["Loop Feed Rows"]?.type === "n8n-nodes-base.splitInBatches"
+      && byName["Loop Feed Rows"]?.parameters.batchSize === 1
+      && wf.connections["Write to Inbox"]?.main[0]?.[0]?.node === "Loop Feed Rows"
+      && wf.connections["Loop Feed Rows"]?.main[0]?.[0]?.node === "Upsert Feed"
+      && wf.connections["Loop Feed Rows"]?.main[1]?.[0]?.node === "Find Feed Row"
+      && wf.connections["Merge Into Feed"]?.main[0]?.[0]?.node === "Loop Feed Rows");
 
   check("Inbox and Needs Review write to distinct Airtable tables",
     byName["Write to Inbox"]?.parameters.table?.value !== byName["Write to Needs Review"]?.parameters.table?.value);
