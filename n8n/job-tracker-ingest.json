@@ -433,6 +433,19 @@
     },
     {
       "parameters": {
+        "batchSize": 1
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1120,
+        180
+      ],
+      "id": "loop-feed-rows",
+      "name": "Loop Feed Rows"
+    },
+    {
+      "parameters": {
         "authentication": "airtableTokenApi",
         "resource": "record",
         "operation": "search",
@@ -454,8 +467,8 @@
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.1,
       "position": [
-        1120,
-        180
+        1340,
+        40
       ],
       "id": "find-feed-row",
       "name": "Find Feed Row",
@@ -478,7 +491,7 @@
       "typeVersion": 2,
       "position": [
         1340,
-        180
+        320
       ],
       "id": "merge-feed",
       "name": "Merge Into Feed"
@@ -595,7 +608,7 @@
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.1,
       "position": [
-        1560,
+        1600,
         180
       ],
       "id": "airtable-tblPZSpJ8P4iFuAhX",
@@ -686,8 +699,8 @@
         -40,
         20
       ],
-      "id": "sticky-13",
-      "name": "Note 13"
+      "id": "sticky-14",
+      "name": "Note 14"
     },
     {
       "parameters": {
@@ -702,8 +715,8 @@
         400,
         60
       ],
-      "id": "sticky-14",
-      "name": "Note 14"
+      "id": "sticky-15",
+      "name": "Note 15"
     },
     {
       "parameters": {
@@ -718,8 +731,8 @@
         820,
         20
       ],
-      "id": "sticky-15",
-      "name": "Note 15"
+      "id": "sticky-16",
+      "name": "Note 16"
     },
     {
       "parameters": {
@@ -734,8 +747,8 @@
         1760,
         20
       ],
-      "id": "sticky-16",
-      "name": "Note 16"
+      "id": "sticky-17",
+      "name": "Note 17"
     }
   ],
   "connections": {
@@ -816,6 +829,24 @@
       "main": [
         [
           {
+            "node": "Loop Feed Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Feed Rows": {
+      "main": [
+        [
+          {
+            "node": "Upsert Feed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
             "node": "Find Feed Row",
             "type": "main",
             "index": 0
@@ -838,7 +869,7 @@
       "main": [
         [
           {
-            "node": "Upsert Feed",
+            "node": "Loop Feed Rows",
             "type": "main",
             "index": 0
           }

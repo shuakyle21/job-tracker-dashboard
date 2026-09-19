@@ -207,6 +207,22 @@ const nodes = [
   airtableNode("Write to Inbox", INBOX_TABLE_ID, INBOX_FIELDS, [900, 180]),
   airtableNode("Write to Needs Review", REVIEW_TABLE_ID, REVIEW_FIELDS, [900, 420]),
   {
+    // Airtable's search node runs once per input item, but when a whole batch
+    // of items all find zero Feed rows, n8n collapses the output to a single
+    // placeholder item and tags it as paired with every item in the batch
+    // instead of just one. Merge Into Feed's $('Parse Job Email').item then
+    // has multiple equally-valid candidates and throws "Multiple matches" —
+    // this bit a real run at 36 emails. Loop Feed Rows forces batch size 1 so
+    // Find Feed Row can never see more than one email at a time, which makes
+    // the collapse impossible rather than working around its symptom.
+    parameters: { batchSize: 1 },
+    type: "n8n-nodes-base.splitInBatches",
+    typeVersion: 3,
+    position: [1120, 180],
+    id: "loop-feed-rows",
+    name: "Loop Feed Rows",
+  },
+  {
     parameters: {
       authentication: "airtableTokenApi",
       resource: "record",
@@ -222,7 +238,7 @@ const nodes = [
     },
     type: "n8n-nodes-base.airtable",
     typeVersion: 2.1,
-    position: [1120, 180],
+    position: [1340, 40],
     id: "find-feed-row",
     name: "Find Feed Row",
     // No match is the normal case for a new application; without this the
@@ -235,11 +251,11 @@ const nodes = [
     parameters: { mode: "runOnceForEachItem", language: "javaScript", jsCode: mergeSource },
     type: "n8n-nodes-base.code",
     typeVersion: 2,
-    position: [1340, 180],
+    position: [1340, 320],
     id: "merge-feed",
     name: "Merge Into Feed",
   },
-  airtableNode("Upsert Feed", FEED_TABLE_ID, FEED_FIELDS, [1560, 180], "Application Key"),
+  airtableNode("Upsert Feed", FEED_TABLE_ID, FEED_FIELDS, [1600, 180], "Application Key"),
   {
     parameters: {
       resource: "message",
@@ -335,9 +351,13 @@ const workflow = {
         [{ node: "Write to Needs Review", type: "main", index: 0 }],
       ],
     },
-    "Write to Inbox": { main: one("Find Feed Row") },
+    "Write to Inbox": { main: one("Loop Feed Rows") },
+    // Output 0 is "done" (every merged row, once the loop finishes) and
+    // output 1 is "loop" (the next single email to look up) — Loop Over
+    // Items always numbers them in that order.
+    "Loop Feed Rows": { main: [one("Upsert Feed")[0], one("Find Feed Row")[0]] },
     "Find Feed Row": { main: one("Merge Into Feed") },
-    "Merge Into Feed": { main: one("Upsert Feed") },
+    "Merge Into Feed": { main: one("Loop Feed Rows") },
     "Upsert Feed": { main: one("Mark Email Processed") },
     "Write to Needs Review": { main: one("Mark Email Processed") },
     "Mark Email Processed": { main: one("Trigger Dashboard Rebuild") },
