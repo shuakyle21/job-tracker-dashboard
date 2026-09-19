@@ -157,12 +157,29 @@ async function assertIngestWorkflow() {
   // Exactly-once. The Gmail query must exclude the label the workflow applies,
   // or the label is decoration and every poll reprocesses every email.
   const q = byName["Poll Gmail"]?.parameters.filters?.q ?? "";
-  check("Gmail query excludes the processed label", /-label:tracker-processed/.test(q), q);
+  check("Gmail query excludes the processed label", /-label:job-application-processed\b/.test(q), q);
 
   // Without a positive scope the trigger polls the whole mailbox — every
   // newsletter gets a full body fetch, a needs-review row and a label. This
   // shipped once; it does not ship again.
-  check("Gmail query is scoped to job mail", /(?:^|\s)label:job-applications\b/.test(q), q);
+  check("Gmail query is scoped to job mail", /(?:^|[\s(])label:job-application(?!-)\b/.test(q), q);
+
+  // The backfill must see exactly what the trigger sees, or it processes a
+  // different set of mail than production would.
+  check("backfill uses the trigger's query",
+    byName["Fetch Job Mail"]?.parameters.filters?.q === q);
+
+  // Every sub-label the parser can choose must exist as a Gmail label id, or
+  // addLabels fails for that email and it is re-polled forever.
+  const labels = JSON.parse(await readFile(join(ROOT, "n8n/gmail-labels.json"), "utf8"));
+  const statusBlock = parserFile.match(/const STATUS_LABELS = \{([\s\S]*?)\};/)?.[1] ?? "";
+  const labelNames = [...statusBlock.matchAll(/:\s*'([^']+)'/g)].map((m) => m[1]).concat("Needs Review");
+  const missing = labelNames.filter((n) => !/^Label_\w+$/.test(labels.status[n] ?? ""));
+  check("every parser status_label has a Gmail label id", labelNames.length > 1 && missing.length === 0, missing.join(", "));
+
+  const markIds = byName["Mark Email Processed"]?.parameters.labelIds ?? [];
+  check("processed email gets scope, processed and status labels",
+    markIds[0] === labels.scope && markIds[1] === labels.processed && /status_label/.test(markIds[2] ?? ""));
 
   // The label must be applied after the rows are written. Inverted, a crash
   // between the two consumes the email without producing its row. On the
@@ -210,7 +227,7 @@ async function assertIngestWorkflow() {
   check("rebuild fires once per run", byName["Trigger Dashboard Rebuild"]?.executeOnce === true);
 
   // Every node the trigger cannot reach is a node that never runs.
-  const reachable = new Set(["Poll Gmail"]);
+  const reachable = new Set(["Poll Gmail", "Backfill (manual)"]);
   for (let i = 0; i < wf.nodes.length; i++) {
     for (const [src, conn] of Object.entries(wf.connections)) {
       if (!reachable.has(src)) continue;

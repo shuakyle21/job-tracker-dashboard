@@ -256,6 +256,24 @@ const cases = [
     want: { status: "rejected", job_title: "Software Developer", status_label: "Rejected" },
   },
   {
+    name: "LinkedIn viewed",
+    input: email({
+      subject: "Your application was viewed by Webwave Digital",
+      from: { value: [{ address: "jobs-noreply@linkedin.com", name: "LinkedIn" }] },
+      text: "Your application was viewed by Webwave Digital\n\nData Ops Developer\nWebwave Digital",
+    }),
+    want: { status: "viewed by employer", company: "Webwave Digital", job_platform: "LinkedIn", status_label: "Viewed" },
+  },
+  {
+    name: "Kalibrr sent",
+    input: email({
+      subject: "Application sent to Technical Consultant at DIRECO BUSINESS TECH INC.!",
+      from: { value: [{ address: "support@kalibrr.com", name: "Kalibrr" }] },
+      text: "Application sent! Your application has been successfully submitted.",
+    }),
+    want: { status: "applied", job_title: "Technical Consultant", company: "DIRECO BUSINESS TECH INC.", job_platform: "Kalibrr", parsed: true },
+  },
+  {
     name: "unparsed mail is labelled Needs Review",
     input: email({
       subject: "Your weekly digest",

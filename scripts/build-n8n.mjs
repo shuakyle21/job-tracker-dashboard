@@ -17,6 +17,21 @@ import { dirname, join } from "node:path";
 const ROOT = join(dirname(new URL(import.meta.url).pathname), "..");
 const parserSource = await readFile(join(ROOT, "n8n/parse-email.js"), "utf8");
 const mergeSource = await readFile(join(ROOT, "n8n/merge-feed.js"), "utf8");
+// Gmail label ids for "Job Application", "Job Application/Processed" and one
+// sub-label per parser status_label. Ids, not names: the Gmail node's
+// addLabels takes ids, and a renamed label keeps its id.
+const LABELS = JSON.parse(await readFile(join(ROOT, "n8n/gmail-labels.json"), "utf8"));
+
+// Two ways in, one exit. Mail already under "Job Application" is in scope by
+// definition; the phrases catch confirmations nobody labelled yet — that is
+// the auto-labelling. Excluding Processed (applied last, after every write) is
+// what stops the trigger re-delivering the same email forever.
+const JOB_MAIL_QUERY = "(label:job-application"
+  + ' OR "thank you for applying" OR "thanks for applying" OR "application has been received"'
+  + ' OR "received your application" OR "successfully submitted" OR "your application was sent"'
+  + ' OR "application sent to" OR "has viewed your application" OR "your application was viewed"'
+  + ' OR "update on your application" OR subject:"your application" OR subject:"application received")'
+  + " -label:job-application-processed -in:chats";
 
 // The live base and its tables. Hard-coded on purpose: a resource locator in
 // `id` mode imports ready to run, where `list` mode imports blank and has to
@@ -103,19 +118,10 @@ const nodes = [
       simple: false,
       maxResults: 25,
       filters: {
-        // Two labels, one job each.
-        //
-        // `job-applications` is applied by a Gmail filter and means "this is in
-        // scope". Without it the trigger polls the entire mailbox: every
-        // newsletter and receipt gets its full body fetched, parsed, dumped
-        // into needs-review and labelled — noise in Airtable and litter in
-        // Gmail. Gmail filters run server-side for free, so the narrowing
-        // belongs there, not here.
-        //
-        // `tracker-processed` is applied by this workflow and means "already
-        // handled". Excluding it is what stops the trigger re-delivering the
-        // same email forever.
-        q: "label:job-applications -label:tracker-processed",
+        // Never an empty or label-free query: without a positive scope the
+        // trigger polls the entire mailbox, and every newsletter gets a full
+        // body fetch, a needs-review row and a label.
+        q: JOB_MAIL_QUERY,
         readStatus: "both",
         includeSpamTrash: false,
         includeDrafts: false,
@@ -127,6 +133,34 @@ const nodes = [
     position: [0, 300],
     id: "gmail-trigger",
     name: "Poll Gmail",
+    credentials: { gmailOAuth2: { id: "REPLACE_ME", name: "Gmail account" } },
+  },
+  // Backfill: the Gmail trigger only sees mail that arrives after it is
+  // activated. Run this once by hand to process what is already in the label;
+  // the same dedupe, labels and upserts make re-running it harmless.
+  {
+    parameters: {},
+    type: "n8n-nodes-base.manualTrigger",
+    typeVersion: 1,
+    position: [0, 520],
+    id: "backfill-trigger",
+    name: "Backfill (manual)",
+  },
+  {
+    parameters: {
+      resource: "message",
+      operation: "getAll",
+      returnAll: false,
+      limit: 500,
+      simple: false,
+      filters: { q: JOB_MAIL_QUERY, readStatus: "both", includeSpamTrash: false },
+      options: {},
+    },
+    type: "n8n-nodes-base.gmail",
+    typeVersion: 2.2,
+    position: [0, 720],
+    id: "backfill-fetch",
+    name: "Fetch Job Mail",
     credentials: { gmailOAuth2: { id: "REPLACE_ME", name: "Gmail account" } },
   },
   {
@@ -214,7 +248,14 @@ const nodes = [
       // has to come from the parser explicitly. This is the single most common
       // way a workflow like this breaks after someone inserts a node.
       messageId: ex("{{ $('Parse Job Email').item.json.message_id }}"),
-      labelIds: ["REPLACE_WITH_TRACKER_PROCESSED_LABEL_ID"],
+      // "Job Application" (so keyword-matched mail joins the label),
+      // "Job Application/Processed" (so it is never polled again), and the
+      // status sub-label the parser chose.
+      labelIds: [
+        LABELS.scope,
+        LABELS.processed,
+        ex(`{{ (${JSON.stringify(LABELS.status)})[$('Parse Job Email').item.json.status_label] || ${JSON.stringify(LABELS.status["Needs Review"])} }}`),
+      ],
     },
     type: "n8n-nodes-base.gmail",
     typeVersion: 2.2,
@@ -230,7 +271,7 @@ const nodes = [
   {
     parameters: {
       method: "POST",
-      url: "https://api.github.com/repos/REPLACE_OWNER/REPLACE_REPO/dispatches",
+      url: "https://api.github.com/repos/shuakyle21/job-tracker-dashboard/dispatches",
       authentication: "genericCredentialType",
       genericAuthType: "httpHeaderAuth",
       sendHeaders: true,
@@ -258,7 +299,7 @@ const nodes = [
 ];
 
 const stickies = [
-  ["## 1. Poll and dedupe\nQuery: `label:job-applications -label:tracker-processed`.\n\nA **Gmail filter** applies the first label (scope). This workflow applies the second (handled). Drop the scope label and the trigger polls your entire mailbox.\n\n**Remove Duplicates** is the second net: it catches a re-delivery in the window between the Airtable write and the label being applied.", [-40, 20], 400, 280, 4],
+  ["## 1. Poll and dedupe\nQuery: mail under **Job Application**, or containing confirmation phrases (\"thank you for applying\", \"received your application\", …), minus **Job Application/Processed**.\n\n**Backfill (manual)**: run once to process mail already in the label.\n\n**Remove Duplicates** is the second net: it catches a re-delivery in the window between the Airtable write and the label being applied.", [-40, 20], 400, 280, 4],
   ["## 2. Classify\nPure function, no network. Source of truth is `n8n/parse-email.js` in the repo — it has tests. Edit it there and re-run `node scripts/build-n8n.mjs`, not here.", [400, 60], 380, 220, 3],
   ["## 3. Store\nInbox / Needs Review rows key on `message_id`, so re-running is an update, not a duplicate.\n\nClassified mail also upserts **Feed**, one row per application (`Application Key` = company|title). `merge-feed.js` only moves a row forward: earliest date, highest stage, no status regressions — hand edits survive.", [820, 20], 860, 260, 5],
   ["## 4. Close the loop\nLabel is applied **after** the write — a crash loses a label, not a row.\n\nThe rebuild fires once per run and reaches GitHub Actions as a `repository_dispatch`, so the dashboard updates in seconds instead of waiting for the 6-hourly cron.", [1760, 20], 400, 280, 6],
@@ -282,6 +323,8 @@ const workflow = {
   nodes,
   connections: {
     "Poll Gmail": { main: one("Skip Already Seen") },
+    "Backfill (manual)": { main: one("Fetch Job Mail") },
+    "Fetch Job Mail": { main: one("Skip Already Seen") },
     "Skip Already Seen": { main: one("Parse Job Email") },
     "Parse Job Email": { main: one("Classified?") },
     "Classified?": {

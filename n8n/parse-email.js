@@ -201,6 +201,9 @@ const EXTRACTORS = [
   // LinkedIn: subject names the company; the body's next line is the title.
   [body, /your application was sent to ([^\n]+)\n+\s*([^\n]+)/i, 2, 1],
   [subject, /your application was sent to (.+)$/i, 0, 1],
+  [subject, /your application was viewed by (.+)$/i, 0, 1],
+  // Kalibrr: "Application sent to <T> at <C>!"
+  [subject, /^application sent to (.+?) at (.+?)!?$/i, 1, 2],
   // Indeed: the subject carries the title and nothing else.
   [subject, /^indeed application:\s*(.+)$/i, 1, 0],
   // ATS / careers-page mail.
