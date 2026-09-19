@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Job Tracker — From Application to Dashboard",
+    "output": "docs/system-overview.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "capture",
+        "label": "Capture",
+        "focus": [
+          "boards",
+          "you",
+          "gmail"
+        ],
+        "note": "Applications and replies land in Gmail under the Job Application label."
+      },
+      {
+        "id": "automate",
+        "label": "Automate",
+        "focus": [
+          "gmail",
+          "n8n",
+          "inbox",
+          "feed"
+        ],
+        "note": "n8n parses each email, logs it, upserts one Feed row per application, and labels it."
+      },
+      {
+        "id": "publish",
+        "label": "Publish",
+        "focus": [
+          "feed",
+          "actions",
+          "dashboard"
+        ],
+        "note": "GitHub Actions verifies, builds from Feed, and deploys the dashboard."
+      }
+    ],
+    "viewBox": [
+      1076,
+      500
+    ],
+    "legend": {
+      "entries": {
+        "security": {
+          "label": "read-only access"
+        },
+        "dashed": {
+          "label": "manual (you)"
+        }
+      }
+    }
+  },
+  "stages": [
+    {
+      "label": "Requirements"
+    },
+    {
+      "label": "Capture"
+    },
+    {
+      "label": "Automate"
+    },
+    {
+      "label": "Store"
+    },
+    {
+      "label": "Publish"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "boards",
+      "type": "external",
+      "label": "Job Boards & ATS",
+      "sublabel": "JobStreet · LinkedIn",
+      "stage": 0,
+      "row": 0,
+      "tag": "replies",
+      "width": 132
+    },
+    {
+      "id": "you",
+      "type": "frontend",
+      "label": "You",
+      "sublabel": "apply · edit tracker",
+      "stage": 0,
+      "row": 2,
+      "tag": "owner"
+    },
+    {
+      "id": "gmail",
+      "type": "external",
+      "label": "Gmail",
+      "sublabel": "Job Application label",
+      "stage": 1,
+      "row": 1,
+      "tag": "inbox"
+    },
+    {
+      "id": "n8n",
+      "type": "backend",
+      "label": "n8n Ingest",
+      "sublabel": "poll · parse · merge",
+      "stage": 2,
+      "row": 1,
+      "tag": "every 15 min"
+    },
+    {
+      "id": "inbox",
+      "type": "database",
+      "label": "Inbox / Needs Review",
+      "sublabel": "one row per email",
+      "stage": 3,
+      "row": 0,
+      "brand": "airtable",
+      "tag": "log",
+      "width": 150
+    },
+    {
+      "id": "feed",
+      "type": "database",
+      "label": "Feed",
+      "sublabel": "one row per application",
+      "stage": 3,
+      "row": 2,
+      "brand": "airtable",
+      "tag": "tracker"
+    },
+    {
+      "id": "actions",
+      "type": "cloud",
+      "label": "GitHub Actions",
+      "sublabel": "verify · build",
+      "stage": 4,
+      "row": 0,
+      "brand": "github-actions",
+      "tag": "CI",
+      "width": 136
+    },
+    {
+      "id": "dashboard",
+      "type": "frontend",
+      "label": "Dashboard",
+      "sublabel": "static HTML on VPS",
+      "stage": 4,
+      "row": 2,
+      "tag": "public"
+    }
+  ],
+  "flows": [
+    {
+      "id": "confirmations",
+      "from": "boards",
+      "to": "gmail",
+      "label": "confirmations",
+      "variant": "default"
+    },
+    {
+      "id": "sent-applications",
+      "from": "you",
+      "to": "gmail",
+      "label": "sent applications",
+      "variant": "dashed"
+    },
+    {
+      "id": "job-mail",
+      "from": "gmail",
+      "to": "n8n",
+      "label": "keyword query",
+      "variant": "emphasis"
+    },
+    {
+      "id": "message-rows",
+      "from": "n8n",
+      "to": "inbox",
+      "label": "upsert message_id",
+      "variant": "default"
+    },
+    {
+      "id": "feed-upsert",
+      "from": "n8n",
+      "to": "feed",
+      "label": "upsert per application",
+      "variant": "emphasis"
+    },
+    {
+      "id": "feed-read",
+      "from": "feed",
+      "to": "actions",
+      "label": "read-only API",
+      "variant": "security"
+    },
+    {
+      "id": "deploy",
+      "from": "actions",
+      "to": "dashboard",
+      "label": "atomic deploy",
+      "variant": "emphasis",
+      "labelDy": 24
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Main path",
+      "items": [
+        "Every application email reaches Gmail, then n8n on a 15-minute poll",
+        "n8n writes Feed, the one table the dashboard reads",
+        "Actions verifies, builds and deploys the page"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Automation rules",
+      "items": [
+        "Each email gets Job Application/Processed plus a status label",
+        "Feed rows only move forward: earliest date, highest stage",
+        "Job Platform is filled in from the sender"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Safety",
+      "items": [
+        "Build reads Feed with a read-only token",
+        "Company names never reach the published page",
+        "verify.mjs gates every deploy"
+      ]
+    }
+  ]
+}
