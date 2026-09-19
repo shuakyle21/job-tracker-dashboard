@@ -56,25 +56,41 @@ const RULES = [
     /\bfuture (?:opportunities|openings|roles)\b/,
   ]],
   ['viewed by employer', [
-    /\byour application was viewed\b/, /\bviewed your application\b/,
+    /\byour application was viewed\b/, /\b(?:has )?viewed your application\b/,
     /\bapplication (?:was )?viewed\b/, /\brecruiter viewed\b/,
   ]],
   ['in review', [
     /\bunder review\b/, /\breviewing your application\b/, /\bbeing reviewed\b/,
-    /\bshortlist(?:ed|ing)?\b/, /\bmoved to the next (?:stage|round)\b/,
+    // "You have been shortlisted", not "if shortlisted, we will call" — the
+    // conditional is boilerplate in plain confirmations.
+    /\b(?:you(?:'ve| have)? been|you are|you're) shortlisted\b/, /\bmoved to the next (?:stage|round)\b/,
     /\bprogress(?:ed|ing) to\b/,
   ]],
   ['applied', [
-    /\bapplication (?:was |has been )?(?:sent|submitted|received)\b/,
-    /\bthank you for (?:applying|your application|your interest)\b/,
-    /\bwe(?:'| ha)ve received your application\b/, /\bapplication confirmation\b/,
+    // Real confirmations don't agree on wording: JobStreet says "was
+    // successfully submitted to", LinkedIn "was sent to", Torre "was
+    // delivered", ATS mail "has been received" / "we've received". The
+    // optional "for <title>" lets "application for X was submitted" match too.
+    /\bapplication (?:for .{1,120}? )?(?:was |has been )?(?:successfully )?(?:sent|submitted|received|delivered)\b/,
+    /\bsuccessfully submitted\b/,
+    /\bthank(?:s| you) for (?:applying|your application|your interest|your submission)\b/,
+    /\bwe(?:'| ha)ve received your application\b/, /\breceived your application\b/,
+    /\bconfirm that we have received\b/, /\bapplication confirmation\b/,
     /\bsuccessfully applied\b/,
   ]],
 ];
 
+// Gmail marks mail you sent with SENT. An outgoing email under the job label
+// is you applying directly — there is no reply to classify.
+const labelIds = Array.isArray(msg.labelIds) ? msg.labelIds : [];
+const isSent = labelIds.includes('SENT');
+
 let status = '';
-for (const [name, patterns] of RULES) {
-  if (any(subjectLower, patterns) || any(hay, patterns)) { status = name; break; }
+if (isSent) status = 'applied';
+else {
+  for (const [name, patterns] of RULES) {
+    if (any(subjectLower, patterns) || any(hay, patterns)) { status = name; break; }
+  }
 }
 
 // --- furthest stage reached ----------------------------------------------
@@ -89,12 +105,20 @@ const STAGE_OF_STATUS = {
 };
 
 let stageEvidence = 1;
-if (any(hay, [/\breview(?:ed|ing)?\b/, /\bviewed\b/, /\bshortlist/])) stageEvidence = 2;
+if (any(hay, [/\breview(?:ed|ing)?\b/, /\bviewed\b/, /\bbeen shortlisted\b/])) stageEvidence = 2;
 if (any(hay, [/\bassessment\b/, /\btake[- ]home\b/, /\bcoding (?:challenge|test)\b/])) stageEvidence = 3;
 if (any(hay, [/\binterview(?:ed|ing)?\b/, /\bcalendly\b/])) stageEvidence = 4;
 if (any(hay, [/\boffer of employment\b/, /\boffer letter\b/])) stageEvidence = 5;
 
 const maxStage = Math.max(STAGE_OF_STATUS[status] || 1, stageEvidence);
+
+// status → Gmail sub-label name. scripts/build-n8n.mjs maps each name to a
+// label id, and verify.mjs fails if any name here has no id there.
+const STATUS_LABELS = {
+  'applied': 'Applied', 'viewed by employer': 'Viewed', 'in review': 'In Review',
+  'assessment': 'Assessment', 'interview scheduled': 'Interview', 'offer': 'Offer',
+  'rejected': 'Rejected', 'talent pool': 'Talent Pool',
+};
 
 // --- company --------------------------------------------------------------
 // The From display name is the most reliable source, but ATS senders bury the
@@ -108,13 +132,17 @@ let company = fromName
   .replace(/^[\s,.\-–—]+|[\s,.\-–—]+$/g, '')
   .trim();
 
+// For mail you sent, the employer is the recipient, not you.
+const to = String(msg.to?.value?.[0]?.address || msg.to?.text || '');
+if (isSent) company = '';
+
 // Fall back to the sending domain, minus the ATS hosts that tell you nothing
 // about who the employer is.
-const ATS_DOMAINS = /^(?:.*\.)?(?:linkedin|indeed|greenhouse|lever|workday(?:day)?|myworkday|jobstreet|glassdoor|ziprecruiter|smartrecruiters|ashbyhq|workable|bamboohr|onlinejobs|gmail|googlemail|outlook|yahoo)\./i;
+const ATS_DOMAINS = /^(?:.*\.)?(?:linkedin|indeed|greenhouse|lever|workday(?:day)?|myworkday|jobstreet|glassdoor|ziprecruiter|smartrecruiters|ashbyhq|workable|workablemail|bamboohr|teamtailor-mail|teamtailor|manatal|applytojob|appsheet|kalibrr|torre|onlinejobs|gmail|googlemail|outlook|yahoo)\./i;
 if (!company) {
-  const domain = (from.split('@')[1] || '').toLowerCase();
+  const domain = ((isSent ? to : from).split('@')[1] || '').toLowerCase();
   if (domain && !ATS_DOMAINS.test(domain + '.')) {
-    company = domain.replace(/\.(?:com|net|org|io|co|ph|ai|dev)(?:\.[a-z]{2})?$/i, '');
+    company = domain.replace(/\.(?:com|net|org|io|co|ph|ai|dev|gov|edu)(?:\.[a-z]{2})?$/i, '');
     company = company.charAt(0).toUpperCase() + company.slice(1);
   }
 }
@@ -131,7 +159,7 @@ const LEAD_INS = [
   /^(?:re|fwd?)\s*:\s*/i,
   /^invitation (?:to|for) (?:an? )?(?:interview|call|chat)\s*(?:for|with)?\s*[:\u2014\u2013-]?\s*/i,
   /^(?:your )?application (?:for|to|update(?: for)?|status(?: for)?|received(?: for)?|confirmation(?: for)?)\s*[:\u2014\u2013-]?\s*/i,
-  /^thank you for (?:applying|your (?:application|interest))(?: (?:to|in|for))?\s*[:\u2014\u2013-]?\s*/i,
+  /^thank(?:s| you) for (?:applying|your (?:application|interest))(?: (?:to|in|for|at))?\s*[:\u2014\u2013-]?\s*/i,
   /^(?:next steps?|update|interview|assessment|invitation)\s*(?:on|for|regarding|about)?\s*(?:your )?(?:application)?\s*[:\u2014\u2013-]\s*/i,
   /^you(?:r)? (?:have )?applied (?:to|for)\s*[:\u2014\u2013-]?\s*/i,
 ];
@@ -156,13 +184,68 @@ if (atMatch) {
     company = candidate;
   }
 }
-title = title.replace(/\s*[|(].*$/, '').replace(/\s{2,}/g, ' ').trim();
+title = title.replace(/\s*[|(].*$/, '').replace(/\s+(?:position|role)$/i, '').replace(/\s{2,}/g, ' ').trim();
+
+// --- sender-specific shapes -----------------------------------------------
+// The heuristics above read the subject; these read sentences the big senders
+// actually use, which name both the job and the employer. When one matches it
+// is more reliable than anything guessed from a display name, so it wins.
+// Company names end in "Inc." / "Ltd." — keep that period, drop a sentence one.
+const clean = (s) => String(s || '').replace(/\s+/g, ' ').trim()
+  .replace(/(?<!\b(?:inc|ltd|corp|co|llc))\.$/i, '').trim();
+const EXTRACTORS = [
+  // JobStreet: "your application for <T> was successfully submitted to <C>"
+  [body, /application for (.+?) was successfully submitted to (.+?)(?=\s*(?:\n|jobstreet\b|$))/i, 1, 2],
+  // JobStreet: "<C> has viewed your application for <T>"
+  [subject, /^(.+?) has viewed your application for (.+)$/i, 2, 1],
+  // LinkedIn: subject names the company; the body's next line is the title.
+  [body, /your application was sent to ([^\n]+)\n+\s*([^\n]+)/i, 2, 1],
+  [subject, /your application was sent to (.+)$/i, 0, 1],
+  // Indeed: the subject carries the title and nothing else.
+  [subject, /^indeed application:\s*(.+)$/i, 1, 0],
+  // ATS / careers-page mail.
+  [body, /interest in (?:the )?(.+?) (?:position|role|opportunity) at ([^\n!]+?)(?=[.!,]\s|[.!]?\s*$|\n)/i, 1, 2],
+  [body, /(?:application|applying|apply) for (?:the )?(.+?) (?:role|position|job|opportunity) at ([^\n!]+?)(?=[.!,]\s|[.!]?\s*$|\n)/i, 1, 2],
+  [body, /(?:application|applying|apply) for (?:the )?(.+?) (?:role|position|job|opportunity)\b/i, 1, 0],
+  // "your application for <T> was delivered" (Torre), "...for <T>, and" (Lever),
+  // "...for <T> shortly" (Teamtailor), "...for <T>. If" (Manatal).
+  [body, /your application for (?:the )?(.+?)(?= was\b| shortly\b| and\b|,|\.\s|\.?\n|\.?$)/i, 1, 0],
+  // "Thank you for your interest in joining <C>, ..." — names the employer
+  // when the sender is a person or an ATS.
+  [body, /interest in joining ([^,!.\n]+)/i, 0, 1],
+];
+let gotTitle = false;
+let gotCompany = false;
+for (const [text, re, ti, ci] of EXTRACTORS) {
+  const m = String(text).match(re);
+  if (!m) continue;
+  if (ti && !gotTitle && clean(m[ti])) { title = clean(m[ti]); gotTitle = true; }
+  if (ci && !gotCompany && clean(m[ci])) { company = clean(m[ci]); gotCompany = true; }
+  if (gotTitle && gotCompany) break;
+}
+
+// --- job platform ---------------------------------------------------------
+// Where the application was made, for the Feed's Job Platform column. Job
+// boards are recognised by sending domain; anything else that wrote back
+// (ATS, careers page, recruiter) is the company's own channel.
+const JOB_BOARDS = [
+  [/jobstreet/i, 'JobStreet'], [/linkedin/i, 'LinkedIn'], [/indeed/i, 'Indeed'],
+  [/kalibrr/i, 'Kalibrr'], [/onlinejobs/i, 'OnlineJobs.ph'], [/torre\.ai/i, 'Torre'],
+];
+let jobPlatform = 'Company Website';
+if (isSent) jobPlatform = 'Direct Email';
+else for (const [re, name] of JOB_BOARDS) if (re.test(from)) { jobPlatform = name; break; }
+const onJobBoard = JOB_BOARDS.some(([, name]) => name === jobPlatform);
+// A board's display name ("Indeed Apply", "LinkedIn") is not the employer.
+if (onJobBoard && !gotCompany) company = '';
 
 // --- confidence and routing ----------------------------------------------
 // A row is only trustworthy enough to land in the tracker when the email said
 // something recognisable AND we know who sent it. Everything else goes to
-// needs-review, where a human decides in ten seconds.
-const parsed = Boolean(status) && Boolean(company) && Boolean(title);
+// needs-review, where a human decides in ten seconds. The one exception: a job
+// board confirmation (Indeed) that names the job but not the employer is still
+// traceable, because the board itself identifies where the application lives.
+const parsed = Boolean(status) && Boolean(title) && (Boolean(company) || onJobBoard);
 
 let confidence = 'low';
 if (status && company && title) confidence = 'high';
@@ -193,6 +276,10 @@ return {
       : /jobstreet/i.test(from) ? 'JobStreet'
       : /onlinejobs/i.test(from) ? 'OnlineJobs.ph'
       : 'Email',
+    job_platform: jobPlatform,
+    // The Gmail sub-label under "Job Application/". Anything routed to
+    // needs-review is labelled that, whatever status was guessed.
+    status_label: parsed ? (STATUS_LABELS[status] || 'Needs Review') : 'Needs Review',
     from_address: from,
     subject,
     parsed,
