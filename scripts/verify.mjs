@@ -128,6 +128,12 @@ async function assertIngestWorkflow() {
   } catch { parserOk = false; }
   check("parser tests pass", parserOk);
 
+  let mergeOk = true;
+  try {
+    await run("node", ["scripts/test-merge-feed.mjs"], { cwd: ROOT });
+  } catch { mergeOk = false; }
+  check("Feed merge tests pass", mergeOk);
+
   // The workflow JSON is generated. If someone edits it in the n8n UI and
   // re-exports over this file, the tested parser and the running parser part
   // ways silently — which is the failure this check exists to make loud.
@@ -144,6 +150,10 @@ async function assertIngestWorkflow() {
   check("embedded parser is the tested file",
     byName["Parse Job Email"]?.parameters.jsCode === parserFile);
 
+  const mergeFile = await readFile(join(ROOT, "n8n/merge-feed.js"), "utf8");
+  check("embedded Feed merge is the tested file",
+    byName["Merge Into Feed"]?.parameters.jsCode === mergeFile);
+
   // Exactly-once. The Gmail query must exclude the label the workflow applies,
   // or the label is decoration and every poll reprocesses every email.
   const q = byName["Poll Gmail"]?.parameters.filters?.q ?? "";
@@ -155,12 +165,13 @@ async function assertIngestWorkflow() {
   check("Gmail query is scoped to job mail", /(?:^|\s)label:job-applications\b/.test(q), q);
 
   // The label must be applied after the rows are written. Inverted, a crash
-  // between the two consumes the email without producing its row.
+  // between the two consumes the email without producing its row. On the
+  // classified branch the last write is the Feed upsert.
   const labelSources = Object.entries(wf.connections)
     .filter(([, c]) => c.main.some((o) => o.some((t) => t.node === "Mark Email Processed")))
     .map(([s]) => s);
-  check("label is applied after both Airtable writes",
-    labelSources.includes("Write to Inbox") && labelSources.includes("Write to Needs Review"),
+  check("label is applied after all Airtable writes",
+    labelSources.length === 2 && labelSources.includes("Upsert Feed") && labelSources.includes("Write to Needs Review"),
     labelSources.join(", "));
 
   check("unclassified email has its own branch",
@@ -176,6 +187,18 @@ async function assertIngestWorkflow() {
   check("both writes target Airtable via upsert",
     ["Write to Inbox", "Write to Needs Review"].every(
       (n) => byName[n]?.type === "n8n-nodes-base.airtable" && byName[n]?.parameters.operation === "upsert"));
+
+  // One Feed row per application: the upsert key must be the application,
+  // not the message, or every follow-up email becomes a new tracker row.
+  check("Feed is upserted on Application Key",
+    byName["Upsert Feed"]?.type === "n8n-nodes-base.airtable"
+      && byName["Upsert Feed"]?.parameters.operation === "upsert"
+      && byName["Upsert Feed"]?.parameters.columns.matchingColumns?.join() === "Application Key");
+
+  check("Feed row lookup survives a miss",
+    byName["Find Feed Row"]?.alwaysOutputData === true
+      && wf.connections["Find Feed Row"]?.main[0]?.[0]?.node === "Merge Into Feed"
+      && wf.connections["Merge Into Feed"]?.main[0]?.[0]?.node === "Upsert Feed");
 
   check("Inbox and Needs Review write to distinct Airtable tables",
     byName["Write to Inbox"]?.parameters.table?.value !== byName["Write to Needs Review"]?.parameters.table?.value);

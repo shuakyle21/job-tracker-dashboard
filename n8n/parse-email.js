@@ -277,6 +277,11 @@ return {
       : /onlinejobs/i.test(from) ? 'OnlineJobs.ph'
       : 'Email',
     job_platform: jobPlatform,
+    // One Feed row per application: every email about the same job at the
+    // same employer lands on the same key. Where the employer is unknown
+    // (Indeed), the board stands in for it.
+    application_key: (company || jobPlatform).toLowerCase().replace(/\s+/g, ' ').trim()
+      + '|' + title.toLowerCase().replace(/\s+/g, ' ').trim(),
     // The Gmail sub-label under "Job Application/". Anything routed to
     // needs-review is labelled that, whatever status was guessed.
     status_label: parsed ? (STATUS_LABELS[status] || 'Needs Review') : 'Needs Review',

@@ -16,15 +16,17 @@ import { dirname, join } from "node:path";
 
 const ROOT = join(dirname(new URL(import.meta.url).pathname), "..");
 const parserSource = await readFile(join(ROOT, "n8n/parse-email.js"), "utf8");
+const mergeSource = await readFile(join(ROOT, "n8n/merge-feed.js"), "utf8");
 
-// The live base and its two ingest tables. Hard-coded on purpose: a resource
-// locator in `id` mode imports ready to run, where `list` mode imports blank
-// and has to be picked by hand in two separate nodes. These are distinct from
-// the "Feed" table scripts/build.mjs reads — Feed is the human-curated
-// tracker; Inbox/Needs Review are n8n's message-level ingest log.
-const BASE_ID = "appJobTrackerIngest01";
-const INBOX_TABLE_ID = "tblIngestInbox0000001";
-const REVIEW_TABLE_ID = "tblIngestNeedsReview1";
+// The live base and its tables. Hard-coded on purpose: a resource locator in
+// `id` mode imports ready to run, where `list` mode imports blank and has to
+// be picked by hand in every node. IDs are not secrets — the token is.
+// Inbox/Needs Review are n8n's message-level ingest log; Feed is the tracker
+// scripts/build.mjs reads, one row per application, which n8n now upserts.
+const BASE_ID = "appRlqw66Sxzjpnf6";
+const INBOX_TABLE_ID = "tbl2ASezOoTqS4qok";
+const REVIEW_TABLE_ID = "tblwEyImuS3hgYGFK";
+const FEED_TABLE_ID = "tblPZSpJ8P4iFuAhX";
 
 // n8n expressions are plain strings that begin with "=".
 const ex = (s) => `=${s}`;
@@ -33,18 +35,18 @@ const ex = (s) => `=${s}`;
 // key is message_id: one Gmail message produces exactly one row, forever. That
 // makes a re-poll a no-op update rather than a duplicate, which is the whole
 // dedupe story at the storage layer.
-function columns(fields) {
+function columns(fields, key = "message_id") {
   return {
     mappingMode: "defineBelow",
-    matchingColumns: ["message_id"],
-    value: Object.fromEntries(fields.map((f) => [f, ex(`{{ $json.${f} }}`)])),
+    matchingColumns: [key],
+    value: Object.fromEntries(fields.map((f) => [f, ex(`{{ $json[${JSON.stringify(f)}] }}`)])),
     schema: fields.map((f) => ({
       id: f,
       displayName: f,
       required: false,
-      defaultMatch: f === "message_id",
+      defaultMatch: f === key,
       display: true,
-      type: f === "max_stage" ? "number" : "string",
+      type: f === "max_stage" || f === "Max Stage" ? "number" : "string",
       canBeUsedToMatch: true,
     })),
   };
@@ -52,14 +54,21 @@ function columns(fields) {
 
 const INBOX_FIELDS = [
   "message_id", "thread_id", "received_at", "company", "job_title",
-  "status", "max_stage", "source", "confidence",
+  "status", "max_stage", "source", "confidence", "job_platform",
 ];
 const REVIEW_FIELDS = [
   "message_id", "thread_id", "received_at", "from_address", "subject",
   "status", "company", "job_title", "confidence",
 ];
 
-function airtableNode(name, tableId, fields, position) {
+// Merge Into Feed returns exactly these, so the upsert writes a full row and
+// never blanks a field by leaving it out.
+const FEED_FIELDS = [
+  "Application Key", "Job Role", "Company", "Job Platform", "Source",
+  "Date Applied", "Status", "Max Stage",
+];
+
+function airtableNode(name, tableId, fields, position, key = "message_id") {
   return {
     parameters: {
       authentication: "airtableTokenApi",
@@ -67,7 +76,7 @@ function airtableNode(name, tableId, fields, position) {
       operation: "upsert",
       base: { __rl: true, mode: "id", value: BASE_ID },
       table: { __rl: true, mode: "id", value: tableId },
-      columns: columns(fields),
+      columns: columns(fields, key),
       options: { typecast: true },
     },
     type: "n8n-nodes-base.airtable",
@@ -165,6 +174,40 @@ const nodes = [
   airtableNode("Write to Needs Review", REVIEW_TABLE_ID, REVIEW_FIELDS, [900, 420]),
   {
     parameters: {
+      authentication: "airtableTokenApi",
+      resource: "record",
+      operation: "search",
+      base: { __rl: true, mode: "id", value: BASE_ID },
+      table: { __rl: true, mode: "id", value: FEED_TABLE_ID },
+      // JSON.stringify quotes and escapes the key the way an Airtable formula
+      // string literal expects, so a title containing quotes can't break it.
+      filterByFormula: ex("{{ '{Application Key} = ' + JSON.stringify($('Parse Job Email').item.json.application_key) }}"),
+      returnAll: false,
+      limit: 1,
+      options: {},
+    },
+    type: "n8n-nodes-base.airtable",
+    typeVersion: 2.1,
+    position: [1120, 180],
+    id: "find-feed-row",
+    name: "Find Feed Row",
+    // No match is the normal case for a new application; without this the
+    // item disappears and the email never reaches Feed or gets labelled.
+    alwaysOutputData: true,
+    onError: "continueRegularOutput",
+    credentials: { airtableTokenApi: { id: "REPLACE_ME", name: "Airtable account" } },
+  },
+  {
+    parameters: { mode: "runOnceForEachItem", language: "javaScript", jsCode: mergeSource },
+    type: "n8n-nodes-base.code",
+    typeVersion: 2,
+    position: [1340, 180],
+    id: "merge-feed",
+    name: "Merge Into Feed",
+  },
+  airtableNode("Upsert Feed", FEED_TABLE_ID, FEED_FIELDS, [1560, 180], "Application Key"),
+  {
+    parameters: {
       resource: "message",
       operation: "addLabels",
       // $json here is the Airtable API response, not the email — the message id
@@ -175,7 +218,7 @@ const nodes = [
     },
     type: "n8n-nodes-base.gmail",
     typeVersion: 2.2,
-    position: [1140, 300],
+    position: [1800, 300],
     id: "mark-handled",
     name: "Mark Email Processed",
     // Deliberately AFTER both writes: a crash between the two loses a label,
@@ -204,7 +247,7 @@ const nodes = [
     },
     type: "n8n-nodes-base.httpRequest",
     typeVersion: 4.5,
-    position: [1360, 300],
+    position: [2020, 300],
     id: "rebuild",
     name: "Trigger Dashboard Rebuild",
     // One rebuild per run, not one per email. Without this, a poll that picks
@@ -217,8 +260,8 @@ const nodes = [
 const stickies = [
   ["## 1. Poll and dedupe\nQuery: `label:job-applications -label:tracker-processed`.\n\nA **Gmail filter** applies the first label (scope). This workflow applies the second (handled). Drop the scope label and the trigger polls your entire mailbox.\n\n**Remove Duplicates** is the second net: it catches a re-delivery in the window between the Airtable write and the label being applied.", [-40, 20], 400, 280, 4],
   ["## 2. Classify\nPure function, no network. Source of truth is `n8n/parse-email.js` in the repo — it has tests. Edit it there and re-run `node scripts/build-n8n.mjs`, not here.", [400, 60], 380, 220, 3],
-  ["## 3. Store\nRows key on `message_id` via Airtable's upsert operation, so re-running is an update, not a duplicate.\n\n`Inbox` = classified. `Needs Review` = everything else, with the subject so you can judge it in ten seconds.\n\nNeither table is the tracker. The `Feed` table (a separate base/table the dashboard build reads) stays yours.", [820, 20], 380, 260, 5],
-  ["## 4. Close the loop\nLabel is applied **after** the write — a crash loses a label, not a row.\n\nThe rebuild fires once per run and reaches GitHub Actions as a `repository_dispatch`, so the dashboard updates in seconds instead of waiting for the 6-hourly cron.", [1100, 20], 400, 280, 6],
+  ["## 3. Store\nInbox / Needs Review rows key on `message_id`, so re-running is an update, not a duplicate.\n\nClassified mail also upserts **Feed**, one row per application (`Application Key` = company|title). `merge-feed.js` only moves a row forward: earliest date, highest stage, no status regressions — hand edits survive.", [820, 20], 860, 260, 5],
+  ["## 4. Close the loop\nLabel is applied **after** the write — a crash loses a label, not a row.\n\nThe rebuild fires once per run and reaches GitHub Actions as a `repository_dispatch`, so the dashboard updates in seconds instead of waiting for the 6-hourly cron.", [1760, 20], 400, 280, 6],
 ];
 
 for (const [content, position, width, height, color] of stickies) {
@@ -247,7 +290,10 @@ const workflow = {
         [{ node: "Write to Needs Review", type: "main", index: 0 }],
       ],
     },
-    "Write to Inbox": { main: one("Mark Email Processed") },
+    "Write to Inbox": { main: one("Find Feed Row") },
+    "Find Feed Row": { main: one("Merge Into Feed") },
+    "Merge Into Feed": { main: one("Upsert Feed") },
+    "Upsert Feed": { main: one("Mark Email Processed") },
     "Write to Needs Review": { main: one("Mark Email Processed") },
     "Mark Email Processed": { main: one("Trigger Dashboard Rebuild") },
   },
