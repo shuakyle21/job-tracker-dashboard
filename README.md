@@ -3,6 +3,13 @@
 Gmail receives an application confirmation, n8n reads it, and a dashboard on Vercel updates
 within the hour. No spreadsheet, no manual data entry beyond the parts that still need a person.
 
+![my-new-folder/image.jpg](https://github.com/shuakyle21/job-tracker-dashboard/blob/main/img/n8n-workflow.png)
+
+## Dashboard Preview
+
+![dashboard-html-preview](https://github.com/shuakyle21/job-tracker-dashboard/blob/main/img/dashboard-html.png)
+
+
 ## About this project
 
 Job Tracker turns job-application emails into a private, automated analytics dashboard. Gmail and n8n capture and classify application updates, Airtable stores the structured feed, and GitHub Actions builds and deploys a static dashboard to a VPS. It is dependency-free, privacy-conscious, and designed to make the job search easier to understand without adding more manual tracking.
