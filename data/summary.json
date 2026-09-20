@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-09-20T07:24:05.004Z",
+  "generatedAt": "2026-09-20T07:35:59.103Z",
   "total": 33,
   "sent": 33,
   "unsent": 0,
   "replied": 3,
   "noReply": 30,
-  "open": 33,
+  "open": 32,
   "replyRate": 0.09090909090909091,
   "interviewRate": 0,
   "ghostRate": 0.9090909090909091,
@@ -27,7 +27,11 @@
     [
       {
         "status": "Applied",
-        "count": 27
+        "count": 26
+      },
+      {
+        "status": "Closed / Expired",
+        "count": 1
       }
     ],
     [
@@ -48,11 +52,15 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 30
+      "count": 29
     },
     {
       "status": "Viewed by Employer",
       "count": 3
+    },
+    {
+      "status": "Closed / Expired",
+      "count": 1
     }
   ],
   "channels": [
@@ -91,11 +99,11 @@
   "workSetup": [
     {
       "label": "Remote",
-      "count": 2
+      "count": 3
     },
     {
       "label": "Unspecified",
-      "count": 31
+      "count": 30
     }
   ],
   "ageing": [
@@ -109,7 +117,7 @@
     },
     {
       "label": "15–30d",
-      "count": 25
+      "count": 24
     },
     {
       "label": "31–60d",
