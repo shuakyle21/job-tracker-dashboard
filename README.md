@@ -4,6 +4,10 @@ Gmail receives an application confirmation, n8n reads it, and a dashboard on you
 updates within the hour. No spreadsheet, no manual data entry beyond the parts that still need a
 person.
 
+## About this project
+
+Job Tracker turns job-application emails into a private, automated analytics dashboard. Gmail and n8n capture and classify application updates, Airtable stores the structured feed, and GitHub Actions builds and deploys a static dashboard to a VPS. It is dependency-free, privacy-conscious, and designed to make the job search easier to understand without adding more manual tracking.
+
 ## What it does
 
 You apply for jobs the way you always have: LinkedIn, JobStreet, company career pages, cold
@@ -29,8 +33,8 @@ and publish stages, plus light/dark and pan/zoom. Open it if the picture above r
 the summary below doesn't answer.
 
 Two tools split the work, and the seam between them is a single `repository_dispatch` call. n8n
-handles the Gmail hop, where OAuth, retries, and dedupe already have solved answers; GitHub
-Actions handles building and shipping a website, which n8n has no good answer for. Neither side
+handles the Gmail hop, where OAuth, retries, and dedupe already have solved answers; GitHub Actions
+handles building and shipping a website, which n8n has no good answer for. Neither side
 has to fake competence it doesn't have.
 
 `Feed` doubles as the privacy boundary. It holds only the nine fields the dashboard reads, so a
@@ -148,7 +152,7 @@ day," never "on the hour."
 ## TODO
 
 - Row-per-application matching in `Inbox`, blocked on fuzzy company/title matching, which is a
-  guess a log shouldn't be making
+guess a log shouldn't be making
 - Commit row-level history instead of daily aggregates, once the privacy tradeoff is settled
 - Time-in-stage analytics, once there's a month or so of committed history to compute it from
 
