@@ -27,7 +27,7 @@ permissions:
   contents: write   # to commit data/summary.json
 
 # A scheduled run and a dispatch can overlap. Let the newer one win rather than
-# racing two rsyncs into the same release directory.
+# racing two deploys against the same Vercel project.
 concurrency:
   group: deploy
   cancel-in-progress: true
@@ -43,7 +43,7 @@ jobs:
           node-version: "20"
 
       # Gate. Builds against the fixture and asserts the funnel invariants, the
-      # drop-off arithmetic and the privacy boundary. Nothing reaches the VPS if
+      # drop-off arithmetic and the privacy boundary. Nothing reaches Vercel if
       # this fails.
       - name: Verify
         run: node scripts/verify.mjs
@@ -71,44 +71,27 @@ jobs:
             echo "No change in aggregates."
           fi
 
-      # Host key comes from a secret, not from StrictHostKeyChecking=no. Disabling
-      # the check means the first connection of every run trusts whatever answers —
-      # which is the whole attack. Pin it once with ssh-keyscan instead.
-      - name: Configure SSH
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
+      # Vercel CLI, not a package.json dependency: this installs the deploy tool the
+      # runner uses, same category as the old pipeline's ssh/rsync, not something the
+      # dashboard app depends on at runtime.
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
 
-      # Trailing slash on dist/ matters: with it, the *contents* are copied into
-      # staging/. Without it you get staging/dist/. --delete keeps staging an exact
-      # mirror so a removed file actually disappears.
-      - name: Upload build to staging
+      # VERCEL_TOKEN/VERCEL_ORG_ID/VERCEL_PROJECT_ID as env vars is what lets the CLI
+      # authenticate and deploy against the right project non-interactively, with no
+      # `vercel link` step and no .vercel/project.json committed to the repo. The CLI
+      # reads VERCEL_TOKEN from the environment on its own — passing the same value
+      # again via --token hit a CLI parsing quirk ("Must not contain: -") on a
+      # perfectly valid token, so it's deliberately left off here. Passing dist/
+      # deploys exactly that folder's contents as a static site — Vercel runs no
+      # build of its own, so nothing here needs the Airtable secrets a
+      # Vercel-triggered build would.
+      - name: Deploy dist/ to Vercel
         env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
-        run: |
-          rsync -az --delete \
-            -e "ssh -p $SSH_PORT -i ~/.ssh/id_ed25519" \
-            dist/ "$SSH_USER@$SSH_HOST:/srv/dashboard/staging/"
-
-      # The swap lives on the server so the workflow stays dumb and the server owns
-      # its own layout. activate.sh copies staging into a timestamped release and
-      # moves the `current` symlink atomically.
-      - name: Activate release
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
-        run: |
-          ssh -p "$SSH_PORT" -i ~/.ssh/id_ed25519 "$SSH_USER@$SSH_HOST" \
-            "/srv/dashboard/bin/activate.sh ${GITHUB_SHA::7}"
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel deploy dist --prod --yes
 
       # Deploying without checking is just copying files. Fail the run if the live
       # page does not come back 200 with the expected marker in it.

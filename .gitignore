@@ -1,4 +1,4 @@
-# Build output. The workflow rsyncs this to the VPS; committing it would create
+# Build output. The workflow deploys this to Vercel; committing it would create
 # merge noise on every run and the repo is not what gets served.
 dist/
 
@@ -13,8 +13,7 @@ feed-*.json
 *-private.csv
 *-private.json
 
-# Deploy key. Generated during setup, added to GitHub as a secret, then deleted
-# from the laptop (DEPLOY.md 2.6). Ignored so a slip can't publish it.
-deploy_key
-deploy_key.pub
-known_hosts.txt
+# Local `vercel link` state. CI never creates this — it deploys with
+# VERCEL_ORG_ID/VERCEL_PROJECT_ID as env vars instead — but ignore it in case
+# anyone links the project locally to use the CLI by hand.
+.vercel

@@ -4,10 +4,11 @@ Three things get set up, in this order. Each one works on its own, so stop after
 them and you still have something running.
 
 1. **Git** — publish the repo.
-2. **VPS** — serve the dashboard, with atomic releases and one-command rollback.
+2. **Vercel** — serve the dashboard. GitHub Actions builds it and deploys the static
+   output; Vercel's own Git integration is deliberately not used (§2.7 explains why).
 3. **n8n**: label job mail in Gmail, fill the Airtable base from it, and trigger rebuilds.
 
-Command blocks are paste-ready. `$` lines run on your laptop, `#` lines on the VPS.
+Command blocks are paste-ready and run on your laptop unless noted otherwise.
 
 ---
 
@@ -36,69 +37,44 @@ git ls-files | xargs grep -ril 'gmail.com\|@.*\.ph\b' || echo "clean"
 
 ---
 
-## 2. VPS
+## 2. Vercel
 
-### 2.1 Layout
-
-```bash
-# ssh into the VPS as a sudo user
-sudo useradd -m -s /bin/bash deploy
-sudo mkdir -p /srv/dashboard/{releases,staging,bin}
-sudo chown -R deploy:deploy /srv/dashboard
-```
-
-`current` is a symlink into `releases/`. A deploy writes a new release directory and moves
-the symlink; nothing is ever edited in place, so a half-finished upload can't be served.
-
-### 2.2 Install the scripts
+### 2.1 Create the project
 
 ```bash
-# from your laptop
-scp deploy/activate.sh deploy/rollback.sh deploy@VPS:/srv/dashboard/bin/
-ssh deploy@VPS 'chmod +x /srv/dashboard/bin/*.sh'
+# laptop, once — links nothing, just reserves the name and gives you the IDs below
+npx vercel@latest projects add job-tracker-dashboard
 ```
 
-The `chmod` is a real step, not a formality — the execute bit does not survive the copy,
-and the deploy fails at the last hop with `Permission denied` if you skip it.
+Or create it from the Vercel dashboard: **Add New ▸ Project ▸ Deploy without a Git
+repository** (naming it, not connecting it, is the point — see 2.7).
 
-### 2.3 Seed a first release
+### 2.2 Turn off Deployment Protection
 
-The web server needs `current` to exist before it will start.
+New projects default to Vercel Authentication (SSO) on production URLs without a custom
+domain, which puts a login wall in front of the dashboard. This dashboard is meant to be
+public, the same way the VPS version had no auth in front of it.
+
+**Project ▸ Settings ▸ Deployment Protection ▸ Vercel Authentication ▸ Off.**
+
+Skipping this doesn't break the deploy — it breaks the smoke test in 2.7, which expects an
+anonymous `curl` to return the page, not a redirect to a login screen.
+
+### 2.3 Get the org and project IDs
+
+**Project ▸ Settings ▸ General** has the Project ID. The Team ID (called `VERCEL_ORG_ID`
+everywhere else) is under your team's **Settings ▸ General**, or:
 
 ```bash
-# laptop
-FEED_FIXTURE=./sample-feed.json node scripts/build.mjs
-rsync -az --delete dist/ deploy@VPS:/srv/dashboard/staging/
-ssh deploy@VPS '/srv/dashboard/bin/activate.sh seed'
+npx vercel@latest teams ls
 ```
 
-### 2.4 Web server
+### 2.4 Access token
 
-Caddy (`deploy/Caddyfile.example`) or nginx (`deploy/nginx-dashboard.conf.example`). Copy
-the one you use, change the hostname, reload.
+**Account Settings ▸ Tokens ▸ Create Token.** Scope it to the team this project lives in,
+not "Full Account" — a token scoped to one team can't touch anything else if it leaks.
 
-If you use nginx, keep `disable_symlinks off;`. nginx caches the resolved path behind a
-symlink, so without it your next deploy swaps `current` and nginx keeps serving the old
-release until you restart it — which looks exactly like a broken deploy.
-
-If your reverse proxy runs in Docker and can't see `/srv/dashboard`, use
-`deploy/docker-compose.dashboard.yml` instead: an nginx container with the release mounted
-read-only.
-
-### 2.5 Deploy key
-
-```bash
-# laptop
-ssh-keygen -t ed25519 -f ./deploy_key -N "" -C "github-actions"
-ssh-copy-id -i ./deploy_key.pub deploy@VPS
-ssh-keyscan -p 22 VPS_HOST > known_hosts.txt   # pin the host key
-```
-
-`ssh-keyscan` matters. The alternative people reach for is
-`StrictHostKeyChecking=no`, which tells the runner to trust whatever answers on that
-address — which is the entire attack it's meant to prevent.
-
-### 2.6 Secrets
+### 2.5 Secrets
 
 **Settings ▸ Secrets and variables ▸ Actions**
 
@@ -107,34 +83,42 @@ address — which is the entire attack it's meant to prevent.
 | `AIRTABLE_API_KEY` | personal access token scoped to `data.records:read` on this base |
 | `AIRTABLE_BASE_ID` | the base ID (`appXXXXXXXXXXXXXX`), from **Help ▸ API documentation** |
 | `AIRTABLE_TABLE_NAME` | optional — only if the tracker table isn't named `Feed` |
-| `SSH_PRIVATE_KEY` | contents of `./deploy_key` |
-| `SSH_KNOWN_HOSTS` | contents of `known_hosts.txt` |
-| `SSH_HOST` | VPS hostname or IP |
-| `SSH_USER` | `deploy` |
-| `SSH_PORT` | `22` (omit if 22) |
-| `PUBLIC_URL` | `https://your-domain/` |
+| `VERCEL_TOKEN` | the token from 2.4 |
+| `VERCEL_ORG_ID` | the Team ID from 2.3 |
+| `VERCEL_PROJECT_ID` | the Project ID from 2.3 |
+| `PUBLIC_URL` | the project's `*.vercel.app` URL, or your custom domain once you add one |
 
-Then delete `deploy_key` from your laptop. It's in GitHub now; a second copy is only a
-second thing to lose.
+None of these belong on your laptop once they're in GitHub — that's the whole reason they're
+secrets instead of a `.env` file next to the code.
 
-### 2.7 First deploy
+### 2.6 First deploy
 
 **Actions ▸ Build and deploy ▸ Run workflow.**
 
-The run verifies, builds from the live feed, commits the summary, uploads to staging,
-activates, then curls the public URL and fails if it doesn't come back 200 with the
-expected markup. A green run means the page is actually up, not that files were copied.
+The run verifies, builds from the live feed, commits the summary, then runs
+`vercel deploy dist --prod`, which uploads `dist/` as a static deployment — Vercel does no
+build of its own, so it never needs the Airtable secrets. The last step curls `PUBLIC_URL`
+and fails if it doesn't come back 200 with the expected markup. A green run means the page
+is actually up, not that a deploy was merely accepted.
+
+If `PUBLIC_URL` isn't set yet because you don't know the domain until after the first
+deploy: run the workflow once, read the URL from **Project ▸ Deployments** or the
+workflow's own log output, then add the secret and run it again.
+
+### 2.7 Why not just connect the GitHub repo in Vercel?
+
+Vercel's native Git integration would rebuild on every push using its own build command —
+which would need the Airtable secrets duplicated into Vercel's env vars, and would produce
+a second, competing deployment on top of the one this workflow already makes for the
+schedule and the n8n webhook (neither of which is a git push, so Vercel's own integration
+wouldn't even fire for them). One trigger path, one place secrets live: same shape as the
+VPS setup this replaced, just swapping SSH+rsync for the Vercel CLI.
 
 ### 2.8 Rollback
 
-```bash
-ssh deploy@VPS '/srv/dashboard/bin/rollback.sh --list'
-ssh deploy@VPS '/srv/dashboard/bin/rollback.sh'                      # previous release
-ssh deploy@VPS '/srv/dashboard/bin/rollback.sh 20260918T101530Z-a1b2c3d'
-```
-
-Five releases are kept. Rollback is a symlink move, so it takes about as long as the SSH
-handshake.
+**Project ▸ Deployments**, find the last good one, **⋯ ▸ Promote to Production**. Vercel
+keeps every deployment until you delete it, so this is closer to instant than the VPS
+symlink swap was.
 
 ---
 
@@ -279,9 +263,10 @@ same email can never fool it twice.
 
 | Symptom | Cause |
 |---|---|
-| Deploy green, page unchanged | nginx without `disable_symlinks off;` |
-| `Permission denied` on activate | forgot `chmod +x` in 2.2 |
-| Smoke test fails, files are there | web server not pointed at `/srv/dashboard/current` |
+| Smoke test gets a redirect/login page instead of 200 | Deployment Protection still on — turn it off (2.2) |
+| `vercel deploy` fails with "Project not found" | `VERCEL_ORG_ID`/`VERCEL_PROJECT_ID` wrong or from a different team than the token (2.3–2.4) |
+| Deploy succeeds, `PUBLIC_URL` still 404s | secret set to a guessed domain before the first deploy told you the real one (2.6) |
+| Two deployments appear for one push | the GitHub repo got connected in Vercel's own Git integration — disconnect it (2.7) |
 | Rows duplicating in `Inbox` or `Feed` | matching field lost on import (3.4) |
 | Same emails reprocessed every poll | `Job Application/Processed` not applied, or not excluded in the query |
 | `Needs Review` full of newsletters | trigger phrases too broad — narrow `JOB_MAIL_QUERY` (3.2) |

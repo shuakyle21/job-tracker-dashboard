@@ -1,8 +1,7 @@
 # Job Tracker
 
-Gmail receives an application confirmation, n8n reads it, and a dashboard on your own VPS
-updates within the hour. No spreadsheet, no manual data entry beyond the parts that still need a
-person.
+Gmail receives an application confirmation, n8n reads it, and a dashboard on Vercel updates
+within the hour. No spreadsheet, no manual data entry beyond the parts that still need a person.
 
 ## About this project
 
@@ -20,9 +19,9 @@ That last part used to be manual.
 The merge never overwrites a status you've corrected by hand, and it never regresses one either.
 A stray confirmation email that arrives after an interview invite won't knock a row back down to
 "Applied." GitHub Actions reads `Feed` on a schedule, or the moment n8n triggers it, builds a
-static dashboard from nine fields, and deploys it to a VPS with an atomic release swap. You still
-do the applying. Everything after Gmail receives a reply runs on its own, short of the rare row
-you need to correct by hand.
+static dashboard from nine fields, and deploys it to Vercel. You still do the applying.
+Everything after Gmail receives a reply runs on its own, short of the rare row you need to
+correct by hand.
 
 ## Architecture
 
@@ -81,10 +80,10 @@ Airtable → your account → **Developer hub → Personal access tokens → Cre
 
 `AIRTABLE_TABLE_NAME` is optional; it defaults to `Feed`.
 
-### 4. Set up the VPS
+### 4. Set up Vercel
 
-[DEPLOY.md §2](DEPLOY.md) covers the release layout, `activate.sh`, the deploy key, and the web
-server config. Then run **Actions → Build and deploy → Run workflow**. It ends by curling your
+[DEPLOY.md §2](DEPLOY.md) covers creating the project, turning off Deployment Protection, and
+the access token. Then run **Actions → Build and deploy → Run workflow**. It ends by curling your
 public URL and fails if the page isn't actually up.
 
 ### 5. Wire up n8n
