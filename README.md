@@ -23,7 +23,7 @@ static dashboard from nine fields, and deploys it to Vercel. You still do the ap
 Everything after Gmail receives a reply runs on its own, short of the rare row you need to
 correct by hand.
 
-## Architecture
+## Workflow
 
 ![System overview: applications flow through Gmail, n8n, Airtable, and GitHub Actions to a public dashboard](docs/system-overview.png)
 
