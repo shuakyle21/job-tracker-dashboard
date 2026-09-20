@@ -48,7 +48,7 @@ const FEED_TABLE_ID = "tblPZSpJ8P4iFuAhX";
 // couldn't classify. Placeholder model — change to whatever this router
 // actually serves.
 const LLM_ENDPOINT = "https://llmrouter.boyemma.com/v1/chat/completions";
-const LLM_MODEL = "gpt-4o-mini";
+const LLM_MODEL = "auto";
 
 // n8n expressions are plain strings that begin with "=".
 const ex = (s) => `=${s}`;
