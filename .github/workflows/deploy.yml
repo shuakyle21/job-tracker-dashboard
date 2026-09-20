@@ -77,17 +77,21 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
-      # VERCEL_ORG_ID/VERCEL_PROJECT_ID as env vars is what lets the CLI deploy
-      # against the right project non-interactively, with no `vercel link` step and
-      # no .vercel/project.json committed to the repo. Passing dist/ deploys exactly
-      # that folder's contents as a static site — Vercel runs no build of its own,
-      # so nothing here needs the Airtable secrets a Vercel-triggered build would.
+      # VERCEL_TOKEN/VERCEL_ORG_ID/VERCEL_PROJECT_ID as env vars is what lets the CLI
+      # authenticate and deploy against the right project non-interactively, with no
+      # `vercel link` step and no .vercel/project.json committed to the repo. The CLI
+      # reads VERCEL_TOKEN from the environment on its own — passing the same value
+      # again via --token hit a CLI parsing quirk ("Must not contain: -") on a
+      # perfectly valid token, so it's deliberately left off here. Passing dist/
+      # deploys exactly that folder's contents as a static site — Vercel runs no
+      # build of its own, so nothing here needs the Airtable secrets a
+      # Vercel-triggered build would.
       - name: Deploy dist/ to Vercel
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: vercel deploy dist --prod --token="$VERCEL_TOKEN" --yes
+        run: vercel deploy dist --prod --yes
 
       # Deploying without checking is just copying files. Fail the run if the live
       # page does not come back 200 with the expected marker in it.
