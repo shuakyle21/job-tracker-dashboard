@@ -1,7 +1,8 @@
 # job-tracker-dashboard
 
 Turns an Airtable base of job applications into an analytics dashboard. Gmail → n8n → Airtable →
-GitHub Actions → VPS. Zero dependencies, Node 20+, no `npm install`.
+GitHub Actions → Vercel. Zero dependencies, Node 20+, no `npm install` (the Vercel CLI in
+deploy.yml is CI tooling, not an app dependency).
 
 Read `DEPLOY.md` for setup. `README.md` explains what it is.
 
@@ -17,7 +18,7 @@ AIRTABLE_API_KEY=... AIRTABLE_BASE_ID=... node scripts/verify.mjs --live  # also
 ```
 
 `verify.mjs` runs the parser tests and regenerates the workflow as part of its own checks, so
-it is the one command that has to pass. CI runs it before anything reaches the VPS.
+it is the one command that has to pass. CI runs it before anything reaches Vercel.
 
 ## Rules that are easy to break
 
@@ -52,9 +53,9 @@ and email addresses and fails the build. That check is why the repo can be publi
 `build.mjs`'s `FIELD_MAP` to include `Company`, `Job Role` or `Application Key`. Those Feed fields
 exist for n8n and for you, never for the page, and a verify check enforces it.
 
-**Don't commit** `dist/`, `deploy_key*`, `known_hosts.txt`, real Airtable credentials, or any real
-feed export. `sample-feed.json` is the de-identified fixture (an Airtable list-records response
-shape) and is the only feed data that belongs in git.
+**Don't commit** `dist/`, real Airtable credentials, a Vercel token, or any real feed export.
+`sample-feed.json` is the de-identified fixture (an Airtable list-records response shape) and is
+the only feed data that belongs in git.
 
 ## Layout
 
@@ -70,17 +71,20 @@ shape) and is the only feed data that belongs in git.
 | `n8n/gmail-labels.json` | Gmail label ids: scope, processed, one per status |
 | `scripts/test-merge-feed.mjs` | runs the Feed merge outside n8n |
 | `n8n/job-tracker-ingest.json` | **generated**, do not edit |
-| `deploy/activate.sh` | atomic release swap on the VPS |
-| `deploy/rollback.sh` | symlink move back to a previous release |
 | `data/summary.json` | aggregates, committed each run — git history is the time series |
 | `sample-feed.json` | de-identified fixture: Airtable list-records shape for the `Feed` table |
 
-## Two things that bit us already
+## Deploy
 
-`activate.sh` and `rollback.sh` sort releases **by name, not mtime**. `cp -a` copies staging's
-timestamps onto every release, so `ls -t` sees ties and falls back to alphabetical — which once
-pruned the two newest releases including the live one. Release names are UTC timestamps, so a
-reverse lexicographic sort is the correct one.
+`.github/workflows/deploy.yml` builds `dist/` (same as always), then runs
+`vercel deploy dist --prod` with `VERCEL_TOKEN`/`VERCEL_ORG_ID`/`VERCEL_PROJECT_ID` as secrets.
+The Vercel project is deliberately **not** connected to the GitHub repo via Vercel's own Git
+integration — that would rebuild on every push using Vercel's own build command (needing the
+Airtable secrets duplicated into Vercel) and race a second deployment against this workflow's,
+which also fires on a schedule and on n8n's webhook, neither of which is a git push. One trigger
+path, one place secrets live. See DEPLOY.md §2 for the one-time project setup.
+
+## One thing that bit us already
 
 The Gmail trigger query needs a **positive scope** (`label:job-application` or the confirmation
 phrases), not just the `-label:job-application-processed` exclusion. Without it the trigger
