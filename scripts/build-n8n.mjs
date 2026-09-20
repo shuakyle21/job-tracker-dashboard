@@ -17,6 +17,7 @@ import { dirname, join } from "node:path";
 const ROOT = join(dirname(new URL(import.meta.url).pathname), "..");
 const parserSource = await readFile(join(ROOT, "n8n/parse-email.js"), "utf8");
 const mergeSource = await readFile(join(ROOT, "n8n/merge-feed.js"), "utf8");
+const llmFallbackSource = await readFile(join(ROOT, "n8n/llm-fallback.js"), "utf8");
 // Gmail label ids for "Job Application", "Job Application/Processed" and one
 // sub-label per parser status_label. Ids, not names: the Gmail node's
 // addLabels takes ids, and a renamed label keeps its id.
@@ -42,6 +43,12 @@ const BASE_ID = "appRlqw66Sxzjpnf6";
 const INBOX_TABLE_ID = "tbl2ASezOoTqS4qok";
 const REVIEW_TABLE_ID = "tblwEyImuS3hgYGFK";
 const FEED_TABLE_ID = "tblPZSpJ8P4iFuAhX";
+
+// Hybrid fallback: only called for emails the rules in parse-email.js
+// couldn't classify. Placeholder model — change to whatever this router
+// actually serves.
+const LLM_ENDPOINT = "https://llmrouter.boyemma.com/v1/chat/completions";
+const LLM_MODEL = "gpt-4o-mini";
 
 // n8n expressions are plain strings that begin with "=".
 const ex = (s) => `=${s}`;
@@ -183,6 +190,67 @@ const nodes = [
     position: [440, 300],
     id: "parse",
     name: "Parse Job Email",
+  },
+  {
+    // Hybrid fallback: rules already ran and found nothing. Only these items
+    // pay the LLM's cost and latency — a rules-matched email never reaches
+    // this branch.
+    parameters: {
+      conditions: {
+        options: { caseSensitive: true, leftValue: "", typeValidation: "strict", version: 2 },
+        conditions: [{
+          id: "not-parsed",
+          leftValue: ex("{{ $json.parsed }}"),
+          rightValue: "",
+          operator: { type: "boolean", operation: "false", singleValue: true },
+        }],
+        combinator: "and",
+      },
+      options: {},
+    },
+    type: "n8n-nodes-base.if",
+    typeVersion: 2.3,
+    position: [440, 460],
+    id: "needs-fallback",
+    name: "Needs LLM Fallback?",
+  },
+  {
+    // Same outbound-call shape as "Trigger Dashboard Rebuild": a dedicated
+    // HTTP Request node with a credential set by hand in the n8n UI, not an
+    // inline fetch()/$env in the Code node. onError + a bounded timeout mean
+    // a slow or down router can never stall Gmail polling — the item just
+    // falls through to Needs Review via Apply LLM Fallback's own fallback.
+    parameters: {
+      method: "POST",
+      url: LLM_ENDPOINT,
+      authentication: "genericCredentialType",
+      genericAuthType: "httpHeaderAuth",
+      sendBody: true,
+      specifyBody: "json",
+      jsonBody: ex(`{{ JSON.stringify({
+        model: ${JSON.stringify(LLM_MODEL)},
+        messages: [
+          { role: "system", content: "You classify job-application emails. Reply with only a JSON object: {\\"status\\": one of applied, viewed by employer, in review, assessment, interview scheduled, offer, rejected, talent pool}. If none fit, reply {\\"status\\": \\"\\"}." },
+          { role: "user", content: $('Parse Job Email').item.json.raw_text },
+        ],
+      }) }}`),
+      options: { timeout: 15000 },
+    },
+    type: "n8n-nodes-base.httpRequest",
+    typeVersion: 4.5,
+    position: [620, 460],
+    id: "llm-classify",
+    name: "Classify With LLM",
+    onError: "continueRegularOutput",
+    credentials: { httpHeaderAuth: { id: "REPLACE_ME", name: "LLM Router Auth" } },
+  },
+  {
+    parameters: { mode: "runOnceForEachItem", language: "javaScript", jsCode: llmFallbackSource },
+    type: "n8n-nodes-base.code",
+    typeVersion: 2,
+    position: [800, 460],
+    id: "llm-apply",
+    name: "Apply LLM Fallback",
   },
   {
     parameters: {
@@ -344,7 +412,15 @@ const workflow = {
     "Backfill (manual)": { main: one("Fetch Job Mail") },
     "Fetch Job Mail": { main: one("Skip Already Seen") },
     "Skip Already Seen": { main: one("Parse Job Email") },
-    "Parse Job Email": { main: one("Classified?") },
+    "Parse Job Email": { main: one("Needs LLM Fallback?") },
+    "Needs LLM Fallback?": {
+      main: [
+        [{ node: "Classify With LLM", type: "main", index: 0 }],
+        [{ node: "Classified?", type: "main", index: 0 }],
+      ],
+    },
+    "Classify With LLM": { main: one("Apply LLM Fallback") },
+    "Apply LLM Fallback": { main: one("Classified?") },
     "Classified?": {
       main: [
         [{ node: "Write to Inbox", type: "main", index: 0 }],

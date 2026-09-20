@@ -206,6 +206,7 @@ ids are already filled in. Credentials are not:
 | **Poll Gmail**, **Fetch Job Mail**, **Mark Email Processed** | your Gmail credential |
 | **Write to Inbox**, **Write to Needs Review**, **Find Feed Row**, **Upsert Feed** | an Airtable personal access token with `data.records:read` and `data.records:write` on this base. This is a *second* token: the `AIRTABLE_API_KEY` secret in §2.6 is read-only and belongs to the dashboard build |
 | **Trigger Dashboard Rebuild** | a Header Auth credential. Name: `Authorization`. Value: `Bearer github_pat_...`, a fine-grained PAT with **Contents: read and write** on this repo only |
+| **Classify With LLM** | a Header Auth credential. Name: `Authorization`. Value: `Bearer <router API key>`, for the OpenAI-compatible endpoint set in `scripts/build-n8n.mjs`'s `LLM_ENDPOINT`. Only called for emails the rules in `n8n/parse-email.js` couldn't classify |
 
 ### 3.4 Backfill, test, then enable
 

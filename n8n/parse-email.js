@@ -297,5 +297,9 @@ return {
     subject,
     parsed,
     confidence,
+    // Subject + body, bounded, for the LLM fallback's prompt only. Never
+    // written to Airtable (INBOX_FIELDS/REVIEW_FIELDS don't list it) and
+    // never reaches dist/.
+    raw_text: (subject + '\n\n' + body).slice(0, 4000),
   },
 };
