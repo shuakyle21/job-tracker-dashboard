@@ -44,13 +44,14 @@
   body { margin: 0; background: #F1F5F9; font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; }
   html.dark body { background: #1A222C; }
 
-  /* Sankey is hand-drawn: ApexCharts has no Sankey type. Themed with tokens so it
-     follows the dashboard rather than carrying baked-in colours. */
+  /* Sankey nodes/links are laid out by d3-sankey, then hand-drawn as SVG (ApexCharts
+     has no Sankey type). Themed with tokens so it follows the dashboard rather than
+     carrying baked-in colours. */
   .sk { --sk-flow:#3C50E0; --sk-loss:#8A99AF; --sk-node:#2A3BB7; --sk-ink:#1C2434; --sk-mut:#64748B; }
   html.dark .sk { --sk-flow:#5D6FE8; --sk-loss:#48586A; --sk-node:#8B9AF0; --sk-ink:#EDF1F7; --sk-mut:#98A6B8; }
   .sk svg { display:block; width:100%; height:auto; min-width:660px; }
-  .sk-flow { fill: var(--sk-flow); opacity:.85 }
-  .sk-loss { fill: var(--sk-loss); opacity:.30 }
+  .sk-flow { fill:none; stroke: var(--sk-flow); opacity:.85 }
+  .sk-loss { fill:none; stroke: var(--sk-loss); opacity:.30 }
   .sk-node { fill: var(--sk-node) }
   .sk-node-loss { fill: var(--sk-loss); opacity:.7 }
   .sk-lab { fill: var(--sk-ink); font-size:12.5px; font-weight:500 }
@@ -181,7 +182,7 @@
         <section id="flow" class="mt-4 rounded-sm border border-stroke bg-white p-5 shadow-default dark:border-strokedark dark:bg-boxdark md:mt-6">
           <h2 class="mb-4 text-lg font-semibold text-black dark:text-white">Stage flow</h2>
           <div class="sk overflow-x-auto">
-{{SANKEY}}
+            <div id="chartSankey"></div>
           </div>
         </section>
 
@@ -233,6 +234,8 @@
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-sankey/0.12.3/d3-sankey.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/3.54.1/apexcharts.min.js"></script>
 <script>
 (function () {
@@ -304,6 +307,94 @@
     "withdrawn":                "#313D4A",
   };
   const statusColor = (s) => STATUS_COLOR[s.toLowerCase()] ?? P.neutral;
+
+  /* ---- stage flow: node/link positions come from d3-sankey, drawn by hand ---- */
+  function renderSankey() {
+    const container = document.getElementById("chartSankey");
+    const { reached, dropComposition, STAGE_LABELS, DROP_PHRASE } = D;
+    const svgNS = "http://www.w3.org/2000/svg";
+    const W = 1000, NODE_W = 12;
+    const el = (tag, attrs, text) => {
+      const n = document.createElementNS(svgNS, tag);
+      for (const k in attrs) n.setAttribute(k, attrs[k]);
+      if (text != null) n.textContent = text;
+      return n;
+    };
+
+    container.innerHTML = "";
+
+    // Stage node i only gets a link (and therefore a d3-sankey position) once
+    // something has reached it. Once reached[i] is 0 every later stage is 0 too
+    // (funnel is monotonic), so those nodes are drawn as fixed placeholders —
+    // same case the old hand-drawn version special-cased.
+    const nodes = [], links = [];
+    const nodeIndex = new Map();
+    const addNode = (id, extra) => { nodeIndex.set(id, nodes.length); nodes.push({ id, ...extra }); };
+    for (let i = 0; i < 5; i++) if (reached[i] > 0) addNode(`stage-${i}`, { stage: i });
+    for (let i = 0; i < 4; i++) {
+      if (reached[i + 1] > 0) links.push({ source: nodeIndex.get(`stage-${i}`), target: nodeIndex.get(`stage-${i + 1}`), value: reached[i + 1], drop: false });
+    }
+    for (let i = 0; i < 5; i++) {
+      const drop = reached[i] - (reached[i + 1] ?? 0);
+      if (drop > 0) {
+        addNode(`drop-${i}`, { drop: i });
+        links.push({ source: nodeIndex.get(`stage-${i}`), target: nodeIndex.get(`drop-${i}`), value: drop, drop: true });
+      }
+    }
+    if (!links.length) return;
+
+    const colWidth = (W - NODE_W) / 4;
+    const HEIGHT = Math.max(240, 46 * nodes.length);
+    const graph = d3.sankey()
+      .nodeWidth(NODE_W)
+      .nodePadding(28)
+      .extent([[0, 20], [W, HEIGHT]])
+      ({ nodes: nodes.map(n => ({ ...n })), links: links.map(l => ({ ...l })) });
+
+    const maxY = Math.ceil(Math.max(...graph.nodes.map(n => n.y1)) + 30);
+    const aria = `Stage flow: of ${reached[0]} applications, ${reached[0] - reached[1]} never got past ` +
+      `the application stage, ${reached[1]} drew a reply, ${reached[2]} reached an assessment, ` +
+      `${reached[3]} reached an interview and ${reached[4]} reached an offer.`;
+    const svg = el("svg", { viewBox: `0 0 ${W} ${maxY}`, role: "img", "aria-label": aria });
+
+    const linkGen = d3.sankeyLinkHorizontal();
+    for (const l of graph.links) {
+      svg.appendChild(el("path", {
+        class: l.drop ? "sk-loss" : "sk-flow",
+        d: linkGen(l),
+        "stroke-width": Math.max(1, l.width),
+      }));
+    }
+    for (const n of graph.nodes) {
+      const isDrop = n.id.startsWith("drop-");
+      svg.appendChild(el("rect", {
+        class: isDrop ? "sk-node-loss" : "sk-node",
+        x: n.x0.toFixed(1), y: n.y0.toFixed(1),
+        width: (n.x1 - n.x0).toFixed(1), height: Math.max(0, n.y1 - n.y0).toFixed(1), rx: 2,
+      }));
+      const cy = (n.y0 + n.y1) / 2 + 4;
+      if (isDrop) {
+        const lx = n.x1 + 8;
+        svg.appendChild(el("text", { class: "sk-num", x: lx, y: cy.toFixed(1) }, dropComposition[n.drop].reduce((a, c) => a + c.count, 0)));
+        svg.appendChild(el("text", { class: "sk-lab", x: lx + 36, y: cy.toFixed(1) }, DROP_PHRASE[n.drop]));
+        const comp = dropComposition[n.drop].slice(0, 5).map(c => `${c.count} ${c.status.toLowerCase()}`).join(" · ");
+        if (comp) svg.appendChild(el("text", { class: "sk-sub", x: lx, y: (cy + 18).toFixed(1) }, comp));
+      } else {
+        svg.appendChild(el("text", { class: "sk-num", x: n.x0.toFixed(1), y: (n.y0 - 6).toFixed(1) }, reached[n.stage]));
+        svg.appendChild(el("text", { class: "sk-lab", x: n.x0 + 30, y: (n.y0 - 6).toFixed(1) }, STAGE_LABELS[n.stage]));
+      }
+    }
+    // Placeholders for stages nothing reached (never had a link, so d3-sankey never saw them).
+    for (let i = 0; i < 5; i++) {
+      if (reached[i] > 0) continue;
+      const x = i * colWidth;
+      svg.appendChild(el("rect", { class: "sk-empty", x: x.toFixed(1), y: 18, width: NODE_W, height: 18, rx: 2 }));
+      svg.appendChild(el("text", { class: "sk-num", x: x.toFixed(1), y: 20 }, "0"));
+      svg.appendChild(el("text", { class: "sk-lab", x: (x + 30).toFixed(1), y: 20 }, STAGE_LABELS[i]));
+      if (i === 4) svg.appendChild(el("text", { class: "sk-sub", x: (x - 18).toFixed(1), y: 62 }, "none"));
+    }
+    container.appendChild(svg);
+  }
 
   const charts = [];
   function mount(el, opts) {
@@ -463,6 +554,7 @@
     });
   }
 
+  renderSankey();
   syncClass();
   renderAll();
 })();
