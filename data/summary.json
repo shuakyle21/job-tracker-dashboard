@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-20T13:43:43.836Z",
+  "generatedAt": "2026-09-20T14:27:47.357Z",
   "total": 34,
   "sent": 34,
   "unsent": 0,
@@ -150,5 +150,19 @@
     "resume": 33,
     "cover": 0,
     "tailored": 0
-  }
+  },
+  "STAGE_LABELS": [
+    "Applied",
+    "Employer replied",
+    "Assessment",
+    "Interview",
+    "Offer"
+  ],
+  "DROP_PHRASE": [
+    "never got past the application",
+    "stalled after the employer replied",
+    "stalled at the assessment",
+    "ended at the interview",
+    "ended at offer"
+  ]
 }
