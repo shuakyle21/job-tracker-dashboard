@@ -24,6 +24,18 @@ import { dirname, join } from "node:path";
 
 const ROOT = join(dirname(new URL(import.meta.url).pathname), "..");
 
+// Displayed sync timestamp only — day-boundary math (aggregate()'s `midnight`)
+// stays UTC so ageing/day-count buckets don't shift with the server's locale.
+function formatPHT(iso) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Manila",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hour12: false,
+  }).formatToParts(new Date(iso));
+  const get = (t) => parts.find((p) => p.type === t).value;
+  return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")} PHT`;
+}
+
 /* ================================================================== *
  * 1. Fetch
  * ================================================================== */
@@ -406,7 +418,7 @@ async function main() {
   const template = await readFile(join(ROOT, "templates/dashboard.html"), "utf8");
 
   const body = template
-    .replaceAll("{{GENERATED_AT}}", new Date(agg.generatedAt).toISOString().slice(0, 16).replace("T", " ") + " UTC")
+    .replaceAll("{{GENERATED_AT}}", formatPHT(agg.generatedAt))
     .replaceAll("{{SANKEY}}", sankeySVG(agg))
     .replaceAll("{{DATA_JSON}}", JSON.stringify(agg));
 
