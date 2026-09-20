@@ -147,7 +147,22 @@ const cases = [
       text: "Hi Alex, your application for Software Automation Developer was successfully submitted to Deltaworks Systems (Philippines), Ltd.\nView your application",
     }),
     want: { status: "applied", job_title: "Software Automation Developer", company: "Deltaworks Systems (Philippines), Ltd.",
-      job_platform: "JobStreet", status_label: "Applied", parsed: true },
+      job_platform: "JobStreet", status_label: "Applied", parsed: true,
+      application_key: "deltaworks systems (philippines), ltd.|software automation developer" },
+  },
+  {
+    // Same application as above, different Gmail thread (a later status-update
+    // email rarely lands in the original thread). Company is known, so the
+    // key must not include thread_id — it has to match the first email's key
+    // or the forward-merge in merge-feed.js can never find this application.
+    name: "JobStreet submitted, different thread, same application_key",
+    input: email({
+      threadId: "thr-different",
+      subject: "Your application was successfully submitted",
+      from: { value: [{ address: "noreply@e.jobstreet.com", name: "Jobstreet" }] },
+      text: "Hi Alex, your application for Software Automation Developer was successfully submitted to Deltaworks Systems (Philippines), Ltd.\nView your application",
+    }),
+    want: { application_key: "deltaworks systems (philippines), ltd.|software automation developer" },
   },
   {
     name: "JobStreet viewed",
@@ -177,7 +192,33 @@ const cases = [
       from: { value: [{ address: "indeedapply@indeed.com", name: "Indeed Apply" }] },
       text: "Your application has been submitted. Good luck!",
     }),
-    want: { status: "applied", job_title: "REMOTE - Full Stack Engineer", company: "", job_platform: "Indeed", parsed: true },
+    want: { status: "applied", job_title: "REMOTE - Full Stack Engineer", company: "", job_platform: "Indeed", parsed: true,
+      application_key: "indeed|remote - full stack engineer|thr-1" },
+  },
+  {
+    // Two distinct real employers, same board, same common title. Without the
+    // thread id in the fallback key these would collapse onto one Feed row
+    // and silently blend two unrelated applications' status/dates.
+    name: "Indeed, no company, thread A",
+    input: email({
+      threadId: "thr-aaa",
+      subject: "Indeed Application: Software Engineer",
+      from: { value: [{ address: "indeedapply@indeed.com", name: "Indeed Apply" }] },
+      text: "Your application has been submitted. Good luck!",
+    }),
+    want: { status: "applied", company: "", job_platform: "Indeed",
+      application_key: "indeed|software engineer|thr-aaa" },
+  },
+  {
+    name: "Indeed, no company, thread B (distinct application, same title)",
+    input: email({
+      threadId: "thr-bbb",
+      subject: "Indeed Application: Software Engineer",
+      from: { value: [{ address: "indeedapply@indeed.com", name: "Indeed Apply" }] },
+      text: "Your application has been submitted. Good luck!",
+    }),
+    want: { status: "applied", company: "", job_platform: "Indeed",
+      application_key: "indeed|software engineer|thr-bbb" },
   },
   {
     name: "Workable ATS",

@@ -270,10 +270,13 @@ const isoDate = Number.isNaN(asDate.getTime())
   ? new Date().toISOString().slice(0, 10)
   : asDate.toISOString().slice(0, 10);
 
+const threadId = String(msg.threadId || '');
+const norm = (s) => String(s).toLowerCase().replace(/\s+/g, ' ').trim();
+
 return {
   json: {
     message_id: String(msg.id || msg.messageId || ''),
-    thread_id: String(msg.threadId || ''),
+    thread_id: threadId,
     received_at: isoDate,
     company,
     job_title: title,
@@ -287,9 +290,23 @@ return {
     job_platform: jobPlatform,
     // One Feed row per application: every email about the same job at the
     // same employer lands on the same key. Where the employer is unknown
-    // (Indeed), the board stands in for it.
-    application_key: (company || jobPlatform).toLowerCase().replace(/\s+/g, ' ').trim()
-      + '|' + title.toLowerCase().replace(/\s+/g, ' ').trim(),
+    // (Indeed, or any board whose sentence-extractors missed the company),
+    // the board stands in for the employer, and the Gmail thread id is
+    // appended as a disambiguator — otherwise two different real employers
+    // that share a board and a common title (e.g. two "Software Engineer"
+    // applications via Indeed) would collapse onto the same Feed row and
+    // silently blend each other's dates/status. This does NOT run when the
+    // company is known: known-company applications must keep exactly
+    // `company|title` so that later emails about the *same* application
+    // (different thread, different received_at) still collapse onto the one
+    // row the forward-merge (merge-feed.js) depends on. Trade-off: if a board
+    // answers with a new Gmail thread instead of replying in the original
+    // one, this produces a second, disconnected Feed row for what is really
+    // the same application — accepted as a much safer failure mode than
+    // silently merging two unrelated applications.
+    application_key: company
+      ? norm(company) + '|' + norm(title)
+      : norm(jobPlatform) + '|' + norm(title) + (threadId ? '|' + threadId : ''),
     // The Gmail sub-label under "Job Application/". Anything routed to
     // needs-review is labelled that, whatever status was guessed.
     status_label: parsed ? (STATUS_LABELS[status] || 'Needs Review') : 'Needs Review',
