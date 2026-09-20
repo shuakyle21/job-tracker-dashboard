@@ -13,6 +13,7 @@ node scripts/verify.mjs                                 # the gate — run befor
 FEED_FIXTURE=./sample-feed.json node scripts/build.mjs   # build against the fixture
 node scripts/test-parser.mjs                             # email classifier tests only
 node scripts/test-merge-feed.mjs                         # Feed merge (n8n → Feed) tests only
+node scripts/test-llm-fallback.mjs                       # LLM classifier fallback tests only
 node scripts/build-n8n.mjs                               # regenerate the n8n workflow
 AIRTABLE_API_KEY=... AIRTABLE_BASE_ID=... node scripts/verify.mjs --live  # also build against the real base
 ```
@@ -48,6 +49,14 @@ that way: emails arrive out of order, and the backfill replays old mail.
 addLabels fails, the email never gets `Job Application/Processed`, and it is re-polled forever.
 There is a verify check.
 
+**The LLM fallback (`n8n/llm-fallback.js`) only runs when the rules already failed.** A
+rules-matched email never reaches it — no added cost or latency. It is capped at
+`confidence: 'medium'` (never `'high'`, since it's inferred, not pattern-matched), it never
+overrides an already-parsed row, and any failure — malformed output, an unrecognized status, a
+down or slow endpoint — falls through to the original `parsed: false` row unchanged rather than
+guess. It keeps its own copy of `STATUS_LABELS` (Code nodes can't import from each other); a
+verify check keeps the two in sync.
+
 **Nothing identifying may reach `dist/`.** `verify.mjs` greps the built output for company names
 and email addresses and fails the build. That check is why the repo can be public. Don't widen
 `build.mjs`'s `FIELD_MAP` to include `Company`, `Job Role` or `Application Key`. Those Feed fields
@@ -68,8 +77,10 @@ the only feed data that belongs in git.
 | `templates/dashboard.html` | TailAdmin markup + chart code; three `{{PLACEHOLDER}}` slots |
 | `n8n/parse-email.js` | the email classifier — **source of truth** |
 | `n8n/merge-feed.js` | merges a parsed email into its Feed row — **source of truth** |
+| `n8n/llm-fallback.js` | LLM classifier fallback for emails the rules couldn't parse — **source of truth** |
 | `n8n/gmail-labels.json` | Gmail label ids: scope, processed, one per status |
 | `scripts/test-merge-feed.mjs` | runs the Feed merge outside n8n |
+| `scripts/test-llm-fallback.mjs` | runs the LLM fallback outside n8n |
 | `n8n/job-tracker-ingest.json` | **generated**, do not edit |
 | `data/summary.json` | aggregates, committed each run — git history is the time series |
 | `sample-feed.json` | de-identified fixture: Airtable list-records shape for the `Feed` table |

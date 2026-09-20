@@ -346,6 +346,11 @@ const cases = [
       from: { value: [{ address: "hr@portcast.io", name: "Portcast" }] } }),
     want: { received_at: "2025-08-03" },
   },
+  {
+    name: "raw_text carries subject and body for the LLM fallback",
+    input: email({ subject: "Application Update", text: "We wanted to give you an update." }),
+    want: { raw_text: "Application Update\n\nWe wanted to give you an update." },
+  },
 ];
 
 console.log("Parser tests\n");
@@ -365,6 +370,10 @@ for (const junk of [{}, { subject: null }, { from: {} }, { date: "not a date" },
   try { out = parse({ id: "x", ...junk }).json; } catch (e) { threw = e; }
   expect(`survives ${JSON.stringify(junk)}`, threw === null && typeof out === "object", true);
 }
+
+const longBody = "x".repeat(10000);
+const truncated = parse(email({ subject: "Long email", text: longBody })).json.raw_text;
+expect("raw_text is bounded to 4000 chars", truncated.length <= 4000, true);
 
 console.log(failures ? `\n${failures} check(s) failed\n` : "\nAll parser checks passed\n");
 process.exit(failures ? 1 : 0);

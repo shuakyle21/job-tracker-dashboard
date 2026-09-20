@@ -134,6 +134,12 @@ async function assertIngestWorkflow() {
   } catch { mergeOk = false; }
   check("Feed merge tests pass", mergeOk);
 
+  let llmFallbackOk = true;
+  try {
+    await run("node", ["scripts/test-llm-fallback.mjs"], { cwd: ROOT });
+  } catch { llmFallbackOk = false; }
+  check("LLM fallback tests pass", llmFallbackOk);
+
   // The workflow JSON is generated. If someone edits it in the n8n UI and
   // re-exports over this file, the tested parser and the running parser part
   // ways silently — which is the failure this check exists to make loud.
@@ -153,6 +159,15 @@ async function assertIngestWorkflow() {
   const mergeFile = await readFile(join(ROOT, "n8n/merge-feed.js"), "utf8");
   check("embedded Feed merge is the tested file",
     byName["Merge Into Feed"]?.parameters.jsCode === mergeFile);
+
+  const llmFallbackFile = await readFile(join(ROOT, "n8n/llm-fallback.js"), "utf8");
+  check("embedded LLM fallback is the tested file",
+    byName["Apply LLM Fallback"]?.parameters.jsCode === llmFallbackFile);
+
+  // A slow or down LLM router must never stall Gmail polling — the item has
+  // to fall through to Needs Review, not hang the whole execution.
+  check("LLM fallback degrades gracefully on error",
+    byName["Classify With LLM"]?.onError === "continueRegularOutput");
 
   // Exactly-once. The Gmail query must exclude the label the workflow applies,
   // or the label is decoration and every poll reprocesses every email.
@@ -176,6 +191,15 @@ async function assertIngestWorkflow() {
   const labelNames = [...statusBlock.matchAll(/:\s*'([^']+)'/g)].map((m) => m[1]).concat("Needs Review");
   const missing = labelNames.filter((n) => !/^Label_\w+$/.test(labels.status[n] ?? ""));
   check("every parser status_label has a Gmail label id", labelNames.length > 1 && missing.length === 0, missing.join(", "));
+
+  // n8n/llm-fallback.js keeps its own copy of STATUS_LABELS (Code nodes can't
+  // import from each other) — this is the guard against it silently drifting
+  // from the parser's copy.
+  const fallbackStatusBlock = llmFallbackFile.match(/const STATUS_LABELS = \{([\s\S]*?)\};/)?.[1] ?? "";
+  const parse = (block) => Object.fromEntries(
+    [...block.matchAll(/'([^']+)':\s*'([^']+)'/g)].map((m) => [m[1], m[2]]));
+  check("LLM fallback statuses match the parser's STATUS_LABELS",
+    statusBlock.length > 0 && JSON.stringify(parse(statusBlock)) === JSON.stringify(parse(fallbackStatusBlock)));
 
   const markIds = byName["Mark Email Processed"]?.parameters.labelIds ?? [];
   check("processed email gets scope, processed and status labels",

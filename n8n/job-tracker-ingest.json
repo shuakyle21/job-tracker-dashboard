@@ -122,6 +122,84 @@
           },
           "conditions": [
             {
+              "id": "not-parsed",
+              "leftValue": "={{ $json.parsed }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        440,
+        460
+      ],
+      "id": "needs-fallback",
+      "name": "Needs LLM Fallback?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://llmrouter.boyemma.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n        model: \"gpt-4o-mini\",\n        messages: [\n          { role: \"system\", content: \"You classify job-application emails. Reply with only a JSON object: {\\\"status\\\": one of applied, viewed by employer, in review, assessment, interview scheduled, offer, rejected, talent pool}. If none fit, reply {\\\"status\\\": \\\"\\\"}.\" },\n          { role: \"user\", content: $('Parse Job Email').item.json.raw_text },\n        ],\n      }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        620,
+        460
+      ],
+      "id": "llm-classify",
+      "name": "Classify With LLM",
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ME",
+          "name": "LLM Router Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "// Body of the \"Apply LLM Fallback\" Code node (mode: runOnceForEachItem).\n//\n// This file is the source of truth. scripts/build-n8n.mjs inlines it into\n// n8n/job-tracker-ingest.json, and scripts/verify.mjs fails the build if the\n// two drift apart. Test it outside n8n with: node scripts/test-llm-fallback.mjs\n//\n// Contract: only reached when Parse Job Email's rules couldn't classify an\n// email. Reads $json (the \"Classify With LLM\" HTTP Request node's response)\n// and $('Parse Job Email').item.json (the original row), returns { json }\n// in the exact same shape parse-email.js produces. It never throws — a\n// malformed LLM reply, an unrecognized status, or an n8n error-passthrough\n// object all fall through to the original, unchanged parsed:false row rather\n// than guess. An LLM success can only improve a row, never regress one: it\n// is capped at confidence:'medium' (never 'high', since it's inferred, not\n// pattern-matched) and it never overrides an already-parsed row.\n\nconst original = $('Parse Job Email').item.json;\n\n// Mirrors n8n/parse-email.js's STATUS_LABELS exactly — scripts/verify.mjs\n// checks the two stay in sync.\nconst STATUS_LABELS = {\n  'applied': 'Applied', 'viewed by employer': 'Viewed', 'in review': 'In Review',\n  'assessment': 'Assessment', 'interview scheduled': 'Interview', 'offer': 'Offer',\n  'rejected': 'Rejected', 'talent pool': 'Talent Pool',\n};\n\nlet status = original.status;\nlet status_label = original.status_label;\nlet parsed = original.parsed;\nlet confidence = original.confidence;\n\nif (!parsed) {\n  try {\n    const guess = JSON.parse($json?.choices?.[0]?.message?.content ?? '');\n    const candidate = String(guess?.status || '').toLowerCase().trim();\n    // A board's own confirmation is traceable even without a named employer\n    // (Indeed) — same bar parse-email.js uses for `parsed`.\n    const onJobBoard = !['Company Website', 'Direct Email'].includes(original.job_platform);\n    if (Object.prototype.hasOwnProperty.call(STATUS_LABELS, candidate)\n        && original.job_title && (original.company || onJobBoard)) {\n      status = candidate;\n      status_label = STATUS_LABELS[status];\n      parsed = true;\n      confidence = 'medium';\n    }\n  } catch {\n    // Malformed LLM output, an n8n error-passthrough object (onError:\n    // continueRegularOutput), or an unrecognized status — leave the\n    // rule-based result untouched rather than guess.\n  }\n}\n\nreturn { json: { ...original, status, status_label, parsed, confidence } };\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        460
+      ],
+      "id": "llm-apply",
+      "name": "Apply LLM Fallback"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
               "id": "is-parsed",
               "leftValue": "={{ $json.parsed }}",
               "rightValue": "",
@@ -699,8 +777,8 @@
         -40,
         20
       ],
-      "id": "sticky-14",
-      "name": "Note 14"
+      "id": "sticky-17",
+      "name": "Note 17"
     },
     {
       "parameters": {
@@ -715,8 +793,8 @@
         400,
         60
       ],
-      "id": "sticky-15",
-      "name": "Note 15"
+      "id": "sticky-18",
+      "name": "Note 18"
     },
     {
       "parameters": {
@@ -731,8 +809,8 @@
         820,
         20
       ],
-      "id": "sticky-16",
-      "name": "Note 16"
+      "id": "sticky-19",
+      "name": "Note 19"
     },
     {
       "parameters": {
@@ -747,8 +825,8 @@
         1760,
         20
       ],
-      "id": "sticky-17",
-      "name": "Note 17"
+      "id": "sticky-20",
+      "name": "Note 20"
     }
   ],
   "connections": {
@@ -797,6 +875,46 @@
       ]
     },
     "Parse Job Email": {
+      "main": [
+        [
+          {
+            "node": "Needs LLM Fallback?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs LLM Fallback?": {
+      "main": [
+        [
+          {
+            "node": "Classify With LLM",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Classified?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify With LLM": {
+      "main": [
+        [
+          {
+            "node": "Apply LLM Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply LLM Fallback": {
       "main": [
         [
           {
