@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-09-21T02:50:01.209Z",
+  "generatedAt": "2026-09-21T04:25:59.814Z",
   "total": 35,
   "sent": 35,
   "unsent": 0,
   "replied": 4,
   "noReply": 31,
-  "open": 33,
+  "open": 32,
   "replyRate": 0.11428571428571428,
   "interviewRate": 0.02857142857142857,
   "ghostRate": 0.8857142857142857,
@@ -27,11 +27,11 @@
     [
       {
         "status": "Applied",
-        "count": 26
+        "count": 25
       },
       {
         "status": "Closed / Expired",
-        "count": 1
+        "count": 2
       },
       {
         "status": "Rejected",
@@ -61,7 +61,7 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 30
+      "count": 29
     },
     {
       "status": "Viewed by Employer",
@@ -69,7 +69,7 @@
     },
     {
       "status": "Closed / Expired",
-      "count": 1
+      "count": 2
     },
     {
       "status": "Rejected",
@@ -130,7 +130,7 @@
     },
     {
       "label": "15–30d",
-      "count": 23
+      "count": 22
     },
     {
       "label": "31–60d",
