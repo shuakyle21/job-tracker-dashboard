@@ -1,23 +1,23 @@
 {
-  "generatedAt": "2026-09-21T12:54:54.570Z",
-  "total": 38,
-  "sent": 38,
+  "generatedAt": "2026-09-21T13:16:04.139Z",
+  "total": 39,
+  "sent": 39,
   "unsent": 0,
   "replied": 5,
-  "noReply": 33,
-  "open": 35,
-  "replyRate": 0.13157894736842105,
-  "interviewRate": 0.05263157894736842,
-  "ghostRate": 0.868421052631579,
+  "noReply": 34,
+  "open": 36,
+  "replyRate": 0.1282051282051282,
+  "interviewRate": 0.05128205128205128,
+  "ghostRate": 0.8717948717948718,
   "reached": [
-    38,
+    39,
     7,
     2,
     2,
     0
   ],
   "atStage": [
-    31,
+    32,
     5,
     0,
     2,
@@ -27,7 +27,7 @@
     [
       {
         "status": "Applied",
-        "count": 27
+        "count": 28
       },
       {
         "status": "Closed / Expired",
@@ -69,7 +69,7 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 31
+      "count": 32
     },
     {
       "status": "Viewed by Employer",
@@ -115,6 +115,13 @@
       "rate": 0
     },
     {
+      "name": "LinkedIn",
+      "sent": 1,
+      "replied": 0,
+      "unsent": 0,
+      "rate": 0
+    },
+    {
       "name": "(blank)",
       "sent": 1,
       "replied": 1,
@@ -129,7 +136,7 @@
     },
     {
       "month": "2026-09",
-      "count": 25
+      "count": 26
     }
   ],
   "workSetup": [
@@ -139,13 +146,13 @@
     },
     {
       "label": "Unspecified",
-      "count": 1
+      "count": 2
     }
   ],
   "ageing": [
     {
       "label": "0–7d",
-      "count": 9
+      "count": 10
     },
     {
       "label": "8–14d",
