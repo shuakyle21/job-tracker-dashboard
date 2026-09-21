@@ -1,0 +1,18 @@
+{
+  "pack": "m_outlined",
+  "size": 48,
+  "technique": "currentColor mask (see .icon8 in templates/dashboard.html)",
+  "icons": {
+    "briefcase": { "id": "82466", "commonName": "briefcase", "usedFor": "sidebar brand mark" },
+    "dashboard-layout": { "id": "aVHe2jHuORcA", "commonName": "dashboard-layout", "usedFor": "nav: Overview" },
+    "workflow": { "id": "83316", "commonName": "workflow", "usedFor": "nav: Stage flow" },
+    "filter": { "id": "115218", "commonName": "filled-filter", "usedFor": "nav: Funnel" },
+    "megaphone": { "id": "86968", "commonName": "megaphone", "usedFor": "nav: Channels" },
+    "calendar": { "id": "84997", "commonName": "calendar", "usedFor": "nav: Applications per month" },
+    "hourglass": { "id": "116452", "commonName": "hourglass", "usedFor": "nav: Ageing" },
+    "send": { "id": "87586", "commonName": "send", "usedFor": "stat tile: Applications sent" },
+    "reply": { "id": "93381", "commonName": "reply", "usedFor": "stat tile: Reply rate" },
+    "checkmark": { "id": "82766", "commonName": "checked", "usedFor": "stat tile: Interviews reached" },
+    "notification-off": { "id": "rW0l36JZZXst", "commonName": "notification-off", "usedFor": "stat tile: No reply at all" }
+  }
+}

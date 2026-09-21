@@ -58,6 +58,11 @@
   .sk-sub { fill: var(--sk-mut); font-size:11px }
   .sk-empty { fill:none; stroke: var(--sk-mut); stroke-width:1.4; stroke-dasharray:3 3 }
 
+  /* Icons8 (m_outlined) as a currentColor mask: one <img> fetch per icon, no
+     inline SVG, so it inherits Tailwind text-color utilities like the hand-drawn
+     stroke icons it replaces. */
+  .icon8 { display: inline-block; background-color: currentColor; -webkit-mask: var(--i8) center / contain no-repeat; mask: var(--i8) center / contain no-repeat; }
+
   .hdr { position: sticky; top: env(safe-area-inset-top, 0px); }
   .apex-charts text { font-family: "Plus Jakarta Sans", sans-serif !important; }
   .apexcharts-tooltip { box-shadow: 0 4px 14px rgba(0,0,0,.12) !important; }
@@ -72,21 +77,19 @@
     <aside class="hidden w-64 shrink-0 flex-col bg-black dark:bg-boxdark lg:sticky lg:top-0 lg:flex lg:h-screen lg:overflow-y-auto">
       <div class="flex items-center gap-2.5 px-6 py-6">
         <span class="flex h-9 w-9 items-center justify-center rounded-md bg-primary">
-          <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round">
-            <path d="M4 19V10M10 19V5M16 19v-6M22 19h-20"/>
-          </svg>
+          <span class="icon8 h-5 w-5 text-white" style="--i8:url('https://img.icons8.com/?id=82466&amp;format=png&amp;size=48')"></span>
         </span>
         <span class="text-base font-bold text-white">Job Search</span>
       </div>
       <nav class="px-4 pb-6">
         <p class="mb-3 ml-3 text-xs font-semibold uppercase tracking-wider text-bodydark2">Analytics</p>
         <ul class="flex flex-col gap-1.5 text-sm font-medium">
-          <li><a href="#overview" class="group flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1 hover:bg-graydark">Overview</a></li>
-          <li><a href="#flow" class="group flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1 hover:bg-graydark">Stage flow</a></li>
-          <li><a href="#funnel" class="group flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1 hover:bg-graydark">Funnel</a></li>
-          <li><a href="#channels" class="group flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1 hover:bg-graydark">Channels</a></li>
-          <li><a href="#cadence" class="group flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1 hover:bg-graydark">Applications per month</a></li>
-          <li><a href="#ageing" class="group flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1 hover:bg-graydark">Ageing</a></li>
+          <li><a href="#overview" class="group flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1 hover:bg-graydark"><span class="icon8 h-4 w-4 shrink-0" style="--i8:url('https://img.icons8.com/?id=aVHe2jHuORcA&amp;format=png&amp;size=48')"></span>Overview</a></li>
+          <li><a href="#flow" class="group flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1 hover:bg-graydark"><span class="icon8 h-4 w-4 shrink-0" style="--i8:url('https://img.icons8.com/?id=83316&amp;format=png&amp;size=48')"></span>Stage flow</a></li>
+          <li><a href="#funnel" class="group flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1 hover:bg-graydark"><span class="icon8 h-4 w-4 shrink-0" style="--i8:url('https://img.icons8.com/?id=115218&amp;format=png&amp;size=48')"></span>Funnel</a></li>
+          <li><a href="#channels" class="group flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1 hover:bg-graydark"><span class="icon8 h-4 w-4 shrink-0" style="--i8:url('https://img.icons8.com/?id=86968&amp;format=png&amp;size=48')"></span>Channels</a></li>
+          <li><a href="#cadence" class="group flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1 hover:bg-graydark"><span class="icon8 h-4 w-4 shrink-0" style="--i8:url('https://img.icons8.com/?id=84997&amp;format=png&amp;size=48')"></span>Applications per month</a></li>
+          <li><a href="#ageing" class="group flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1 hover:bg-graydark"><span class="icon8 h-4 w-4 shrink-0" style="--i8:url('https://img.icons8.com/?id=116452&amp;format=png&amp;size=48')"></span>Ageing</a></li>
         </ul>
       </nav>
       <div class="mt-auto px-6 pb-6 text-xs text-bodydark2">
@@ -125,7 +128,7 @@
         <section id="overview" class="grid grid-cols-2 gap-4 md:gap-6 xl:grid-cols-4">
           <div class="rounded-sm border border-stroke bg-white px-5 py-5 shadow-default dark:border-strokedark dark:bg-boxdark">
             <div class="flex h-11 w-11 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4">
-              <svg class="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16v5H4zM4 15h16v5H4z"/></svg>
+              <span class="icon8 h-5 w-5 text-primary" style="--i8:url('https://img.icons8.com/?id=87586&amp;format=png&amp;size=48')"></span>
             </div>
             <div class="mt-4">
               <h4 class="text-2xl font-bold tabular-nums text-black dark:text-white" data-stat="sent">—</h4>
@@ -135,7 +138,7 @@
           </div>
           <div class="rounded-sm border border-stroke bg-white px-5 py-5 shadow-default dark:border-strokedark dark:bg-boxdark">
             <div class="flex h-11 w-11 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4">
-              <svg class="h-5 w-5 text-meta-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8l9 6 9-6M3 8v9h18V8"/></svg>
+              <span class="icon8 h-5 w-5 text-meta-5" style="--i8:url('https://img.icons8.com/?id=93381&amp;format=png&amp;size=48')"></span>
             </div>
             <div class="mt-4">
               <h4 class="text-2xl font-bold tabular-nums text-black dark:text-white" data-stat="replyRate">—</h4>
@@ -145,7 +148,7 @@
           </div>
           <div class="rounded-sm border border-stroke bg-white px-5 py-5 shadow-default dark:border-strokedark dark:bg-boxdark">
             <div class="flex h-11 w-11 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4">
-              <svg class="h-5 w-5 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 12l3 3 5-6"/><circle cx="12" cy="12" r="9"/></svg>
+              <span class="icon8 h-5 w-5 text-success" style="--i8:url('https://img.icons8.com/?id=82766&amp;format=png&amp;size=48')"></span>
             </div>
             <div class="mt-4">
               <h4 class="text-2xl font-bold tabular-nums text-black dark:text-white" data-stat="interviews">—</h4>
@@ -155,7 +158,7 @@
           </div>
           <div class="rounded-sm border border-stroke bg-white px-5 py-5 shadow-default dark:border-strokedark dark:bg-boxdark">
             <div class="flex h-11 w-11 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4">
-              <svg class="h-5 w-5 text-danger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l9 16H3z"/><path d="M12 9v4M12 16h.01"/></svg>
+              <span class="icon8 h-5 w-5 text-danger" style="--i8:url('https://img.icons8.com/?id=rW0l36JZZXst&amp;format=png&amp;size=48')"></span>
             </div>
             <div class="mt-4">
               <h4 class="text-2xl font-bold tabular-nums text-black dark:text-white" data-stat="ghostRate">—</h4>
