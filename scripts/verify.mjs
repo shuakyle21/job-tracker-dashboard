@@ -91,14 +91,11 @@ async function assertBuildOutput(label) {
 
   // --- the page actually contains what it claims to ------------------
   check("no unfilled template placeholders", !html.includes("{{"));
-  check("Sankey mount point is present", html.includes('id="chartSankey"'));
+  check("Sankey SVG is server-rendered", /<svg viewBox="0 0 1000 \d+"/.test(html));
   check("ApexCharts is loaded from the allowed CDN",
     html.includes("cdnjs.cloudflare.com/ajax/libs/apexcharts/"));
-  check("d3 and d3-sankey are loaded from the allowed CDN",
-    html.includes("cdnjs.cloudflare.com/ajax/libs/d3/") &&
-    html.includes("cdnjs.cloudflare.com/ajax/libs/d3-sankey/"));
   check("Tailwind is loaded", html.includes("cdn.tailwindcss.com"));
-  check("data payload is embedded", html.includes('"reached"') && html.includes('"STAGE_LABELS"'));
+  check("data payload is embedded", html.includes('"reached"'));
   check("standalone page has a doctype", /^<!doctype html>/i.test(html.trim()));
   check("artifact variant has no skeleton",
     !/<!doctype|<html|<body/i.test(artifact));
