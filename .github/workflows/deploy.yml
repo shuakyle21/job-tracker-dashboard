@@ -71,6 +71,14 @@ jobs:
             echo "No change in aggregates."
           fi
 
+      # Catches a broken template render before spending a Vercel deploy on it.
+      # verify.mjs already checks this at build time (see its dist/index.html
+      # read) — this re-checks the actual artifact right before it's uploaded.
+      - name: Validate build output
+        run: |
+          grep -q 'Job Search Analytics' dist/index.html || { echo "dist/index.html missing expected title"; exit 1; }
+          grep -q 'apexcharts' dist/index.html || { echo "dist/index.html missing chart bundle"; exit 1; }
+
       # Vercel CLI, not a package.json dependency: this installs the deploy tool the
       # runner uses, same category as the old pipeline's ssh/rsync, not something the
       # dashboard app depends on at runtime.
@@ -86,22 +94,35 @@ jobs:
       # deploys exactly that folder's contents as a static site — Vercel runs no
       # build of its own, so nothing here needs the Airtable secrets a
       # Vercel-triggered build would.
+      #
+      # `vercel deploy --prod` prints exactly one URL to stdout: the production URL
+      # of the deployment just made. Capturing it here means the smoke test below
+      # checks what this run actually deployed, not a PUBLIC_URL secret that can
+      # drift from reality (wrong domain, stale project, never updated).
       - name: Deploy dist/ to Vercel
+        id: deploy
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: vercel deploy dist --prod --yes
+        run: |
+          url=$(vercel deploy dist --prod --yes)
+          echo "Deployed to $url"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
 
       # Deploying without checking is just copying files. Fail the run if the live
       # page does not come back 200 with the expected marker in it.
       - name: Smoke test the live URL
         env:
-          PUBLIC_URL: ${{ secrets.PUBLIC_URL }}
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
         run: |
-          code=$(curl -sS -o /tmp/live.html -w '%{http_code}' --retry 3 --retry-delay 3 "$PUBLIC_URL")
-          echo "HTTP $code"
-          [[ "$code" == "200" ]] || { echo "Bad status"; exit 1; }
-          grep -q 'Job Search Analytics' /tmp/live.html || { echo "Page served but content is wrong"; exit 1; }
-          grep -q 'apexcharts' /tmp/live.html || { echo "Chart bundle missing from the page"; exit 1; }
+          code=$(curl -sS -o /tmp/live.html -w '%{http_code}' --retry 3 --retry-delay 3 "$DEPLOY_URL")
+          echo "HTTP $code from $DEPLOY_URL"
+          if [[ "$code" != "200" ]]; then
+            echo "Bad status. Response body:"
+            cat /tmp/live.html
+            exit 1
+          fi
+          grep -q 'Job Search Analytics' /tmp/live.html || { echo "Page served but content is wrong"; cat /tmp/live.html; exit 1; }
+          grep -q 'apexcharts' /tmp/live.html || { echo "Chart bundle missing from the page"; cat /tmp/live.html; exit 1; }
           echo "Live page looks right."
