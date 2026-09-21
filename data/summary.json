@@ -1,23 +1,23 @@
 {
-  "generatedAt": "2026-09-20T20:52:06.270Z",
-  "total": 34,
-  "sent": 34,
+  "generatedAt": "2026-09-21T02:35:58.823Z",
+  "total": 35,
+  "sent": 35,
   "unsent": 0,
   "replied": 4,
-  "noReply": 30,
-  "open": 32,
-  "replyRate": 0.11764705882352941,
-  "interviewRate": 0.029411764705882353,
-  "ghostRate": 0.8823529411764706,
+  "noReply": 31,
+  "open": 33,
+  "replyRate": 0.11428571428571428,
+  "interviewRate": 0.02857142857142857,
+  "ghostRate": 0.8857142857142857,
   "reached": [
-    34,
+    35,
     7,
     1,
     1,
     0
   ],
   "atStage": [
-    27,
+    28,
     6,
     0,
     1,
@@ -27,7 +27,7 @@
     [
       {
         "status": "Applied",
-        "count": 25
+        "count": 26
       },
       {
         "status": "Closed / Expired",
@@ -61,7 +61,7 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 29
+      "count": 30
     },
     {
       "status": "Viewed by Employer",
@@ -86,10 +86,10 @@
     },
     {
       "name": "Direct / Careers",
-      "sent": 10,
+      "sent": 11,
       "replied": 1,
       "unsent": 0,
-      "rate": 0.1
+      "rate": 0.09090909090909091
     },
     {
       "name": "Torre.ai",
@@ -106,13 +106,13 @@
     },
     {
       "month": "2026-09",
-      "count": 22
+      "count": 23
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 10
+      "count": 11
     },
     {
       "label": "Unspecified",
@@ -122,7 +122,7 @@
   "ageing": [
     {
       "label": "0–7d",
-      "count": 5
+      "count": 6
     },
     {
       "label": "8–14d",
