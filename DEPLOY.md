@@ -86,7 +86,7 @@ not "Full Account" — a token scoped to one team can't touch anything else if i
 | `VERCEL_TOKEN` | the token from 2.4 |
 | `VERCEL_ORG_ID` | the Team ID from 2.3 |
 | `VERCEL_PROJECT_ID` | the Project ID from 2.3 |
-| `PUBLIC_URL` | the project's `*.vercel.app` URL, or your custom domain once you add one |
+| `PUBLIC_URL` | optional — no longer read by the workflow (see 2.6); a bookmark for your own custom domain if you set one |
 
 None of these belong on your laptop once they're in GitHub — that's the whole reason they're
 secrets instead of a `.env` file next to the code.
@@ -97,13 +97,12 @@ secrets instead of a `.env` file next to the code.
 
 The run verifies, builds from the live feed, commits the summary, then runs
 `vercel deploy dist --prod`, which uploads `dist/` as a static deployment — Vercel does no
-build of its own, so it never needs the Airtable secrets. The last step curls `PUBLIC_URL`
-and fails if it doesn't come back 200 with the expected markup. A green run means the page
-is actually up, not that a deploy was merely accepted.
-
-If `PUBLIC_URL` isn't set yet because you don't know the domain until after the first
-deploy: run the workflow once, read the URL from **Project ▸ Deployments** or the
-workflow's own log output, then add the secret and run it again.
+build of its own, so it never needs the Airtable secrets. The deploy step captures the URL
+`vercel deploy` prints and hands it to the smoke test, which curls that URL and fails if it
+doesn't come back 200 with the expected markup. A green run means the page is actually up,
+not that a deploy was merely accepted — and because the smoke test checks the URL this run
+just deployed rather than a hand-set secret, there's nothing to keep in sync after the first
+deploy.
 
 ### 2.7 Why not just connect the GitHub repo in Vercel?
 
@@ -276,7 +275,6 @@ same email can never fool it twice.
 |---|---|
 | Smoke test gets a redirect/login page instead of 200 | Deployment Protection still on — turn it off (2.2) |
 | `vercel deploy` fails with "Project not found" | `VERCEL_ORG_ID`/`VERCEL_PROJECT_ID` wrong or from a different team than the token (2.3–2.4) |
-| Deploy succeeds, `PUBLIC_URL` still 404s | secret set to a guessed domain before the first deploy told you the real one (2.6) |
 | Two deployments appear for one push | the GitHub repo got connected in Vercel's own Git integration — disconnect it (2.7) |
 | Rows duplicating in `Inbox` or `Feed` | matching field lost on import (3.4) |
 | Same emails reprocessed every poll | `Job Application/Processed` not applied, or not excluded in the query |
