@@ -111,6 +111,14 @@
         </button>
       </header>
 
+      <div id="refresh-banner" class="hidden items-center justify-between gap-4 border-b border-stroke bg-warning/10 px-4 py-2.5 text-sm text-black dark:border-strokedark dark:text-white md:px-6">
+        <span>New data is available.</span>
+        <div class="flex items-center gap-3">
+          <button id="refresh-banner-reload" type="button" class="font-medium text-warning hover:underline">Refresh</button>
+          <button id="refresh-banner-dismiss" type="button" aria-label="Dismiss" class="text-body hover:text-black dark:text-bodydark2 dark:hover:text-white">&times;</button>
+        </div>
+      </div>
+
       <main class="mx-auto w-full max-w-screen-2xl p-4 md:p-6">
 
         <!-- stat tiles -->
@@ -465,5 +473,42 @@
 
   syncClass();
   renderAll();
+
+  // Detect that the *data* actually changed (cron rebuilds every ~6h whether or
+  // not anything moved, so comparing generatedAt alone would nag on every one of
+  // them). Never touches rendering: just offers a reload, so a broken fetch can't
+  // break the page — and a build that never ships dist/data/ (the Claude-artifact
+  // variant) gives up after one failed attempt instead of polling forever.
+  if (location.protocol === "http:" || location.protocol === "https:") {
+    const banner = document.getElementById("refresh-banner");
+    document.getElementById("refresh-banner-reload").addEventListener("click", () => location.reload());
+    // Sticky dismissal: remember what was dismissed so the same unchanged data
+    // doesn't resurrect the banner on the next poll.
+    document.getElementById("refresh-banner-dismiss").addEventListener("click", () => {
+      dismissedSignature = lastSignature;
+      banner.classList.remove("flex");
+      banner.classList.add("hidden");
+    });
+
+    const dataSignature = (obj) => JSON.stringify({ ...obj, generatedAt: undefined });
+    const originalSignature = dataSignature(D);
+    let lastSignature = originalSignature;
+    let dismissedSignature = null;
+
+    let poll = null;
+    const checkForNewData = () => {
+      fetch("./data/summary.json", { cache: "no-store" })
+        .then((res) => (res.ok ? res.json() : Promise.reject(new Error("not found"))))
+        .then((latest) => {
+          lastSignature = dataSignature(latest);
+          if (lastSignature !== originalSignature && lastSignature !== dismissedSignature) {
+            banner.classList.remove("hidden");
+            banner.classList.add("flex");
+          }
+        })
+        .catch(() => clearInterval(poll));
+    };
+    poll = setInterval(checkForNewData, 5 * 60 * 1000);
+  }
 })();
 </script>

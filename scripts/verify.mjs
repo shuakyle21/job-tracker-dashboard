@@ -49,6 +49,7 @@ async function assertBuildOutput(label) {
   const summary = JSON.parse(await readFile(join(ROOT, "data/summary.json"), "utf8"));
   const html = await readFile(join(ROOT, "dist/index.html"), "utf8");
   const artifact = await readFile(join(ROOT, "dist/artifact.html"), "utf8");
+  const distSummaryRaw = await readFile(join(ROOT, "dist/data/summary.json"), "utf8");
   const { reached, atStage, total, sent, unsent, replied, noReply } = summary;
 
   console.log(`\n${label}`);
@@ -99,20 +100,29 @@ async function assertBuildOutput(label) {
   check("artifact variant has no skeleton",
     !/<!doctype|<html|<body/i.test(artifact));
 
+  // The live page fetches dist/data/summary.json to notice a newer build landed.
+  // It must always match what's baked into this same build's HTML, or the banner
+  // would fire (or stay silent) on a false signal.
+  check("dist/data/summary.json matches data/summary.json",
+    distSummaryRaw === JSON.stringify(summary, null, 2) + "\n");
+
   // --- the privacy boundary ------------------------------------------
   // The Feed table is de-identified by construction, but a widened feed would
   // leak silently. Fail the build instead. Airtable field names change (Title
   // Case, spaces) but company names and emails would still match these
   // patterns however the source field was renamed.
+  // dist/data/summary.json ships in the same deployed dist/ tree as artifact.html
+  // (the live page fetches it), so it gets the same scrutiny.
   const forbidden = [/@[a-z0-9.-]+\.(com|ph|org|net|co)\b/i, /\bInc\.\b/, /\bLtd\b/, /\bCorporation\b/];
-  const hits = forbidden.filter(re => re.test(artifact.replace(/wght@\d+/g, "")));
+  const hits = forbidden.filter(re => re.test(artifact.replace(/wght@\d+/g, "")) || re.test(distSummaryRaw));
   check("no company names or emails in the published output",
     hits.length === 0, hits.map(String).join(", "));
 
   // Airtable base/table IDs and API keys are config, not analytics — they must
   // never reach a page the build can also publish as a public GitHub Pages site.
   check("no Airtable API endpoints or credentials leak into the published output",
-    !/api\.airtable\.com/i.test(artifact) && !/\bAIRTABLE_API_KEY\b/.test(artifact));
+    !/api\.airtable\.com/i.test(artifact) && !/\bAIRTABLE_API_KEY\b/.test(artifact) &&
+    !/api\.airtable\.com/i.test(distSummaryRaw) && !/\bAIRTABLE_API_KEY\b/.test(distSummaryRaw));
 
   return summary;
 }
