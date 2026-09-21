@@ -313,12 +313,82 @@ function aggregate(records, today = new Date()) {
     byStatus, channels, monthly, workSetup, ageing,
     followUps: { overdue, dueToday, dueWeek },
     quality,
-    STAGE_LABELS, DROP_PHRASE,
   };
 }
 
 /* ================================================================== *
- * 4. Render
+ * 4. Sankey layout (ApexCharts has no Sankey type, so this is hand-drawn)
+ * ================================================================== */
+
+function sankeySVG(agg) {
+  const { reached, dropComposition } = agg;
+  const PAD_TOP = 30, NODE_W = 12, W = 1000;
+  const K = reached[0] > 0 ? 300 / reached[0] : 0;
+  const xs = [40, 268, 496, 700, 880];
+  const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  const h = (n) => n * K;
+  const out = [];
+
+  for (let i = 0; i < 4; i++) {
+    const carry = reached[i + 1];
+    if (carry <= 0) continue;
+    const x1 = xs[i] + NODE_W, x2 = xs[i + 1];
+    out.push(`<path class="sk-flow" d="M${x1} ${PAD_TOP} L${x2} ${PAD_TOP} L${x2} ${(PAD_TOP + h(carry)).toFixed(1)} L${x1} ${(PAD_TOP + h(carry)).toFixed(1)} Z"/>`);
+  }
+
+  const stubs = [];
+  for (let i = 0; i < 5; i++) {
+    const drop = reached[i] - (reached[i + 1] ?? 0);
+    if (drop <= 0) continue;
+    const x1 = xs[i] + NODE_W;
+    const x2 = x1 + (i === 0 ? 98 : 100);
+    const srcTop = PAD_TOP + h(reached[i + 1] ?? 0);
+    const srcBot = PAD_TOP + h(reached[i]);
+    const dy = [50, 132, 140, 120, 120][i];
+    const dstTop = srcTop + dy, dstBot = dstTop + h(drop);
+    const mx = (x1 + x2) / 2;
+    out.push(
+      `<path class="sk-loss" d="M${x1} ${srcTop.toFixed(1)} ` +
+      `C${mx} ${srcTop.toFixed(1)}, ${mx} ${dstTop.toFixed(1)}, ${x2} ${dstTop.toFixed(1)} ` +
+      `L${x2} ${dstBot.toFixed(1)} C${mx} ${dstBot.toFixed(1)}, ${mx} ${srcBot.toFixed(1)}, ${x1} ${srcBot.toFixed(1)} Z"/>`
+    );
+    stubs.push({ i, x: x2, y: dstTop, hh: h(drop), drop });
+  }
+
+  for (let i = 0; i < 5; i++) {
+    const hh = h(reached[i]);
+    out.push(reached[i] > 0
+      ? `<rect class="sk-node" x="${xs[i]}" y="${PAD_TOP}" width="${NODE_W}" height="${hh.toFixed(1)}" rx="2"/>`
+      : `<rect class="sk-empty" x="${xs[i]}" y="${PAD_TOP - 2}" width="${NODE_W}" height="18" rx="2"/>`);
+    out.push(`<text class="sk-num" x="${xs[i]}" y="20">${reached[i]}</text>`);
+    out.push(`<text class="sk-lab" x="${xs[i] + String(reached[i]).length * 9 + 12}" y="20">${esc(STAGE_LABELS[i])}</text>`);
+  }
+
+  // Track the lowest drawn pixel so the viewBox hugs the content. A fixed height
+  // leaves a dead band inside the card whenever the flow is shallow.
+  let maxY = PAD_TOP + h(reached[0]);
+
+  for (const s of stubs) {
+    out.push(`<rect class="sk-node-loss" x="${s.x}" y="${s.y.toFixed(1)}" width="${NODE_W}" height="${s.hh.toFixed(1)}" rx="2"/>`);
+    const cy = s.y + s.hh / 2 + 4, lx = s.x + 20;
+    out.push(`<text class="sk-num" x="${lx}" y="${cy.toFixed(1)}">${s.drop}</text>`);
+    out.push(`<text class="sk-lab" x="${lx + String(s.drop).length * 9 + 12}" y="${cy.toFixed(1)}">${esc(DROP_PHRASE[s.i])}</text>`);
+    const comp = dropComposition[s.i].slice(0, 5).map(c => `${c.count} ${c.status.toLowerCase()}`).join(" · ");
+    if (comp) out.push(`<text class="sk-sub" x="${lx}" y="${(cy + 18).toFixed(1)}">${esc(comp)}</text>`);
+    maxY = Math.max(maxY, s.y + s.hh, cy + (comp ? 24 : 6));
+  }
+  if (reached[4] === 0) out.push(`<text class="sk-sub" x="${xs[4] - 18}" y="62">none</text>`);
+
+  const H = Math.ceil(maxY + 16);
+  const aria = `Stage flow: of ${reached[0]} applications, ${reached[0] - reached[1]} never got past ` +
+    `the application stage, ${reached[1]} drew a reply, ${reached[2]} reached an assessment, ` +
+    `${reached[3]} reached an interview and ${reached[4]} reached an offer.`;
+
+  return `<svg viewBox="0 0 ${W} ${Math.round(H)}" role="img" aria-label="${aria}">\n${out.map(p => "  " + p).join("\n")}\n</svg>`;
+}
+
+/* ================================================================== *
+ * 5. Render
  * ================================================================== */
 
 const HEAD = `<!doctype html>
@@ -351,6 +421,7 @@ async function main() {
 
   const body = template
     .replaceAll("{{GENERATED_AT}}", formatPHT(agg.generatedAt))
+    .replaceAll("{{SANKEY}}", sankeySVG(agg))
     .replaceAll("{{DATA_JSON}}", JSON.stringify(agg));
 
   if (body.includes("{{")) {
