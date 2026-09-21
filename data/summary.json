@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-21T10:01:04.952Z",
+  "generatedAt": "2026-09-21T10:11:09.655Z",
   "total": 38,
   "sent": 38,
   "unsent": 0,
@@ -11,14 +11,14 @@
   "ghostRate": 0.868421052631579,
   "reached": [
     38,
-    8,
+    7,
     2,
     2,
     0
   ],
   "atStage": [
-    30,
-    6,
+    31,
+    5,
     0,
     2,
     0
@@ -34,6 +34,10 @@
         "count": 2
       },
       {
+        "status": "(blank)",
+        "count": 1
+      },
+      {
         "status": "Rejected",
         "count": 1
       }
@@ -45,7 +49,7 @@
       },
       {
         "status": "Viewed by Employer",
-        "count": 3
+        "count": 2
       }
     ],
     [],
@@ -69,11 +73,15 @@
     },
     {
       "status": "Viewed by Employer",
-      "count": 3
+      "count": 2
     },
     {
       "status": "Closed / Expired",
       "count": 2
+    },
+    {
+      "status": "(blank)",
+      "count": 1
     },
     {
       "status": "Rejected",
@@ -87,10 +95,10 @@
   "channels": [
     {
       "name": "Jobstreet",
-      "sent": 23,
-      "replied": 3,
+      "sent": 22,
+      "replied": 2,
       "unsent": 0,
-      "rate": 0.13043478260869565
+      "rate": 0.09090909090909091
     },
     {
       "name": "Direct / Careers",
@@ -105,6 +113,13 @@
       "replied": 0,
       "unsent": 0,
       "rate": 0
+    },
+    {
+      "name": "(blank)",
+      "sent": 1,
+      "replied": 1,
+      "unsent": 0,
+      "rate": 1
     }
   ],
   "monthly": [
@@ -114,13 +129,17 @@
     },
     {
       "month": "2026-09",
-      "count": 26
+      "count": 25
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 38
+      "count": 37
+    },
+    {
+      "label": "Unspecified",
+      "count": 1
     }
   ],
   "ageing": [
@@ -130,7 +149,7 @@
     },
     {
       "label": "8–14d",
-      "count": 4
+      "count": 3
     },
     {
       "label": "15–30d",
@@ -151,7 +170,7 @@
     "dueWeek": 0
   },
   "quality": {
-    "resume": 37,
+    "resume": 36,
     "cover": 1,
     "tailored": 1
   }
