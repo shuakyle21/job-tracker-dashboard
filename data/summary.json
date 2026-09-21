@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-21T08:05:58.939Z",
+  "generatedAt": "2026-09-21T08:31:05.362Z",
   "total": 38,
   "sent": 38,
   "unsent": 0,
@@ -120,11 +120,7 @@
   "workSetup": [
     {
       "label": "Remote",
-      "count": 37
-    },
-    {
-      "label": "Unspecified",
-      "count": 1
+      "count": 38
     }
   ],
   "ageing": [
