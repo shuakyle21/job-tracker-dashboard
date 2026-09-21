@@ -9,6 +9,8 @@
  *         dist/artifact.html  same body, no <html>/<head> skeleton, for publishing
  *                             as a Claude artifact (the host supplies the skeleton)
  *         data/summary.json aggregate counts only, committed each run
+ *         dist/data/summary.json same aggregate, deploy-only, lets the live page
+ *                             detect a newer build without a full redeploy
  *
  * Every metric on the dashboard is derived from the nine feed fields and nothing
  * else. If a number cannot be computed from the n8n output, it does not appear.
@@ -363,6 +365,11 @@ async function main() {
 
   await mkdir(join(ROOT, "data"), { recursive: true });
   await writeFile(join(ROOT, "data/summary.json"), JSON.stringify(agg, null, 2) + "\n");
+
+  // Same aggregate, shipped inside dist/ so the deployed page can fetch it and
+  // notice a newer build landed — data/summary.json above never reaches Vercel.
+  await mkdir(join(ROOT, "dist/data"), { recursive: true });
+  await writeFile(join(ROOT, "dist/data/summary.json"), JSON.stringify(agg, null, 2) + "\n");
 
   console.log(
     `Built ${agg.total} rows (${agg.sent} sent, ${agg.unsent} unsent)\n` +
