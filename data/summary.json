@@ -1,23 +1,23 @@
 {
-  "generatedAt": "2026-09-22T01:01:01.447Z",
-  "total": 39,
-  "sent": 39,
+  "generatedAt": "2026-09-22T03:01:13.861Z",
+  "total": 40,
+  "sent": 40,
   "unsent": 0,
   "replied": 4,
-  "noReply": 35,
-  "open": 36,
-  "replyRate": 0.10256410256410256,
-  "interviewRate": 0.05128205128205128,
-  "ghostRate": 0.8974358974358975,
+  "noReply": 36,
+  "open": 37,
+  "replyRate": 0.1,
+  "interviewRate": 0.05,
+  "ghostRate": 0.9,
   "reached": [
-    39,
+    40,
     7,
     2,
     2,
     0
   ],
   "atStage": [
-    32,
+    33,
     5,
     0,
     2,
@@ -27,7 +27,7 @@
     [
       {
         "status": "Applied",
-        "count": 29
+        "count": 30
       },
       {
         "status": "Closed / Expired",
@@ -65,7 +65,7 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 33
+      "count": 34
     },
     {
       "status": "Viewed by Employer",
@@ -87,10 +87,10 @@
   "channels": [
     {
       "name": "Jobstreet",
-      "sent": 22,
+      "sent": 23,
       "replied": 2,
       "unsent": 0,
-      "rate": 0.09090909090909091
+      "rate": 0.08695652173913043
     },
     {
       "name": "Direct / Careers",
@@ -128,19 +128,23 @@
     },
     {
       "month": "2026-09",
-      "count": 27
+      "count": 28
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
       "count": 39
+    },
+    {
+      "label": "Unspecified",
+      "count": 1
     }
   ],
   "ageing": [
     {
       "label": "0–7d",
-      "count": 11
+      "count": 12
     },
     {
       "label": "8–14d",
