@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-22T10:10:35.065Z",
+  "generatedAt": "2026-09-22T10:15:37.423Z",
   "total": 41,
   "sent": 41,
   "unsent": 0,
@@ -94,10 +94,10 @@
     },
     {
       "name": "Direct / Careers",
-      "sent": 14,
-      "replied": 2,
+      "sent": 13,
+      "replied": 1,
       "unsent": 0,
-      "rate": 0.14285714285714285
+      "rate": 0.07692307692307693
     },
     {
       "name": "Torre.ai",
@@ -119,6 +119,13 @@
       "replied": 0,
       "unsent": 0,
       "rate": 0
+    },
+    {
+      "name": " DICT Digital Workforce Hub",
+      "sent": 1,
+      "replied": 1,
+      "unsent": 0,
+      "rate": 1
     }
   ],
   "monthly": [
