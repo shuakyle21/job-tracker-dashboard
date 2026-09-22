@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-09-21T22:00:31.955Z",
+  "generatedAt": "2026-09-22T00:50:55.494Z",
   "total": 39,
   "sent": 39,
   "unsent": 0,
-  "replied": 5,
-  "noReply": 34,
+  "replied": 4,
+  "noReply": 35,
   "open": 36,
-  "replyRate": 0.1282051282051282,
+  "replyRate": 0.10256410256410256,
   "interviewRate": 0.05128205128205128,
-  "ghostRate": 0.8717948717948718,
+  "ghostRate": 0.8974358974358975,
   "reached": [
     39,
     7,
@@ -27,15 +27,11 @@
     [
       {
         "status": "Applied",
-        "count": 28
+        "count": 29
       },
       {
         "status": "Closed / Expired",
         "count": 2
-      },
-      {
-        "status": "(blank)",
-        "count": 1
       },
       {
         "status": "Rejected",
@@ -69,7 +65,7 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 32
+      "count": 33
     },
     {
       "status": "Viewed by Employer",
@@ -78,10 +74,6 @@
     {
       "status": "Closed / Expired",
       "count": 2
-    },
-    {
-      "status": "(blank)",
-      "count": 1
     },
     {
       "status": "Rejected",
@@ -122,11 +114,11 @@
       "rate": 0
     },
     {
-      "name": "(blank)",
+      "name": "Online.jobs",
       "sent": 1,
-      "replied": 1,
+      "replied": 0,
       "unsent": 0,
-      "rate": 1
+      "rate": 0
     }
   ],
   "monthly": [
@@ -136,31 +128,27 @@
     },
     {
       "month": "2026-09",
-      "count": 26
+      "count": 27
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 38
-    },
-    {
-      "label": "Unspecified",
-      "count": 1
+      "count": 39
     }
   ],
   "ageing": [
     {
       "label": "0–7d",
-      "count": 10
+      "count": 11
     },
     {
       "label": "8–14d",
-      "count": 3
+      "count": 2
     },
     {
       "label": "15–30d",
-      "count": 22
+      "count": 23
     },
     {
       "label": "31–60d",
@@ -177,7 +165,7 @@
     "dueWeek": 0
   },
   "quality": {
-    "resume": 38,
+    "resume": 39,
     "cover": 3,
     "tailored": 1
   }
