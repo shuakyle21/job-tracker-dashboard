@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-22T09:46:21.265Z",
+  "generatedAt": "2026-09-22T09:50:21.243Z",
   "total": 41,
   "sent": 41,
   "unsent": 0,
@@ -134,11 +134,11 @@
   "workSetup": [
     {
       "label": "Remote",
-      "count": 40
+      "count": 37
     },
     {
-      "label": "Unspecified",
-      "count": 1
+      "label": "Onsite",
+      "count": 4
     }
   ],
   "ageing": [
@@ -169,7 +169,7 @@
     "dueWeek": 0
   },
   "quality": {
-    "resume": 39,
+    "resume": 41,
     "cover": 4,
     "tailored": 4
   }
