@@ -267,6 +267,28 @@ Then re-import the JSON into n8n. When an email lands in `needs-review` that sho
 have, paste its subject into `scripts/test-parser.mjs` as a new case first — that way the
 same email can never fool it twice.
 
+### Checking the live workflow hasn't drifted from the repo
+
+`verify.mjs` only checks that `n8n/job-tracker-ingest.json` matches its generator — it has
+no way to see whether the workflow **imported into n8n** still matches that file. It doesn't,
+if someone re-exports over the import (rather than re-importing fresh) or edits a Code node
+directly in the UI: n8n renames every node with a numeric suffix (`Parse Job Email` becomes
+`Parse Job Email1`) the next time a file with the same node names is imported into a project
+that already has them, and the two versions quietly part ways from there.
+
+This happened here: the live workflow's `Parse Job Email1` node was running a version of
+`n8n/parse-email.js` from before the `raw_text` field was added, while `Classify With LLM`'s
+prompt already read `$('Parse Job Email1').item.json.raw_text` — so the LLM fallback was
+sending an undefined/empty prompt to the classifier for every email the rules couldn't
+handle, with `onError: continueRegularOutput` quietly swallowing the result into Needs
+Review. Nothing failed loudly; the fallback just stopped doing anything.
+
+There is no automated check for this (it would need n8n credentials in CI to compare against
+a live workflow, which is a bigger tradeoff than this repo currently makes). After any parser
+change, treat "diff the live Code node's content against the repo file" as part of the
+re-import step, not optional: open the node in n8n and paste in `n8n/parse-email.js` (or the
+relevant source file) directly, rather than trusting a prior import is still current.
+
 ---
 
 ## When something breaks
