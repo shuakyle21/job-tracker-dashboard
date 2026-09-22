@@ -174,6 +174,24 @@ const cases = [
     want: { status: "viewed by employer", company: "Acme Group", job_title: "AI Developer", status_label: "Viewed", max_stage: 2 },
   },
   {
+    // Real production bug: a title long enough to wrap onto a second line
+    // breaks the single-line JobStreet extractor (`.` doesn't cross `\n`), and
+    // JobStreet's own safety disclaimer ("...when applying for a job.") used to
+    // win the fallback race, extracting the article "a" as the job title.
+    name: "JobStreet submitted, title wraps to a second line",
+    input: email({
+      subject: "Your application was successfully submitted",
+      from: { value: [{ address: "noreply@e.jobstreet.com", name: "Jobstreet" }] },
+      text: "Hi Alex, your application for Web Developer – AI & Automation Specialist\n"
+        + "| AU Client - WFH was successfully submitted to SourceU\n\n"
+        + "Each employer's recruitment process is different, so you might not always "
+        + "hear from them.\n\n"
+        + "Never provide your bank or credit card details when applying for a job.\n",
+    }),
+    want: { status: "applied", job_title: "Web Developer – AI & Automation Specialist",
+      job_platform: "JobStreet", status_label: "Applied", parsed: true },
+  },
+  {
     name: "LinkedIn sent (title on the next line)",
     input: email({
       subject: "Alex, your application was sent to Quikly Staffing",

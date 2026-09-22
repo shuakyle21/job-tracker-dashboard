@@ -198,6 +198,10 @@ title = title.replace(/\s*[|(].*$/, '').replace(/\s+(?:position|role)$/i, '').re
 // Company names end in "Inc." / "Ltd." — keep that period, drop a sentence one.
 const clean = (s) => String(s || '').replace(/\s+/g, ' ').trim()
   .replace(/(?<!\b(?:inc|ltd|corp|co|llc))\.$/i, '').trim();
+// A real job title is never a bare article/pronoun. Extractors with no anchor
+// past their keyword (e.g. "...applying for <T> job") can otherwise pick up a
+// stray "a"/"the" out of unrelated boilerplate, like a safety disclaimer.
+const isPlausibleTitle = (s) => !/^(?:a|an|the|this|that|it)$/i.test(s);
 const EXTRACTORS = [
   // JobStreet: "your application for <T> was successfully submitted to <C>"
   [body, /application for (.+?) was successfully submitted to (.+?)(?=\s*(?:\n|jobstreet\b|$))/i, 1, 2],
@@ -214,6 +218,10 @@ const EXTRACTORS = [
   // ATS / careers-page mail.
   [body, /interest in (?:the )?(.+?) (?:position|role|opportunity) at ([^\n!]+?)(?=[.!,]\s|[.!]?\s*$|\n)/i, 1, 2],
   [body, /(?:application|applying|apply) for (?:the )?(.+?) (?:role|position|job|opportunity) at ([^\n!]+?)(?=[.!,]\s|[.!]?\s*$|\n)/i, 1, 2],
+  // No anchor past the keyword here, so this also matches unrelated boilerplate
+  // — a safety disclaimer ("never share your bank details when applying for a
+  // job") reads as "applying for <a> job" and would otherwise capture the
+  // article "a" as the title. isPlausibleTitle() below rejects that.
   [body, /(?:application|applying|apply) for (?:the )?(.+?) (?:role|position|job|opportunity)\b/i, 1, 0],
   // "your application for <T> was delivered" (Torre), "...for <T>, and" (Lever),
   // "...for <T> shortly" (Teamtailor), "...for <T>. If" (Manatal).
@@ -227,7 +235,7 @@ let gotCompany = false;
 for (const [text, re, ti, ci] of EXTRACTORS) {
   const m = String(text).match(re);
   if (!m) continue;
-  if (ti && !gotTitle && clean(m[ti])) { title = clean(m[ti]); gotTitle = true; }
+  if (ti && !gotTitle && clean(m[ti]) && isPlausibleTitle(clean(m[ti]))) { title = clean(m[ti]); gotTitle = true; }
   if (ci && !gotCompany && clean(m[ci])) { company = clean(m[ci]); gotCompany = true; }
   if (gotTitle && gotCompany) break;
 }
