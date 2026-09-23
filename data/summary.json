@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-23T11:43:40.782Z",
+  "generatedAt": "2026-09-23T16:30:39.133Z",
   "total": 41,
   "sent": 41,
   "unsent": 0,
@@ -9,6 +9,8 @@
   "replyRate": 0.17073170731707318,
   "interviewRate": 0.04878048780487805,
   "ghostRate": 0.8292682926829268,
+  "rejected": 3,
+  "rejectionRate": 0.07317073170731707,
   "reached": [
     41,
     8,
@@ -72,6 +74,13 @@
       }
     ],
     []
+  ],
+  "rejectedAt": [
+    2,
+    1,
+    0,
+    0,
+    0
   ],
   "usedExplicitStage": true,
   "byStatus": [
