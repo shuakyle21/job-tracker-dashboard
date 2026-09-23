@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-09-22T21:23:03.883Z",
+  "generatedAt": "2026-09-23T02:10:37.866Z",
   "total": 41,
   "sent": 41,
   "unsent": 0,
-  "replied": 4,
-  "noReply": 37,
+  "replied": 5,
+  "noReply": 36,
   "open": 38,
-  "replyRate": 0.0975609756097561,
+  "replyRate": 0.12195121951219512,
   "interviewRate": 0.04878048780487805,
-  "ghostRate": 0.9024390243902439,
+  "ghostRate": 0.8780487804878049,
   "reached": [
     41,
     8,
@@ -27,7 +27,7 @@
     [
       {
         "status": "Applied",
-        "count": 30
+        "count": 29
       },
       {
         "status": "Closed / Expired",
@@ -35,6 +35,10 @@
       },
       {
         "status": "Rejected",
+        "count": 1
+      },
+      {
+        "status": "In Review",
         "count": 1
       }
     ],
@@ -65,7 +69,7 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 35
+      "count": 34
     },
     {
       "status": "Viewed by Employer",
@@ -76,11 +80,11 @@
       "count": 2
     },
     {
-      "status": "Rejected",
-      "count": 1
+      "status": "In Review",
+      "count": 2
     },
     {
-      "status": "In Review",
+      "status": "Rejected",
       "count": 1
     }
   ],
@@ -88,9 +92,9 @@
     {
       "name": "Jobstreet",
       "sent": 23,
-      "replied": 2,
+      "replied": 3,
       "unsent": 0,
-      "rate": 0.08695652173913043
+      "rate": 0.13043478260869565
     },
     {
       "name": "Direct / Careers",
