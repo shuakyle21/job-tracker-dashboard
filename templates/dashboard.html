@@ -46,13 +46,24 @@
 
   /* Sankey is hand-drawn: ApexCharts has no Sankey type. Themed with tokens so it
      follows the dashboard rather than carrying baked-in colours. */
-  .sk { --sk-flow:#3C50E0; --sk-loss:#8A99AF; --sk-node:#2A3BB7; --sk-ink:#1C2434; --sk-mut:#64748B; }
-  html.dark .sk { --sk-flow:#5D6FE8; --sk-loss:#48586A; --sk-node:#8B9AF0; --sk-ink:#EDF1F7; --sk-mut:#98A6B8; }
+  .sk { --sk-flow:#3C50E0; --sk-loss:#8A99AF; --sk-node:#2A3BB7; --sk-ink:#1C2434; --sk-mut:#64748B;
+        --sk-rej:#D34053; --sk-rej-ink:#B42336; --sk-win:#219653; }
+  html.dark .sk { --sk-flow:#5D6FE8; --sk-loss:#48586A; --sk-node:#8B9AF0; --sk-ink:#EDF1F7; --sk-mut:#98A6B8;
+        --sk-rej:#E5596B; --sk-rej-ink:#F28B98; --sk-win:#34D399; }
   .sk svg { display:block; width:100%; height:auto; min-width:660px; }
   .sk-flow { fill: var(--sk-flow); opacity:.85 }
   .sk-loss { fill: var(--sk-loss); opacity:.30 }
   .sk-node { fill: var(--sk-node) }
   .sk-node-loss { fill: var(--sk-loss); opacity:.7 }
+  /* Rejections get their own branch: an answer, not silence, so they should not
+     disappear into the grey. */
+  .sk-rej { fill: var(--sk-rej); opacity:.32 }
+  .sk-node-rej { fill: var(--sk-rej) }
+  .sk-num-rej { fill: var(--sk-rej-ink); font-size:13px; font-weight:700; font-variant-numeric:tabular-nums }
+  .sk-node-win { fill: var(--sk-win) }
+  .sk path { transition: opacity .15s ease }
+  .sk-flow:hover { opacity:1 } .sk-loss:hover { opacity:.55 } .sk-rej:hover { opacity:.6 }
+  .sk-key { display:inline-block; width:10px; height:10px; border-radius:2px; vertical-align:-1px }
   .sk-lab { fill: var(--sk-ink); font-size:12.5px; font-weight:500 }
   .sk-num { fill: var(--sk-ink); font-size:13px; font-weight:700; font-variant-numeric:tabular-nums }
   .sk-sub { fill: var(--sk-mut); font-size:11px }
@@ -64,6 +75,15 @@
   .icon8 { display: inline-block; background-color: currentColor; -webkit-mask: var(--i8) center / contain no-repeat; mask: var(--i8) center / contain no-repeat; }
 
   .hdr { position: sticky; top: env(safe-area-inset-top, 0px); }
+  /* Anchored sections land below the sticky header, not under it. */
+  main [id] { scroll-margin-top: 96px; }
+  @media (max-width: 1023px) { main [id] { scroll-margin-top: 140px; } }
+  /* Scrollspy state. Plain CSS, because the Tailwind CDN only generates classes it
+     saw at load and would miss one added later by script. */
+  .nav-link:hover { background: #333A48; }
+  .nav-link.is-active { background: #333A48; color: #fff; box-shadow: inset 3px 0 0 #3C50E0; }
+  .chip.is-active { background: #3C50E0; border-color: #3C50E0; color: #fff; }
+  .no-scrollbar { scrollbar-width: none; } .no-scrollbar::-webkit-scrollbar { display: none; }
   .apex-charts text { font-family: "Plus Jakarta Sans", sans-serif !important; }
   .apexcharts-tooltip { box-shadow: 0 4px 14px rgba(0,0,0,.12) !important; }
   .apexcharts-legend-text { font-family: "Plus Jakarta Sans", sans-serif !important; }
@@ -84,16 +104,16 @@
       <nav class="px-4 pb-6">
         <p class="mb-3 ml-3 text-xs font-semibold uppercase tracking-wider text-bodydark2">Analytics</p>
         <ul class="flex flex-col gap-1.5 text-sm font-medium">
-          <li><a href="#overview" class="group flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1 hover:bg-graydark"><span class="icon8 h-4 w-4 shrink-0" style="--i8:url('https://img.icons8.com/?id=aVHe2jHuORcA&amp;format=png&amp;size=48')"></span>Overview</a></li>
-          <li><a href="#flow" class="group flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1 hover:bg-graydark"><span class="icon8 h-4 w-4 shrink-0" style="--i8:url('https://img.icons8.com/?id=83316&amp;format=png&amp;size=48')"></span>Stage flow</a></li>
-          <li><a href="#funnel" class="group flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1 hover:bg-graydark"><span class="icon8 h-4 w-4 shrink-0" style="--i8:url('https://img.icons8.com/?id=115218&amp;format=png&amp;size=48')"></span>Funnel</a></li>
-          <li><a href="#channels" class="group flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1 hover:bg-graydark"><span class="icon8 h-4 w-4 shrink-0" style="--i8:url('https://img.icons8.com/?id=86968&amp;format=png&amp;size=48')"></span>Channels</a></li>
-          <li><a href="#cadence" class="group flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1 hover:bg-graydark"><span class="icon8 h-4 w-4 shrink-0" style="--i8:url('https://img.icons8.com/?id=84997&amp;format=png&amp;size=48')"></span>Applications per month</a></li>
-          <li><a href="#ageing" class="group flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1 hover:bg-graydark"><span class="icon8 h-4 w-4 shrink-0" style="--i8:url('https://img.icons8.com/?id=116452&amp;format=png&amp;size=48')"></span>Ageing</a></li>
+          <li><a href="#overview" class="nav-link flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1"><span class="icon8 h-4 w-4 shrink-0" style="--i8:url('https://img.icons8.com/?id=aVHe2jHuORcA&amp;format=png&amp;size=48')"></span>Overview</a></li>
+          <li><a href="#flow" class="nav-link flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1"><span class="icon8 h-4 w-4 shrink-0" style="--i8:url('https://img.icons8.com/?id=83316&amp;format=png&amp;size=48')"></span>Stage flow</a></li>
+          <li><a href="#funnel" class="nav-link flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1"><span class="icon8 h-4 w-4 shrink-0" style="--i8:url('https://img.icons8.com/?id=115218&amp;format=png&amp;size=48')"></span>Funnel</a></li>
+          <li><a href="#channels" class="nav-link flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1"><span class="icon8 h-4 w-4 shrink-0" style="--i8:url('https://img.icons8.com/?id=86968&amp;format=png&amp;size=48')"></span>Channels</a></li>
+          <li><a href="#cadence" class="nav-link flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1"><span class="icon8 h-4 w-4 shrink-0" style="--i8:url('https://img.icons8.com/?id=84997&amp;format=png&amp;size=48')"></span>Applications per month</a></li>
+          <li><a href="#ageing" class="nav-link flex items-center gap-2.5 rounded-sm px-3 py-2 text-bodydark1"><span class="icon8 h-4 w-4 shrink-0" style="--i8:url('https://img.icons8.com/?id=116452&amp;format=png&amp;size=48')"></span>Ageing</a></li>
         </ul>
       </nav>
       <div class="mt-auto px-6 pb-6 text-xs text-bodydark2">
-        <p class="font-semibold text-bodydark1">n8n → Sheets → Actions</p>
+        <p class="font-semibold text-bodydark1">Gmail → n8n → Airtable</p>
         <p class="mt-1">Synced {{GENERATED_AT}}</p>
       </div>
     </aside>
@@ -101,18 +121,33 @@
     <!-- main -->
     <div class="flex min-w-0 flex-1 flex-col">
 
-      <header class="hdr z-40 flex items-center justify-between gap-4 border-b border-stroke bg-white px-4 py-4 shadow-card dark:border-strokedark dark:bg-boxdark md:px-6">
+      <div class="hdr z-40">
+      <header class="flex items-center justify-between gap-4 border-b border-stroke bg-white px-4 py-4 shadow-card dark:border-strokedark dark:bg-boxdark md:px-6">
         <div>
           <h1 class="text-xl font-bold text-black dark:text-white">Job Search Analytics</h1>
           <p class="mt-0.5 text-xs text-body dark:text-bodydark2">Synced {{GENERATED_AT}}</p>
         </div>
         <button id="themeBtn" type="button" aria-label="Toggle dark mode"
           class="flex h-10 w-10 items-center justify-center rounded-full border border-stroke bg-gray text-body hover:text-primary dark:border-strokedark dark:bg-meta-4 dark:text-bodydark">
-          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <svg class="h-5 w-5 dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
+          </svg>
+          <svg class="hidden h-5 w-5 dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/>
           </svg>
         </button>
       </header>
+
+      <!-- below lg the sidebar is hidden, so the sections get a chip row instead -->
+      <nav aria-label="Sections" class="no-scrollbar flex gap-2 overflow-x-auto border-b border-stroke bg-white px-4 py-2.5 text-xs font-medium dark:border-strokedark dark:bg-boxdark lg:hidden">
+        <a href="#overview" class="chip shrink-0 rounded-full border border-stroke px-3 py-1.5 dark:border-strokedark">Overview</a>
+        <a href="#flow" class="chip shrink-0 rounded-full border border-stroke px-3 py-1.5 dark:border-strokedark">Stage flow</a>
+        <a href="#funnel" class="chip shrink-0 rounded-full border border-stroke px-3 py-1.5 dark:border-strokedark">Funnel</a>
+        <a href="#channels" class="chip shrink-0 rounded-full border border-stroke px-3 py-1.5 dark:border-strokedark">Channels</a>
+        <a href="#cadence" class="chip shrink-0 rounded-full border border-stroke px-3 py-1.5 dark:border-strokedark">Per month</a>
+        <a href="#ageing" class="chip shrink-0 rounded-full border border-stroke px-3 py-1.5 dark:border-strokedark">Ageing</a>
+      </nav>
+      </div>
 
       <div id="refresh-banner" class="hidden items-center justify-between gap-4 border-b border-stroke bg-warning/10 px-4 py-2.5 text-sm text-black dark:border-strokedark dark:text-white md:px-6">
         <span>New data is available.</span>
@@ -169,7 +204,7 @@
         </section>
 
         <!-- secondary tiles -->
-        <section class="mt-4 grid grid-cols-2 gap-4 md:gap-6 xl:grid-cols-4">
+        <section class="mt-4 grid grid-cols-2 gap-4 md:gap-6 xl:grid-cols-5">
           <div class="rounded-sm border border-stroke bg-white px-5 py-4 shadow-default dark:border-strokedark dark:bg-boxdark">
             <span class="text-xs font-semibold uppercase tracking-wider text-bodydark2">Still open</span>
             <h4 class="mt-1 text-xl font-bold tabular-nums text-black dark:text-white" data-stat="open">—</h4>
@@ -186,12 +221,29 @@
             <span class="text-xs font-semibold uppercase tracking-wider text-bodydark2">Due within 7 days</span>
             <h4 class="mt-1 text-xl font-bold tabular-nums text-meta-5" data-stat="dueWeek">—</h4>
           </div>
+          <div class="col-span-2 rounded-sm border border-stroke bg-white px-5 py-4 shadow-default dark:border-strokedark dark:bg-boxdark xl:col-span-1">
+            <span class="text-xs font-semibold uppercase tracking-wider text-bodydark2">Rejected</span>
+            <h4 class="mt-1 text-xl font-bold tabular-nums text-danger" data-stat="rejected">—</h4>
+            <p class="mt-0.5 text-xs text-bodydark2" data-stat="rejectedNote"></p>
+          </div>
         </section>
 
         <!-- sankey -->
-        <section id="flow" class="mt-4 rounded-sm border border-stroke bg-white p-5 shadow-default dark:border-strokedark dark:bg-boxdark md:mt-6">
-          <h2 class="mb-4 text-lg font-semibold text-black dark:text-white">Stage flow</h2>
-          <div class="sk overflow-x-auto">
+        <section id="flow" class="sk mt-4 rounded-sm border border-stroke bg-white p-5 shadow-default dark:border-strokedark dark:bg-boxdark md:mt-6">
+          <div class="mb-4 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+            <div>
+              <h2 class="text-lg font-semibold text-black dark:text-white">Stage flow</h2>
+              <p class="mt-0.5 text-xs text-bodydark2">Where every application went. Hover a branch for its numbers.</p>
+            </div>
+            <ul class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs font-medium">
+              <li><span class="sk-key" style="background:var(--sk-flow)"></span> Moved forward</li>
+              <li><span class="sk-key" style="background:var(--sk-loss)"></span> Stalled / no reply</li>
+              <li><span class="sk-key" style="background:var(--sk-rej)"></span> Rejected
+                <span class="ml-1 rounded-full bg-danger/10 px-2 py-0.5 font-semibold tabular-nums text-danger" data-stat="rejectedPill"></span></li>
+              <li><span class="sk-key" style="background:var(--sk-win)"></span> Offer</li>
+            </ul>
+          </div>
+          <div class="overflow-x-auto">
 {{SANKEY}}
           </div>
         </section>
@@ -237,7 +289,7 @@
         </section>
 
         <footer class="py-6 text-xs text-bodydark2">
-          Built from the tracker's published feed tab. Aggregates only.
+          Built from the Airtable Feed table. Aggregates only — no company names, roles or contacts.
         </footer>
       </main>
     </div>
@@ -292,6 +344,34 @@
   set("unsent", D.unsent);
   set("overdue", D.followUps.overdue);
   set("dueWeek", D.followUps.dueToday + D.followUps.dueWeek);
+  set("rejected", D.rejected);
+  set("rejectedNote", fmtPct(D.rejectionRate) + " of sent");
+  set("rejectedPill", `${D.rejected} · ${fmtPct(D.rejectionRate)}`);
+
+  /* ---- scrollspy: mark the section in view in the sidebar and the chip row ---- */
+  const navLinks = [...document.querySelectorAll(".nav-link, .chip")];
+  const sections = [...new Set(navLinks.map(a => a.getAttribute("href")))]
+    .map(h => document.querySelector(h)).filter(Boolean);
+  // The active section is the last one whose top has passed under the sticky
+  // header. An IntersectionObserver only reports what changed, which left the
+  // wrong link lit after an anchor jump.
+  let lit = null, queued = false;
+  function spy() {
+    queued = false;
+    const line = document.querySelector(".hdr").getBoundingClientRect().bottom + 24;
+    const bottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+    let cur = sections[0];
+    for (const sec of sections) if (sec.getBoundingClientRect().top <= line) cur = sec;
+    if (bottom) cur = sections[sections.length - 1];
+    if (!cur || cur === lit) return;
+    lit = cur;
+    const href = "#" + cur.id;
+    navLinks.forEach(a => a.classList.toggle("is-active", a.getAttribute("href") === href));
+    const chip = document.querySelector(`.chip[href="${href}"]`);
+    if (chip && chip.offsetParent) chip.parentElement.scrollTo({ left: chip.offsetLeft - 16, behavior: "smooth" });
+  }
+  window.addEventListener("scroll", () => { if (!queued) { queued = true; requestAnimationFrame(spy); } }, { passive: true });
+  window.addEventListener("load", spy);
 
   /* ---- status → colour.
      An explicit map, not a regex cascade: the cascade collapsed Applied, No Response,
