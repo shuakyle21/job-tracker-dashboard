@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-09-23T04:49:30.489Z",
+  "generatedAt": "2026-09-23T09:00:37.677Z",
   "total": 41,
   "sent": 41,
   "unsent": 0,
-  "replied": 5,
-  "noReply": 36,
-  "open": 38,
-  "replyRate": 0.12195121951219512,
+  "replied": 7,
+  "noReply": 34,
+  "open": 34,
+  "replyRate": 0.17073170731707318,
   "interviewRate": 0.04878048780487805,
-  "ghostRate": 0.8780487804878049,
+  "ghostRate": 0.8292682926829268,
   "reached": [
     41,
     8,
@@ -27,7 +27,11 @@
     [
       {
         "status": "Applied",
-        "count": 29
+        "count": 26
+      },
+      {
+        "status": "No Response",
+        "count": 2
       },
       {
         "status": "Closed / Expired",
@@ -35,7 +39,7 @@
       },
       {
         "status": "Rejected",
-        "count": 1
+        "count": 2
       },
       {
         "status": "In Review",
@@ -45,11 +49,15 @@
     [
       {
         "status": "Applied",
-        "count": 4
+        "count": 3
       },
       {
         "status": "Viewed by Employer",
         "count": 2
+      },
+      {
+        "status": "Rejected",
+        "count": 1
       }
     ],
     [],
@@ -69,7 +77,15 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 34
+      "count": 30
+    },
+    {
+      "status": "Rejected",
+      "count": 3
+    },
+    {
+      "status": "No Response",
+      "count": 2
     },
     {
       "status": "Viewed by Employer",
@@ -82,10 +98,6 @@
     {
       "status": "In Review",
       "count": 2
-    },
-    {
-      "status": "Rejected",
-      "count": 1
     }
   ],
   "channels": [
@@ -99,9 +111,9 @@
     {
       "name": "Direct / Careers",
       "sent": 13,
-      "replied": 1,
+      "replied": 3,
       "unsent": 0,
-      "rate": 0.07692307692307693
+      "rate": 0.23076923076923078
     },
     {
       "name": "Torre.ai",
@@ -162,7 +174,7 @@
   "ageing": [
     {
       "label": "0–7d",
-      "count": 13
+      "count": 11
     },
     {
       "label": "8–14d",
@@ -170,7 +182,7 @@
     },
     {
       "label": "15–30d",
-      "count": 23
+      "count": 21
     },
     {
       "label": "31–60d",
