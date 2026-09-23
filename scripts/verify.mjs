@@ -85,13 +85,26 @@ async function assertBuildOutput(label) {
       list.reduce((a, c) => a + c.count, 0) === atStage[i]),
     summary.dropComposition.map((l, i) => `${l.reduce((a, c) => a + c.count, 0)}/${atStage[i]}`).join(" "));
 
+  // The Sankey's red branches are carved out of the drop-off buckets above, so
+  // they must fit inside them and add up to every "Rejected" row.
+  const rejectedRows = summary.byStatus
+    .filter(s => s.status.toLowerCase() === "rejected").reduce((a, s) => a + s.count, 0);
+  check("rejections by stage sum to the Rejected status count",
+    summary.rejectedAt.reduce((a, b) => a + b, 0) === rejectedRows && summary.rejected === rejectedRows,
+    `${summary.rejectedAt.join("+")} vs ${rejectedRows}`);
+  check("rejections never exceed their stage's drop-off",
+    summary.rejectedAt.every((n, i) => n >= 0 && n <= atStage[i]),
+    summary.rejectedAt.map((n, i) => `${n}/${atStage[i]}`).join(" "));
+
   check("rates are within 0..1 or null",
-    [summary.replyRate, summary.interviewRate, summary.ghostRate]
+    [summary.replyRate, summary.interviewRate, summary.ghostRate, summary.rejectionRate]
       .every(r => r === null || (r >= 0 && r <= 1)));
 
   // --- the page actually contains what it claims to ------------------
   check("no unfilled template placeholders", !html.includes("{{"));
   check("Sankey SVG is server-rendered", /<svg viewBox="0 0 1000 \d+"/.test(html));
+  check("Sankey draws a rejected branch when there are rejections",
+    summary.rejectedAt.slice(0, 4).every(n => n === 0) || /class="sk-rej"/.test(html));
   check("ApexCharts is loaded from the allowed CDN",
     html.includes("cdnjs.cloudflare.com/ajax/libs/apexcharts/"));
   check("Tailwind is loaded", html.includes("cdn.tailwindcss.com"));
@@ -311,6 +324,7 @@ check("funnel is 97 → 31 → 12 → 3 → 0", fixture.reached.join(",") === "9
 check("93 sent, 4 unsent", fixture.sent === 93 && fixture.unsent === 4);
 check("reply rate is 49.5%", Math.round(fixture.replyRate * 1000) === 495);
 check("five months of history", fixture.monthly.length === 5);
+check("rejected by stage is 15,2,0,2,0", fixture.rejectedAt.join(",") === "15,2,0,2,0", fixture.rejectedAt.join(","));
 
 if (process.argv.includes("--live")) {
   if (!process.env.AIRTABLE_API_KEY || !process.env.AIRTABLE_BASE_ID) {

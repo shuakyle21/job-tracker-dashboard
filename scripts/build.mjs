@@ -126,12 +126,19 @@ function toRecords(airtableRecords) {
 
 const STAGE_LABELS = ["Applied", "Employer replied", "Assessment", "Interview", "Offer"];
 
-const DROP_PHRASE = [
+// Each stage's losses, split in two. Rejected is an answer; stalled is silence or
+// a status that never moved. Offer has neither: it is the last column.
+const STALL_PHRASE = [
   "never got past the application",
   "stalled after the employer replied",
   "stalled at the assessment",
-  "ended at the interview",
-  "ended at offer",
+  "stalled after interview",
+];
+const REJECT_PHRASE = [
+  "rejected at the application",
+  "rejected after a reply",
+  "rejected after the assessment",
+  "rejected after interview",
 ];
 
 /**
@@ -223,6 +230,14 @@ function aggregate(records, today = new Date()) {
                     .sort((a, b) => b.count - a.count)
   );
 
+  // Rejections split out of each stage's drop-off, so the Sankey can draw them as
+  // their own branch. Same stageOf() bucketing, so a rejection after an interview
+  // lands at the interview, not back at "applied".
+  const rejectedAt = compMaps.map(m =>
+    [...m.entries()].filter(([s]) => s.toLowerCase() === "rejected").reduce((a, [, n]) => a + n, 0)
+  );
+  const rejected = rejectedAt.reduce((a, b) => a + b, 0);
+
   // --- channels ----------------------------------------------------
   const chanMap = new Map();
   for (const r of records) {
@@ -309,7 +324,9 @@ function aggregate(records, today = new Date()) {
     replyRate:     sent ? replied / sent : null,
     interviewRate: sent ? reached[3] / sent : null,
     ghostRate:     sent ? noReply / sent : null,
-    reached, atStage, dropComposition, usedExplicitStage,
+    rejected,
+    rejectionRate: sent ? rejected / sent : null,
+    reached, atStage, dropComposition, rejectedAt, usedExplicitStage,
     byStatus, channels, monthly, workSetup, ageing,
     followUps: { overdue, dueToday, dueWeek },
     quality,
@@ -321,70 +338,121 @@ function aggregate(records, today = new Date()) {
  * ================================================================== */
 
 function sankeySVG(agg) {
-  const { reached, dropComposition } = agg;
-  const PAD_TOP = 30, NODE_W = 12, W = 1000;
+  const { reached, atStage, dropComposition, rejectedAt, rejected } = agg;
+  const HEAD_Y = 20, PAD_TOP = 48, NODE_W = 12, W = 1000;
   const K = reached[0] > 0 ? 300 / reached[0] : 0;
   const xs = [40, 268, 496, 700, 880];
-  const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  // How far each loss branch travels before its stub. The last one is short
+  // because its label has to fit before the 1000px edge.
+  const REACH = [98, 100, 100, 44];
+  const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+  const f = (n) => n.toFixed(1);
   const h = (n) => n * K;
-  const out = [];
+  const pct = (a, b) => (b ? Math.round((100 * a) / b) : 0) + "%";
+  const numW = (n) => String(n).length * 9 + 12;
+  const flows = [], nodes = [], text = [];
 
+  // Inline SVG clips at the viewBox, and the right-hand stages have little room,
+  // so a status list is cut to the width it has rather than to an entry count.
+  // The branch tooltip keeps the full list. ~6.2px per character at 11px.
+  const fitList = (items, px) => {
+    const budget = Math.floor(px / 6.2);
+    let line = "";
+    for (let k = 0; k < items.length; k++) {
+      const next = line ? `${line} · ${items[k]}` : items[k];
+      const more = k < items.length - 1 ? ` · +${items.length - k - 1} more` : "";
+      if ((next + more).length > budget) return line ? `${line} · +${items.length - k} more` : `+${items.length} more`;
+      line = next;
+    }
+    return line;
+  };
+
+  const ribbon = (cls, x1, s0, s1, x2, d0, d1, tip) => {
+    const mx = (x1 + x2) / 2;
+    return `<path class="${cls}" d="M${x1} ${f(s0)} C${mx} ${f(s0)}, ${mx} ${f(d0)}, ${x2} ${f(d0)} ` +
+      `L${x2} ${f(d1)} C${mx} ${f(d1)}, ${mx} ${f(s1)}, ${x1} ${f(s1)} Z"><title>${esc(tip)}</title></path>`;
+  };
+
+  // --- forward flow along the top ------------------------------------
   for (let i = 0; i < 4; i++) {
     const carry = reached[i + 1];
     if (carry <= 0) continue;
-    const x1 = xs[i] + NODE_W, x2 = xs[i + 1];
-    out.push(`<path class="sk-flow" d="M${x1} ${PAD_TOP} L${x2} ${PAD_TOP} L${x2} ${(PAD_TOP + h(carry)).toFixed(1)} L${x1} ${(PAD_TOP + h(carry)).toFixed(1)} Z"/>`);
+    flows.push(ribbon("sk-flow", xs[i] + NODE_W, PAD_TOP, PAD_TOP + h(carry), xs[i + 1], PAD_TOP, PAD_TOP + h(carry),
+      `${carry} of ${reached[i]} moved from ${STAGE_LABELS[i]} to ${STAGE_LABELS[i + 1]} (${pct(carry, reached[i])})`));
   }
 
-  const stubs = [];
+  // --- stage headers: count, name, and conversion from the stage before ----
   for (let i = 0; i < 5; i++) {
-    const drop = reached[i] - (reached[i + 1] ?? 0);
-    if (drop <= 0) continue;
-    const x1 = xs[i] + NODE_W;
-    const x2 = x1 + (i === 0 ? 98 : 100);
-    const srcTop = PAD_TOP + h(reached[i + 1] ?? 0);
-    const srcBot = PAD_TOP + h(reached[i]);
-    const dy = [50, 132, 140, 120, 120][i];
-    const dstTop = srcTop + dy, dstBot = dstTop + h(drop);
-    const mx = (x1 + x2) / 2;
-    out.push(
-      `<path class="sk-loss" d="M${x1} ${srcTop.toFixed(1)} ` +
-      `C${mx} ${srcTop.toFixed(1)}, ${mx} ${dstTop.toFixed(1)}, ${x2} ${dstTop.toFixed(1)} ` +
-      `L${x2} ${dstBot.toFixed(1)} C${mx} ${dstBot.toFixed(1)}, ${mx} ${srcBot.toFixed(1)}, ${x1} ${srcBot.toFixed(1)} Z"/>`
-    );
-    stubs.push({ i, x: x2, y: dstTop, hh: h(drop), drop });
-  }
-
-  for (let i = 0; i < 5; i++) {
-    const hh = h(reached[i]);
-    out.push(reached[i] > 0
-      ? `<rect class="sk-node" x="${xs[i]}" y="${PAD_TOP}" width="${NODE_W}" height="${hh.toFixed(1)}" rx="2"/>`
+    text.push(`<text class="sk-num" x="${xs[i]}" y="${HEAD_Y}">${reached[i]}</text>`);
+    text.push(`<text class="sk-lab" x="${xs[i] + numW(reached[i])}" y="${HEAD_Y}">${esc(STAGE_LABELS[i])}</text>`);
+    if (i > 0 && reached[i] > 0) {
+      text.push(`<text class="sk-sub" x="${xs[i]}" y="${HEAD_Y + 17}">${pct(reached[i], reached[i - 1])} conversion</text>`);
+    }
+    const tip = `${reached[i]} reached ${STAGE_LABELS[i]}` + (i ? ` (${pct(reached[i], reached[0])} of all rows)` : "");
+    nodes.push(reached[i] > 0
+      ? `<rect class="${i === 4 ? "sk-node-win" : "sk-node"}" x="${xs[i]}" y="${PAD_TOP}" width="${NODE_W}" height="${f(h(reached[i]))}" rx="2"><title>${esc(tip)}</title></rect>`
       : `<rect class="sk-empty" x="${xs[i]}" y="${PAD_TOP - 2}" width="${NODE_W}" height="18" rx="2"/>`);
-    out.push(`<text class="sk-num" x="${xs[i]}" y="20">${reached[i]}</text>`);
-    out.push(`<text class="sk-lab" x="${xs[i] + String(reached[i]).length * 9 + 12}" y="20">${esc(STAGE_LABELS[i])}</text>`);
+  }
+  if (reached[4] === 0) text.push(`<text class="sk-sub" x="${xs[4] - 18}" y="${PAD_TOP + 34}">none</text>`);
+
+  // Offer is the last column, so it has no room for loss branches. A rejection
+  // after an offer still counts in the legend total, so say so here rather than
+  // let the two numbers disagree silently.
+  if (rejectedAt[4] > 0) {
+    text.push(`<text class="sk-sub" x="${xs[4]}" y="${f(PAD_TOP + h(reached[4]) + 16)}">${rejectedAt[4]} later rejected</text>`);
   }
 
-  // Track the lowest drawn pixel so the viewBox hugs the content. A fixed height
-  // leaves a dead band inside the card whenever the flow is shallow.
+  // --- where each stage's losses went: stalled (grey) and rejected (red) ----
+  // Labels run rightwards under the columns that follow, so each stage's block is
+  // stacked below the block of the stage to its right. That ordering, not
+  // hand-tuned offsets, is what keeps a long label from running through a
+  // neighbour's branch however the counts change.
   let maxY = PAD_TOP + h(reached[0]);
+  let floor = -Infinity;
+  for (let i = 3; i >= 0; i--) {
+    if (atStage[i] <= 0) continue;
+    const rej = rejectedAt[i];
+    const stall = atStage[i] - rej;
+    const x1 = xs[i] + NODE_W, x2 = x1 + REACH[i];
+    let src = PAD_TOP + h(reached[i + 1]);
+    let y = Math.max(src + 44, floor + 20);
 
-  for (const s of stubs) {
-    out.push(`<rect class="sk-node-loss" x="${s.x}" y="${s.y.toFixed(1)}" width="${NODE_W}" height="${s.hh.toFixed(1)}" rx="2"/>`);
-    const cy = s.y + s.hh / 2 + 4, lx = s.x + 20;
-    out.push(`<text class="sk-num" x="${lx}" y="${cy.toFixed(1)}">${s.drop}</text>`);
-    out.push(`<text class="sk-lab" x="${lx + String(s.drop).length * 9 + 12}" y="${cy.toFixed(1)}">${esc(DROP_PHRASE[s.i])}</text>`);
-    const comp = dropComposition[s.i].slice(0, 5).map(c => `${c.count} ${c.status.toLowerCase()}`).join(" · ");
-    if (comp) out.push(`<text class="sk-sub" x="${lx}" y="${(cy + 18).toFixed(1)}">${esc(comp)}</text>`);
-    maxY = Math.max(maxY, s.y + s.hh, cy + (comp ? 24 : 6));
+    // Grey on top, red below, matching their order on the node, so the two
+    // branches never cross.
+    const comp = dropComposition[i].filter(c => c.status.toLowerCase() !== "rejected")
+      .map(c => `${c.count} ${c.status.toLowerCase()}`);
+    const parts = [
+      { n: stall, cls: "sk-loss", node: "sk-node-loss", num: "sk-num", phrase: STALL_PHRASE[i],
+        sub: fitList(comp, W - 8 - (x2 + 20)), full: comp.join(" · ") },
+      { n: rej, cls: "sk-rej", node: "sk-node-rej", num: "sk-num-rej", phrase: REJECT_PHRASE[i],
+        sub: rejected ? `${pct(rej, rejected)} of all rejections` : "" },
+    ];
+    for (const p of parts) {
+      if (p.n <= 0) continue;
+      const hh = h(p.n);
+      flows.push(ribbon(p.cls, x1, src, src + hh, x2, y, y + hh,
+        `${p.n} ${p.phrase}` + (p.full ? `: ${p.full}` : "")));
+      nodes.push(`<rect class="${p.node}" x="${x2}" y="${f(y)}" width="${NODE_W}" height="${f(hh)}" rx="2"/>`);
+      const cy = y + Math.max(hh, 14) / 2 + 4, lx = x2 + 20;
+      text.push(`<text class="${p.num}" x="${lx}" y="${f(cy)}">${p.n}</text>`);
+      text.push(`<text class="sk-lab" x="${lx + numW(p.n)}" y="${f(cy)}">${esc(p.phrase)}</text>`);
+      if (p.sub) text.push(`<text class="sk-sub" x="${lx}" y="${f(cy + 17)}">${esc(p.sub)}</text>`);
+      const bottom = Math.max(y + hh, cy + (p.sub ? 22 : 6));
+      src += hh;
+      y = bottom + 10;
+      floor = bottom;
+      maxY = Math.max(maxY, bottom);
+    }
   }
-  if (reached[4] === 0) out.push(`<text class="sk-sub" x="${xs[4] - 18}" y="62">none</text>`);
 
   const H = Math.ceil(maxY + 16);
-  const aria = `Stage flow: of ${reached[0]} applications, ${reached[0] - reached[1]} never got past ` +
-    `the application stage, ${reached[1]} drew a reply, ${reached[2]} reached an assessment, ` +
-    `${reached[3]} reached an interview and ${reached[4]} reached an offer.`;
+  const aria = `Stage flow: of ${reached[0]} applications, ${reached[1]} drew a reply, ${reached[2]} reached an ` +
+    `assessment, ${reached[3]} reached an interview and ${reached[4]} reached an offer. ` +
+    `${rejected} were rejected: ${rejectedAt.slice(0, 4).map((n, i) => `${n} ${REJECT_PHRASE[i].replace(/^rejected /, "")}`).join(", ")}` +
+    (rejectedAt[4] ? `, ${rejectedAt[4]} after an offer.` : ".");
 
-  return `<svg viewBox="0 0 ${W} ${Math.round(H)}" role="img" aria-label="${aria}">\n${out.map(p => "  " + p).join("\n")}\n</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(aria)}">\n` +
+    [...flows, ...nodes, ...text].map(p => "  " + p).join("\n") + `\n</svg>`;
 }
 
 /* ================================================================== *
