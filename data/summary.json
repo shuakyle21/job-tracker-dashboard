@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-23T02:11:11.572Z",
+  "generatedAt": "2026-09-23T02:35:34.594Z",
   "total": 41,
   "sent": 41,
   "unsent": 0,
@@ -91,10 +91,10 @@
   "channels": [
     {
       "name": "Jobstreet",
-      "sent": 23,
-      "replied": 3,
+      "sent": 22,
+      "replied": 2,
       "unsent": 0,
-      "rate": 0.13043478260869565
+      "rate": 0.09090909090909091
     },
     {
       "name": "Direct / Careers",
@@ -126,6 +126,13 @@
     },
     {
       "name": " DICT Digital Workforce Hub",
+      "sent": 1,
+      "replied": 1,
+      "unsent": 0,
+      "rate": 1
+    },
+    {
+      "name": "Company/Career Site",
       "sent": 1,
       "replied": 1,
       "unsent": 0,
