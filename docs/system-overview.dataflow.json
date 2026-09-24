@@ -7,25 +7,28 @@
     "quality_profile": "showcase",
     "views": [
       {
-        "id": "capture",
-        "label": "Capture",
+        "id": "ingest",
+        "label": "Ingest",
         "focus": [
           "boards",
-          "you",
-          "gmail"
-        ],
-        "note": "Applications and replies land in Gmail under the Job Application label."
-      },
-      {
-        "id": "automate",
-        "label": "Automate",
-        "focus": [
           "gmail",
-          "n8n",
+          "ingest",
+          "llm",
           "inbox",
           "feed"
         ],
-        "note": "n8n parses each email, logs it, upserts one Feed row per application, and labels it."
+        "note": "n8n polls Gmail, classifies each email (LLM only when the rules fail), logs it and upserts one Feed row per application."
+      },
+      {
+        "id": "sync",
+        "label": "Sync",
+        "focus": [
+          "you",
+          "feed",
+          "feed-sync",
+          "actions"
+        ],
+        "note": "Any Feed change, a hand edit or an ingest upsert, pings n8n within seconds and fires one repository_dispatch."
       },
       {
         "id": "publish",
@@ -33,14 +36,14 @@
         "focus": [
           "feed",
           "actions",
-          "dashboard"
+          "vercel"
         ],
-        "note": "GitHub Actions verifies, builds from Feed, and deploys the dashboard."
+        "note": "GitHub Actions verifies, builds from Feed with a read-only token, and deploys dist/ to Vercel."
       }
     ],
     "viewBox": [
       1076,
-      500
+      540
     ],
     "legend": {
       "entries": {
@@ -55,16 +58,16 @@
   },
   "stages": [
     {
-      "label": "Requirements"
-    },
-    {
       "label": "Capture"
     },
     {
-      "label": "Automate"
+      "label": "Ingest"
     },
     {
       "label": "Store"
+    },
+    {
+      "label": "Trigger"
     },
     {
       "label": "Publish"
@@ -82,38 +85,39 @@
       "width": 132
     },
     {
-      "id": "you",
-      "type": "frontend",
-      "label": "You",
-      "sublabel": "apply · edit tracker",
-      "stage": 0,
-      "row": 2,
-      "tag": "owner"
-    },
-    {
       "id": "gmail",
       "type": "external",
       "label": "Gmail",
-      "sublabel": "Job Application label",
-      "stage": 1,
+      "sublabel": "Job Application labels",
+      "stage": 0,
       "row": 1,
       "tag": "inbox"
     },
     {
-      "id": "n8n",
+      "id": "llm",
+      "type": "external",
+      "label": "LLM Router",
+      "sublabel": "fallback classifier",
+      "stage": 1,
+      "row": 0,
+      "tag": "unparsed only"
+    },
+    {
+      "id": "ingest",
       "type": "backend",
-      "label": "n8n Ingest",
-      "sublabel": "poll · parse · merge",
-      "stage": 2,
+      "label": "n8n Gmail Ingest",
+      "sublabel": "parse · merge · label",
+      "stage": 1,
       "row": 1,
-      "tag": "every 15 min"
+      "tag": "every 15 min",
+      "width": 136
     },
     {
       "id": "inbox",
       "type": "database",
       "label": "Inbox / Needs Review",
       "sublabel": "one row per email",
-      "stage": 3,
+      "stage": 2,
       "row": 0,
       "brand": "airtable",
       "tag": "log",
@@ -124,10 +128,29 @@
       "type": "database",
       "label": "Feed",
       "sublabel": "one row per application",
-      "stage": 3,
-      "row": 2,
+      "stage": 2,
+      "row": 1,
       "brand": "airtable",
       "tag": "tracker"
+    },
+    {
+      "id": "you",
+      "type": "frontend",
+      "label": "You",
+      "sublabel": "edit the tracker",
+      "stage": 2,
+      "row": 2,
+      "tag": "owner"
+    },
+    {
+      "id": "feed-sync",
+      "type": "backend",
+      "label": "n8n Feed Sync",
+      "sublabel": "daily webhook keep-alive",
+      "stage": 3,
+      "row": 2,
+      "tag": "seconds",
+      "width": 136
     },
     {
       "id": "actions",
@@ -135,18 +158,19 @@
       "label": "GitHub Actions",
       "sublabel": "verify · build",
       "stage": 4,
-      "row": 0,
+      "row": 1,
       "brand": "github-actions",
-      "tag": "CI",
+      "tag": "deploy.yml",
       "width": 136
     },
     {
-      "id": "dashboard",
+      "id": "vercel",
       "type": "frontend",
       "label": "Dashboard",
-      "sublabel": "static HTML on VPS",
+      "sublabel": "static dist/ on Vercel",
       "stage": 4,
       "row": 2,
+      "brand": "vercel",
       "tag": "public"
     }
   ],
@@ -156,48 +180,75 @@
       "from": "boards",
       "to": "gmail",
       "label": "confirmations",
-      "variant": "default"
-    },
-    {
-      "id": "sent-applications",
-      "from": "you",
-      "to": "gmail",
-      "label": "sent applications",
-      "variant": "dashed"
+      "variant": "default",
+      "labelDy": 24
     },
     {
       "id": "job-mail",
       "from": "gmail",
-      "to": "n8n",
-      "label": "keyword query",
+      "to": "ingest",
+      "label": "Gmail OAuth poll",
       "variant": "emphasis"
     },
     {
+      "id": "classify",
+      "from": "ingest",
+      "to": "llm",
+      "label": "Bearer: LLM Router Auth",
+      "variant": "default"
+    },
+    {
       "id": "message-rows",
-      "from": "n8n",
+      "from": "ingest",
       "to": "inbox",
       "label": "upsert message_id",
       "variant": "default"
     },
     {
       "id": "feed-upsert",
-      "from": "n8n",
+      "from": "ingest",
       "to": "feed",
-      "label": "upsert per application",
+      "label": "forward-only upsert",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelAt": [
+        429,
+        314
+      ]
+    },
+    {
+      "id": "hand-edits",
+      "from": "you",
+      "to": "feed",
+      "label": "hand edits",
+      "variant": "dashed"
+    },
+    {
+      "id": "ping",
+      "from": "feed",
+      "to": "feed-sync",
+      "label": "webhook ping",
+      "variant": "emphasis"
+    },
+    {
+      "id": "dispatch",
+      "from": "feed-sync",
+      "to": "actions",
+      "label": "repository_dispatch",
       "variant": "emphasis"
     },
     {
       "id": "feed-read",
       "from": "feed",
       "to": "actions",
-      "label": "read-only API",
+      "label": "read-only PAT",
       "variant": "security"
     },
     {
       "id": "deploy",
       "from": "actions",
-      "to": "dashboard",
-      "label": "atomic deploy",
+      "to": "vercel",
+      "label": "vercel deploy --prod",
       "variant": "emphasis",
       "labelDy": 24
     }
@@ -207,26 +258,26 @@
       "dot": "emerald",
       "title": "Main path",
       "items": [
-        "Every application email reaches Gmail, then n8n on a 15-minute poll",
-        "n8n writes Feed, the one table the dashboard reads",
-        "Actions verifies, builds and deploys the page"
+        "n8n polls Gmail every 15 min and upserts one Feed row per application",
+        "Any Feed change pings n8n Feed Sync, which fires one repository_dispatch",
+        "Actions verifies, builds from Feed and deploys to Vercel; cron every 6 h is the backstop"
       ]
     },
     {
       "dot": "violet",
       "title": "Automation rules",
       "items": [
-        "Each email gets Job Application/Processed plus a status label",
+        "Rules classify first; the LLM only sees emails they couldn't parse",
         "Feed rows only move forward: earliest date, highest stage",
-        "Job Platform is filled in from the sender"
+        "A daily keep-alive refreshes the Airtable webhook before its 7-day expiry"
       ]
     },
     {
       "dot": "rose",
-      "title": "Safety",
+      "title": "Credentials",
       "items": [
-        "Build reads Feed with a read-only token",
-        "Company names never reach the published page",
+        "GitHub Dispatch (Header Auth) and LLM Router Auth (Bearer) are separate types",
+        "Build reads Feed with a read-only token; company names never reach the page",
         "verify.mjs gates every deploy"
       ]
     }
