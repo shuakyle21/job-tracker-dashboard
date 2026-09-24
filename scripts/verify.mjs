@@ -262,6 +262,12 @@ async function assertIngestWorkflow() {
       && byName["Upsert Feed"]?.parameters.operation === "upsert"
       && byName["Upsert Feed"]?.parameters.columns.matchingColumns?.join() === "Application Key");
 
+  // Hand-typed keys ("va masters | dev") and generated ones ("va masters|dev")
+  // must find the same row; an exact comparison made a duplicate Feed row.
+  check("Feed row lookup ignores case and spacing around |",
+    (byName["Find Feed Row"]?.parameters.filterByFormula ?? "")
+      .includes('REGEX_REPLACE(LOWER(TRIM({Application Key})), \\" *[|] *\\", \\"|\\")'));
+
   check("Feed row lookup survives a miss",
     byName["Find Feed Row"]?.alwaysOutputData === true
       && wf.connections["Find Feed Row"]?.main[0]?.[0]?.node === "Merge Into Feed");
