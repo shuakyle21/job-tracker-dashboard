@@ -1,0 +1,41 @@
+name: n8n health
+
+# Watches the n8n instance from outside it. A dead or drifted n8n can't report
+# its own failure, and until this existed the only signal was a dashboard that
+# quietly stopped changing. A failed run here is the alert: GitHub emails you.
+#
+# Deliberately separate from deploy.yml: an n8n problem must never block a
+# dashboard deploy, and a deploy problem must never hide an n8n one.
+on:
+  schedule:
+    # Hourly, off the top of the hour (Actions cron is busiest at :00).
+    - cron: "43 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: n8n-health
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # Active, published, matching the generated JSON, no shared GitHub
+      # credential, and no error executions in the last 150 minutes (the
+      # ingest's hourly stale-mail alarm and the Feed webhook keep-alive both
+      # fail that way).
+      - name: Check live n8n against the repo
+        env:
+          N8N_API_URL: ${{ secrets.N8N_API_URL }}
+          N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
+        run: node scripts/check-live.mjs

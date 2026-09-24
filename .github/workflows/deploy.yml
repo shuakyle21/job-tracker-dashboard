@@ -18,8 +18,9 @@ on:
   # Manual run from the Actions tab — how you'll test the first deploy.
   workflow_dispatch:
 
-  # Event-driven refresh. n8n POSTs here after it writes new rows, so the dashboard
-  # updates within seconds of an email arriving instead of waiting for the cron.
+  # Event-driven refresh. n8n POSTs here whenever Airtable pings it that Feed
+  # changed (hand edits and the Gmail ingest's writes alike), so the dashboard
+  # updates within seconds instead of waiting for the cron.
   repository_dispatch:
     types: [tracker-updated]
 
@@ -37,6 +38,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # Which path fired this run. "airtable-webhook" means Feed changed, from a
+      # hand edit or the Gmail ingest's upsert. Passed through env, never
+      # interpolated into the script, because the payload is caller-supplied.
+      - name: Trigger source
+        env:
+          EVENT: ${{ github.event_name }}
+          SOURCE: ${{ github.event.client_payload.source }}
+        run: echo "event=$EVENT source=${SOURCE:-n/a}"
 
       - uses: actions/setup-node@v4
         with:

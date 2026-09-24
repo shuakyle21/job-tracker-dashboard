@@ -96,7 +96,9 @@ public URL and fails if the page isn't actually up.
 ### 5. Wire up n8n
 
 [DEPLOY.md §3](DEPLOY.md) covers the Gmail labels, importing `n8n/job-tracker-ingest.json`, and
-running the one-off backfill over mail that predates the workflow.
+running the one-off backfill over mail that predates the workflow. §3.6 adds
+`n8n/job-tracker-feed-sync.json`, which rebuilds the dashboard within seconds of any Feed
+change, from a hand edit in Airtable or from the ingest.
 
 ## Usage
 

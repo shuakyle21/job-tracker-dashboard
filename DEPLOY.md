@@ -87,6 +87,8 @@ not "Full Account" — a token scoped to one team can't touch anything else if i
 | `VERCEL_ORG_ID` | the Team ID from 2.3 |
 | `VERCEL_PROJECT_ID` | the Project ID from 2.3 |
 | `PUBLIC_URL` | optional — no longer read by the workflow (see 2.6); a bookmark for your own custom domain if you set one |
+| `N8N_API_URL` | your n8n base URL, e.g. `https://n8n.example.com`. Used only by `health.yml` (§3.8) |
+| `N8N_API_KEY` | an n8n API key (n8n ▸ Settings ▸ n8n API). Used only by `health.yml` (§3.8) |
 
 None of these belong on your laptop once they're in GitHub — that's the whole reason they're
 secrets instead of a `.env` file next to the code.
@@ -214,8 +216,17 @@ ids are already filled in. Credentials are not:
 |---|---|
 | **Poll Gmail**, **Fetch Job Mail**, **Mark Email Processed** | your Gmail credential |
 | **Write to Inbox**, **Write to Needs Review**, **Find Feed Row**, **Upsert Feed** | an Airtable personal access token with `data.records:read` and `data.records:write` on this base. This is a *second* token: the `AIRTABLE_API_KEY` secret in §2.6 is read-only and belongs to the dashboard build |
-| **Trigger Dashboard Rebuild** | a Header Auth credential. Name: `Authorization`. Value: `Bearer github_pat_...`, a fine-grained PAT with **Contents: read and write** on this repo only |
-| **Classify With LLM** | a Header Auth credential. Name: `Authorization`. Value: `Bearer <router API key>`, for the OpenAI-compatible endpoint set in `scripts/build-n8n.mjs`'s `LLM_ENDPOINT`. Only called for emails the rules in `n8n/parse-email.js` couldn't classify |
+| **Classify With LLM** | **LLM Router Auth**, a *Bearer Auth* credential. Token: your router API key, without the `Bearer ` prefix (n8n adds it). Used for the OpenAI-compatible endpoint set in `scripts/build-n8n.mjs`'s `LLM_ENDPOINT`. Only called for emails the rules in `n8n/parse-email.js` couldn't classify |
+
+This workflow doesn't call GitHub. Rebuilds come from the Feed webhook in §3.6, which fires on
+every Feed write, the ingest's own upserts included. Set that up too, or new mail only reaches
+the dashboard on the 6-hourly cron.
+
+The LLM credential is a different *type* from the GitHub one (Bearer Auth vs Header Auth) on
+purpose. When both were Header Auth, one credential got attached to both nodes, so the GitHub
+token was sent to the LLM router on every fallback call (and the router rejected it, so the
+fallback never worked). n8n only offers credentials of a node's own type, so that mix-up can't
+happen again. `verify.mjs` checks it.
 
 ### 3.4 Backfill, test, then enable
 
@@ -229,7 +240,8 @@ Check, in order:
 2. `Feed` has one row per application, not one per email, with `Job Platform` set.
 3. `Needs Review` has the rest.
 4. Those emails carry `Job Application`, `Job Application/Processed` and a status label.
-5. GitHub Actions shows a run triggered by `repository_dispatch`.
+5. GitHub Actions shows a `repository_dispatch` run whose *Trigger source* step prints
+   `source=airtable-webhook` (needs §3.6).
 
 Run the backfill a second time. Nothing should change: no new rows and no new labels. If rows
 duplicate, the matching field was lost on import. Reopen the Airtable nodes and confirm
@@ -244,8 +256,109 @@ The workflow works for a week, then quietly stops. Publish the app, or use a ser
 account. This is the single most common way this kind of pipeline dies, and it dies
 silently — n8n shows a credential error in the execution log and nowhere else.
 
-Worth doing: n8n ▸ Settings ▸ **Log Streaming** or an error workflow that emails you on
-failure. Otherwise the first sign is a dashboard that stopped changing.
+That credential error now surfaces in two ways: the hourly **Ingest Backlog Check** fails when
+it can't read Gmail, and `health.yml` (§3.8) emails you about the failed execution.
+
+### 3.6 Feed edits → rebuild in seconds
+
+Every change to Feed reaches the dashboard through a second workflow,
+`n8n/job-tracker-feed-sync.json`, built by the same `scripts/build-n8n.mjs`.
+
+This is the only thing that dispatches rebuilds, for mail as well as hand edits: the ingest
+upserts Feed, and that write pings the receiver like any other.
+
+- **Receiver.** Airtable's Webhooks API POSTs a small ping to
+  `https://<your n8n>/webhook/job-tracker-feed-changed` within seconds of any change to `Feed`,
+  from any source (the UI, the API, n8n itself). n8n answers 200 straight away, checks the ping
+  names this base, and fires one `repository_dispatch` (`client_payload.source:
+  airtable-webhook`). Bursts of edits become one deploy because `deploy.yml` cancels the
+  run in progress when a newer one starts.
+- **Keep-alive.** A webhook created with a personal access token **expires 7 days after it was
+  created or last refreshed, even if the token itself never expires.** Airtable also switches a
+  webhook's notifications off after about a day of failed pings. Once a day
+  (**Daily Keep-Alive**) the workflow lists the base's webhooks and refreshes ours, re-enables
+  its notifications, or creates it if none is left. The decision is `n8n/airtable-webhook.js`,
+  tested by `scripts/test-airtable-webhook.mjs`. A keep-alive that can't reach Airtable fails
+  its execution instead of quietly letting the webhook lapse.
+
+Setup:
+
+1. Add the **`webhook:manage`** scope to the Airtable token n8n uses (the read/write one from
+   §3.3, not the dashboard's read-only secret).
+2. If your n8n isn't at `https://n8n.shua-kyle.me`, change `NOTIFICATION_URL` in
+   `n8n/airtable-webhook.js` and regenerate. `verify.mjs` checks the URL ends in the receiver's
+   path.
+3. n8n ▸ Import from File → `n8n/job-tracker-feed-sync.json`. On **Trigger Dashboard
+   Rebuild**, set **GitHub Dispatch**: a *Header Auth* credential, name `Authorization`, value
+   `Bearer github_pat_...`, a fine-grained PAT with **Contents: read and write** on this repo
+   only. Set the Airtable token on the four Airtable HTTP nodes. Activate it.
+4. Check the receiver routes before Airtable depends on it:
+   `curl -X POST -H 'Content-Type: application/json' -d '{}' https://<your n8n>/webhook/job-tracker-feed-changed`
+   must return 200, and n8n must show one execution that stopped at **Is Our Base?** (false
+   branch) with no error and no dispatch.
+5. Open **Register Webhook (manual)** and click *Execute workflow*. **Create Webhook** should
+   return an id starting `ach`. Run it a **second** time: **Decide Webhook Action** must output
+   `action: "refresh"`, not `create`. A second `create` means the list response didn't match
+   what `n8n/airtable-webhook.js` expects, and it would add a duplicate webhook every day.
+6. Retire the old paths, or every edit still fires twice: unpublish any older workflow that
+   polls Feed, and remove any Airtable Trigger node on Feed from the ingest workflow.
+7. Edit a Feed cell. **Actions** should show one `repository_dispatch` run within about 15
+   seconds, and its *Trigger source* step prints `source=airtable-webhook` (that step exists
+   once this change is on `main`, since `repository_dispatch` always runs `main`'s workflow).
+   Make two or three more edits a few minutes apart: each should get its own receiver
+   execution. Two runs for one edit means either Airtable sent a second ping (two receiver
+   executions; harmless, cancel-in-progress absorbs it) or an old poller is still live (one
+   receiver execution; finish step 6).
+
+The receiver's URL is public (so is this repo), and the check on the base id only stops casual
+hits. The most a deliberate one can do is start a rebuild. Checking Airtable's
+`X-Airtable-Content-MAC` header would close that gap.
+
+Don't add an Airtable polling trigger on `Feed` beside this: two paths fire two dispatches
+for every edit. `verify.mjs` fails if either generated workflow has one.
+
+### 3.7 Replacing a drifted ingest workflow
+
+If the running ingest was edited in the n8n UI, don't patch it by hand: that's how drift
+starts. `node scripts/check-live.mjs` (or the `health.yml` run) lists every difference.
+To replace it:
+
+1. n8n ▸ Import from File → `n8n/job-tracker-ingest.json`. That creates a new workflow. Set the
+   credentials from §3.3, including the Bearer Auth **LLM Router Auth** on
+   **Classify With LLM**.
+2. Deactivate the old workflow, then archive it. `check-live.mjs` fails while two active or
+   unarchived workflows share the name.
+3. Activate the new one and run **Backfill (manual)** once. Mail the old workflow never labelled
+   `Job Application/Processed` gets processed now. That's safe: Feed merges only move forward,
+   and Inbox and Needs Review upsert on `message_id`.
+4. Until the backfill has cleared that mail, **Stale Job Mail Alarm** fails every hour and
+   `health.yml` will say so. That's expected. If it keeps failing after the backfill:
+   - more than 500 messages were waiting: run Backfill again;
+   - or the email was already *seen* once but never labelled (for example **Mark Email
+     Processed** failed). **Skip Already Seen** remembers every message id it has passed, so
+     Backfill drops that email too. Search Gmail with the trigger's query, find the email's row
+     in Inbox or Feed, then add `Job Application/Processed` by hand. If the row is missing, clear
+     Skip Already Seen's deduplication history and backfill again; that's safe, since every
+     write is an upsert.
+
+### 3.8 Health check (so you don't have to look)
+
+`.github/workflows/health.yml` runs `scripts/check-live.mjs` hourly against the n8n API, from
+outside n8n. A failed run means GitHub emails you. It fails when:
+
+- a generated workflow is missing, duplicated or inactive on the instance;
+- the live workflow differs from the generated JSON (nodes, parameters, flags, connections,
+  credential types; positions and credential ids are ignored);
+- a credential attached to a GitHub dispatch is also attached to any other node;
+- the published (running) version differs from the draft;
+- either workflow had an error execution in the last 150 minutes (wider than the hourly
+  schedule, because Actions cron can run late; an error may be reported twice). That covers
+  the ingest's hourly **Stale Job Mail Alarm** (job mail older than 2h still
+  unprocessed), the Feed webhook keep-alive, a failed dispatch, and an expired Gmail or Airtable
+  credential.
+
+Setup: add `N8N_API_URL` and `N8N_API_KEY` (§2.5), then **Actions ▸ n8n health ▸ Run workflow**.
+Add the secrets before merging `health.yml`, or it fails every hour until you do.
 
 ---
 

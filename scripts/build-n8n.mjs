@@ -18,6 +18,7 @@ const ROOT = join(dirname(new URL(import.meta.url).pathname), "..");
 const parserSource = await readFile(join(ROOT, "n8n/parse-email.js"), "utf8");
 const mergeSource = await readFile(join(ROOT, "n8n/merge-feed.js"), "utf8");
 const llmFallbackSource = await readFile(join(ROOT, "n8n/llm-fallback.js"), "utf8");
+const webhookKeepAliveSource = await readFile(join(ROOT, "n8n/airtable-webhook.js"), "utf8");
 // Gmail label ids for "Job Application", "Job Application/Processed" and one
 // sub-label per parser status_label. Ids, not names: the Gmail node's
 // addLabels takes ids, and a renamed label keeps its id.
@@ -33,6 +34,11 @@ const JOB_MAIL_QUERY = "(label:job-application"
   + ' OR "application sent to" OR "has viewed your application" OR "your application was viewed"'
   + ' OR "update on your application" OR subject:"your application" OR subject:"application received")'
   + " -label:job-application-processed -in:chats";
+
+// How long job mail may sit unprocessed before the watchdog calls it stuck.
+// Two polls' worth of slack on a 15-minute trigger would be enough; two hours
+// also rides out an n8n restart without paging anyone.
+const BACKLOG_GRACE_HOURS = 2;
 
 // The live base and its tables. Hard-coded on purpose: a resource locator in
 // `id` mode imports ready to run, where `list` mode imports blank and has to
@@ -50,8 +56,81 @@ const FEED_TABLE_ID = "tblPZSpJ8P4iFuAhX";
 const LLM_ENDPOINT = "https://llmrouter.boyemma.com/v1/chat/completions";
 const LLM_MODEL = "auto";
 
+// Airtable POSTs a ping here whenever Feed changes. The full production URL
+// lives in n8n/airtable-webhook.js (it is what the keep-alive registers);
+// verify.mjs checks that URL ends in this path.
+const FEED_WEBHOOK_PATH = "job-tracker-feed-changed";
+
 // n8n expressions are plain strings that begin with "=".
 const ex = (s) => `=${s}`;
+
+// Credential placeholders are named, and the two outbound HTTP credentials are
+// different *types* on purpose. Both used to be Header Auth, the import picked
+// the same one for both, and the GitHub token went to the LLM router on every
+// fallback call. n8n's picker only offers credentials of the node's own type,
+// so a Bearer Auth node can never be handed the GitHub header again.
+const GITHUB_CREDENTIAL = { httpHeaderAuth: { id: "REPLACE_ME", name: "GitHub Dispatch" } };
+const LLM_CREDENTIAL = { httpBearerAuth: { id: "REPLACE_ME", name: "LLM Router Auth" } };
+const AIRTABLE_CREDENTIAL = { airtableTokenApi: { id: "REPLACE_ME", name: "Airtable account" } };
+
+// The repository_dispatch deploy.yml listens for. `source` only says which
+// path fired it, for the run log. Only the Feed-sync workflow dispatches: the
+// dashboard reads nothing but Feed, and every Feed write (the Gmail ingest's
+// upserts included) already pings it, so a second dispatch from the ingest
+// would just start a run that cancel-in-progress throws away.
+function dispatchNode(id, position, source) {
+  return {
+    parameters: {
+      method: "POST",
+      url: "https://api.github.com/repos/shuakyle21/job-tracker-dashboard/dispatches",
+      authentication: "genericCredentialType",
+      genericAuthType: "httpHeaderAuth",
+      sendHeaders: true,
+      headerParameters: {
+        parameters: [
+          { name: "Accept", value: "application/vnd.github+json" },
+          { name: "X-GitHub-Api-Version", value: "2022-11-28" },
+        ],
+      },
+      sendBody: true,
+      specifyBody: "json",
+      jsonBody: JSON.stringify({ event_type: "tracker-updated", client_payload: { source } }),
+      options: {},
+    },
+    type: "n8n-nodes-base.httpRequest",
+    typeVersion: 4.5,
+    position,
+    id,
+    name: "Trigger Dashboard Rebuild",
+    // One rebuild per execution, whatever arrives in it.
+    executeOnce: true,
+    // No onError: nothing runs after this, so continuing would only turn a
+    // revoked token into a green execution and a dashboard that stops moving.
+    retryOnFail: true,
+    maxTries: 3,
+    waitBetweenTries: 2000,
+    credentials: GITHUB_CREDENTIAL,
+  };
+}
+
+// A one-condition IF node, the only shape these workflows need.
+function ifNode(id, name, position, leftValue, operator, rightValue = "") {
+  return {
+    parameters: {
+      conditions: {
+        options: { caseSensitive: true, leftValue: "", typeValidation: "strict", version: 2 },
+        conditions: [{ id, leftValue: ex(leftValue), rightValue, operator }],
+        combinator: "and",
+      },
+      options: {},
+    },
+    type: "n8n-nodes-base.if",
+    typeVersion: 2.3,
+    position,
+    id,
+    name,
+  };
+}
 
 // Both tables take the same shape, so build the resourceMapper once. The row
 // key is message_id: one Gmail message produces exactly one row, forever. That
@@ -114,7 +193,7 @@ function airtableNode(name, tableId, fields, position, key = "message_id") {
     retryOnFail: true,
     maxTries: 3,
     waitBetweenTries: 2000,
-    credentials: { airtableTokenApi: { id: "REPLACE_ME", name: "Airtable account" } },
+    credentials: AIRTABLE_CREDENTIAL,
   };
 }
 
@@ -224,7 +303,7 @@ const nodes = [
       method: "POST",
       url: LLM_ENDPOINT,
       authentication: "genericCredentialType",
-      genericAuthType: "httpHeaderAuth",
+      genericAuthType: "httpBearerAuth",
       sendBody: true,
       specifyBody: "json",
       jsonBody: ex(`{{ JSON.stringify({
@@ -242,7 +321,7 @@ const nodes = [
     id: "llm-classify",
     name: "Classify With LLM",
     onError: "continueRegularOutput",
-    credentials: { httpHeaderAuth: { id: "REPLACE_ME", name: "LLM Router Auth" } },
+    credentials: LLM_CREDENTIAL,
   },
   {
     parameters: { mode: "runOnceForEachItem", language: "javaScript", jsCode: llmFallbackSource },
@@ -313,7 +392,7 @@ const nodes = [
     // item disappears and the email never reaches Feed or gets labelled.
     alwaysOutputData: true,
     onError: "continueRegularOutput",
-    credentials: { airtableTokenApi: { id: "REPLACE_ME", name: "Airtable account" } },
+    credentials: AIRTABLE_CREDENTIAL,
   },
   {
     parameters: { mode: "runOnceForEachItem", language: "javaScript", jsCode: mergeSource },
@@ -354,33 +433,57 @@ const nodes = [
     onError: "continueRegularOutput",
     credentials: { gmailOAuth2: { id: "REPLACE_ME", name: "Gmail account" } },
   },
+
+  // Watchdog. A Gmail trigger that finds nothing produces no execution at all,
+  // so "no new mail" and "broken trigger" look identical from outside. Job mail
+  // still unprocessed two hours after it arrived can only mean the second; this
+  // turns it into a failed execution, which scripts/check-live.mjs reports.
+  // An expired Gmail token fails the fetch itself, which is just as loud.
+  {
+    parameters: { rule: { interval: [{ field: "hours", hoursInterval: 1 }] } },
+    type: "n8n-nodes-base.scheduleTrigger",
+    typeVersion: 1.2,
+    position: [0, 940],
+    id: "backlog-check",
+    name: "Ingest Backlog Check",
+  },
   {
     parameters: {
-      method: "POST",
-      url: "https://api.github.com/repos/shuakyle21/job-tracker-dashboard/dispatches",
-      authentication: "genericCredentialType",
-      genericAuthType: "httpHeaderAuth",
-      sendHeaders: true,
-      headerParameters: {
-        parameters: [
-          { name: "Accept", value: "application/vnd.github+json" },
-          { name: "X-GitHub-Api-Version", value: "2022-11-28" },
-        ],
+      resource: "message",
+      operation: "getAll",
+      returnAll: false,
+      limit: 1,
+      simple: true,
+      filters: {
+        // Gmail reads a bare number after before: as epoch seconds.
+        q: ex(`${JOB_MAIL_QUERY} before:{{ Math.floor(Date.now() / 1000) - ${BACKLOG_GRACE_HOURS} * 3600 }}`),
+        readStatus: "both",
+        includeSpamTrash: false,
       },
-      sendBody: true,
-      specifyBody: "json",
-      jsonBody: '{"event_type": "tracker-updated"}',
       options: {},
     },
-    type: "n8n-nodes-base.httpRequest",
-    typeVersion: 4.5,
-    position: [2020, 300],
-    id: "rebuild",
-    name: "Trigger Dashboard Rebuild",
-    // One rebuild per run, not one per email. Without this, a poll that picks
-    // up eight emails fires eight Actions runs that all build the same data.
+    type: "n8n-nodes-base.gmail",
+    typeVersion: 2.2,
+    position: [220, 940],
+    id: "backlog-fetch",
+    name: "Find Stale Job Mail",
+    credentials: { gmailOAuth2: { id: "REPLACE_ME", name: "Gmail account" } },
+  },
+  {
+    // Only reached when the search returned something: Gmail emits no items
+    // for an empty result, so a healthy inbox ends the execution above.
+    parameters: {
+      errorMessage: `Job mail older than ${BACKLOG_GRACE_HOURS}h is still missing Job Application/Processed — the ingest is stuck. `
+        + "Check the Poll Gmail executions, then run Backfill (manual). If that doesn't clear it, the email was already "
+        + "seen once and Skip Already Seen drops it: find its row in Inbox/Feed, then label it Job Application/Processed "
+        + "by hand, or clear Skip Already Seen's deduplication history and backfill again. See DEPLOY.md §3.7.",
+    },
+    type: "n8n-nodes-base.stopAndError",
+    typeVersion: 1,
+    position: [440, 940],
+    id: "backlog-alarm",
+    name: "Stale Job Mail Alarm",
     executeOnce: true,
-    onError: "continueRegularOutput",
   },
 ];
 
@@ -388,7 +491,8 @@ const stickies = [
   ["## 1. Poll and dedupe\nQuery: mail under **Job Application**, or containing confirmation phrases (\"thank you for applying\", \"received your application\", …), minus **Job Application/Processed**.\n\n**Backfill (manual)**: run once to process mail already in the label.\n\n**Remove Duplicates** is the second net: it catches a re-delivery in the window between the Airtable write and the label being applied.", [-40, 20], 400, 280, 4],
   ["## 2. Classify\nPure function, no network. Source of truth is `n8n/parse-email.js` in the repo — it has tests. Edit it there and re-run `node scripts/build-n8n.mjs`, not here.", [400, 60], 380, 220, 3],
   ["## 3. Store\nInbox / Needs Review rows key on `message_id`, so re-running is an update, not a duplicate.\n\nClassified mail also upserts **Feed**, one row per application (`Application Key` = company|title, or platform|title|thread-id when the employer is unknown). `merge-feed.js` only moves a row forward: earliest date, highest stage, no status regressions — hand edits survive.", [820, 20], 860, 260, 5],
-  ["## 4. Close the loop\nLabel is applied **after** the write — a crash loses a label, not a row.\n\nThe rebuild fires once per run and reaches GitHub Actions as a `repository_dispatch`, so the dashboard updates in seconds instead of waiting for the 6-hourly cron.", [1760, 20], 400, 280, 6],
+  ["## 5. Watchdog\nHourly: any job mail older than 2h that still lacks **Job Application/Processed** fails this execution. `scripts/check-live.mjs` (hourly in GitHub Actions) turns failed executions into an email, so a stuck ingest can't stay quiet.", [-40, 1060], 560, 160, 2],
+  ["## 4. Close the loop\nLabel is applied **after** the write — a crash loses a label, not a row.\n\nNo rebuild here: every Feed upsert pings the **Feed change → rebuild** workflow, which dispatches to GitHub Actions, so the dashboard updates in seconds instead of waiting for the 6-hourly cron.", [1760, 20], 400, 280, 6],
 ];
 
 for (const [content, position, width, height, color] of stickies) {
@@ -436,7 +540,8 @@ const workflow = {
     "Merge Into Feed": { main: one("Loop Feed Rows") },
     "Upsert Feed": { main: one("Mark Email Processed") },
     "Write to Needs Review": { main: one("Mark Email Processed") },
-    "Mark Email Processed": { main: one("Trigger Dashboard Rebuild") },
+    "Ingest Backlog Check": { main: one("Find Stale Job Mail") },
+    "Find Stale Job Mail": { main: one("Stale Job Mail Alarm") },
   },
   settings: { executionOrder: "v1", saveManualExecutions: true, saveExecutionProgress: true },
   pinData: {},
@@ -448,3 +553,146 @@ const out = join(ROOT, "n8n/job-tracker-ingest.json");
 await writeFile(out, JSON.stringify(workflow, null, 2) + "\n");
 console.log(`Wrote ${out}`);
 console.log(`  ${nodes.length} nodes, parser body ${parserSource.length} chars`);
+
+// ---------------------------------------------------------------------------
+// Feed change → rebuild. A separate workflow, n8n/job-tracker-feed-sync.json.
+//
+// Airtable's Webhooks API POSTs a small ping ({ base, webhook, timestamp })
+// here within seconds of any change to Feed, including hand edits, which the
+// Gmail workflow never sees. The receiver turns that into a repository_dispatch,
+// so a hand edit reaches GitHub Actions in seconds instead of on the 6-hourly
+// cron. It replaces the old 5-minute Airtable polling trigger.
+// ---------------------------------------------------------------------------
+
+const AIRTABLE_WEBHOOKS_URL = `https://api.airtable.com/v0/bases/${BASE_ID}/webhooks`;
+const DECIDE = "Decide Webhook Action";
+
+function airtableApiNode(id, name, position, method, url, body) {
+  return {
+    parameters: {
+      method,
+      url,
+      authentication: "predefinedCredentialType",
+      nodeCredentialType: "airtableTokenApi",
+      ...(body ? { sendBody: true, specifyBody: "json", jsonBody: body } : {}),
+      options: {},
+    },
+    type: "n8n-nodes-base.httpRequest",
+    typeVersion: 4.5,
+    position,
+    id,
+    name,
+    // No onError here: a keep-alive that can't reach Airtable must fail the
+    // execution, loudly, rather than let the webhook quietly expire.
+    retryOnFail: true,
+    maxTries: 3,
+    waitBetweenTries: 5000,
+    credentials: AIRTABLE_CREDENTIAL,
+  };
+}
+
+const syncNodes = [
+  {
+    parameters: {
+      httpMethod: "POST",
+      path: FEED_WEBHOOK_PATH,
+      // Answer 200 before doing anything. Airtable retries a failed ping 13
+      // times over ~a day and then switches the webhook's notifications off.
+      responseMode: "onReceived",
+      options: {},
+    },
+    type: "n8n-nodes-base.webhook",
+    typeVersion: 2,
+    position: [0, 200],
+    id: "feed-changed",
+    name: "Airtable Feed Changed",
+    webhookId: "ec582629-12e7-45b6-966c-180c5df431bf",
+  },
+  // The repo is public, so the path is not a secret. This stops casual hits;
+  // the worst a deliberate one can do is start a rebuild that cancel-in-progress
+  // collapses into the next. Verifying X-Airtable-Content-MAC would close it.
+  // `?? ''` keeps a junk POST with no body on the false branch instead of
+  // failing strict type validation and showing up as an error execution.
+  ifNode("is-our-base", "Is Our Base?", [220, 200], "{{ $json.body?.base?.id ?? '' }}",
+    { type: "string", operation: "equals" }, BASE_ID),
+  dispatchNode("feed-rebuild", [440, 180], "airtable-webhook"),
+
+  {
+    parameters: { rule: { interval: [{ field: "days", daysInterval: 1, triggerAtHour: 3 }] } },
+    type: "n8n-nodes-base.scheduleTrigger",
+    typeVersion: 1.2,
+    position: [0, 520],
+    id: "keep-alive-daily",
+    name: "Daily Keep-Alive",
+  },
+  // First-time setup: run once by hand after activating, to create the webhook
+  // without waiting for the schedule.
+  {
+    parameters: {},
+    type: "n8n-nodes-base.manualTrigger",
+    typeVersion: 1,
+    position: [0, 720],
+    id: "keep-alive-manual",
+    name: "Register Webhook (manual)",
+  },
+  airtableApiNode("list-webhooks", "List Airtable Webhooks", [220, 620], "GET", AIRTABLE_WEBHOOKS_URL),
+  {
+    parameters: { mode: "runOnceForEachItem", language: "javaScript", jsCode: webhookKeepAliveSource },
+    type: "n8n-nodes-base.code",
+    typeVersion: 2,
+    position: [440, 620],
+    id: "decide-webhook",
+    name: DECIDE,
+  },
+  ifNode("webhook-exists", "Webhook Exists?", [660, 620], "{{ $json.action }}",
+    { type: "string", operation: "notEquals" }, "create"),
+  ifNode("notifications-off", "Notifications Off?", [880, 520], "{{ $json.action }}",
+    { type: "string", operation: "equals" }, "enable"),
+  airtableApiNode("enable-notifications", "Enable Notifications", [1100, 440], "POST",
+    ex(`${AIRTABLE_WEBHOOKS_URL}/{{ $('${DECIDE}').item.json.webhookId }}/enableNotifications`),
+    JSON.stringify({ enable: true })),
+  airtableApiNode("refresh-webhook", "Refresh Webhook", [1320, 540], "POST",
+    ex(`${AIRTABLE_WEBHOOKS_URL}/{{ $('${DECIDE}').item.json.webhookId }}/refresh`)),
+  airtableApiNode("create-webhook", "Create Webhook", [880, 720], "POST", AIRTABLE_WEBHOOKS_URL,
+    ex(`{{ JSON.stringify($('${DECIDE}').item.json.createBody) }}`)),
+];
+
+const syncStickies = [
+  ["## Feed change → rebuild\nAirtable pings this webhook within seconds of any Feed change (hand edits included) and it fires one `repository_dispatch`. Source of truth: `scripts/build-n8n.mjs`. Edit there, not here.", [-40, 0], 620, 160, 5],
+  ["## Keep the webhook alive\nA webhook created with a personal access token expires 7 days after its last refresh, whatever the token's own expiry is, and Airtable switches notifications off after ~a day of failed pings. Daily: refresh it, re-enable it, or create it. Logic: `n8n/airtable-webhook.js` (tested).", [-40, 380], 620, 120, 6],
+];
+for (const [content, position, width, height, color] of syncStickies) {
+  syncNodes.push({
+    parameters: { content, width, height, color },
+    type: "n8n-nodes-base.stickyNote",
+    typeVersion: 1,
+    position,
+    id: `sync-sticky-${syncNodes.length}`,
+    name: `Note ${syncNodes.length}`,
+  });
+}
+
+const syncWorkflow = {
+  name: "Job Tracker — Feed change → rebuild",
+  nodes: syncNodes,
+  connections: {
+    "Airtable Feed Changed": { main: one("Is Our Base?") },
+    "Is Our Base?": { main: [one("Trigger Dashboard Rebuild")[0], []] },
+    "Daily Keep-Alive": { main: one("List Airtable Webhooks") },
+    "Register Webhook (manual)": { main: one("List Airtable Webhooks") },
+    "List Airtable Webhooks": { main: one(DECIDE) },
+    [DECIDE]: { main: one("Webhook Exists?") },
+    "Webhook Exists?": { main: [one("Notifications Off?")[0], one("Create Webhook")[0]] },
+    "Notifications Off?": { main: [one("Enable Notifications")[0], one("Refresh Webhook")[0]] },
+    "Enable Notifications": { main: one("Refresh Webhook") },
+  },
+  settings: { executionOrder: "v1", saveManualExecutions: true },
+  pinData: {},
+  meta: { instanceId: "job-tracker-dashboard" },
+  tags: [],
+};
+
+const syncOut = join(ROOT, "n8n/job-tracker-feed-sync.json");
+await writeFile(syncOut, JSON.stringify(syncWorkflow, null, 2) + "\n");
+console.log(`Wrote ${syncOut}`);
+console.log(`  ${syncNodes.length} nodes`);

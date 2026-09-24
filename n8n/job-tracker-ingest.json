@@ -150,7 +150,7 @@
         "method": "POST",
         "url": "https://llmrouter.boyemma.com/v1/chat/completions",
         "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
+        "genericAuthType": "httpBearerAuth",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({\n        model: \"auto\",\n        messages: [\n          { role: \"system\", content: \"You classify job-application emails. Reply with only a JSON object: {\\\"status\\\": one of applied, viewed by employer, in review, assessment, interview scheduled, offer, rejected, talent pool}. If none fit, reply {\\\"status\\\": \\\"\\\"}.\" },\n          { role: \"user\", content: $('Parse Job Email').item.json.raw_text },\n        ],\n      }) }}",
@@ -168,7 +168,7 @@
       "name": "Classify With LLM",
       "onError": "continueRegularOutput",
       "credentials": {
-        "httpHeaderAuth": {
+        "httpBearerAuth": {
           "id": "REPLACE_ME",
           "name": "LLM Router Auth"
         }
@@ -731,38 +731,66 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.github.com/repos/shuakyle21/job-tracker-dashboard/dispatches",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
+        "rule": {
+          "interval": [
             {
-              "name": "Accept",
-              "value": "application/vnd.github+json"
-            },
-            {
-              "name": "X-GitHub-Api-Version",
-              "value": "2022-11-28"
+              "field": "hours",
+              "hoursInterval": 1
             }
           ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        940
+      ],
+      "id": "backlog-check",
+      "name": "Ingest Backlog Check"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": 1,
+        "simple": true,
+        "filters": {
+          "q": "=(label:job-application OR \"thank you for applying\" OR \"thanks for applying\" OR \"application has been received\" OR \"received your application\" OR \"successfully submitted\" OR \"your application was sent\" OR \"application sent to\" OR \"has viewed your application\" OR \"your application was viewed\" OR \"update on your application\" OR subject:\"your application\" OR subject:\"application received\") -label:job-application-processed -in:chats before:{{ Math.floor(Date.now() / 1000) - 2 * 3600 }}",
+          "readStatus": "both",
+          "includeSpamTrash": false
         },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "{\"event_type\": \"tracker-updated\"}",
         "options": {}
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
       "position": [
-        2020,
-        300
+        220,
+        940
       ],
-      "id": "rebuild",
-      "name": "Trigger Dashboard Rebuild",
-      "executeOnce": true,
-      "onError": "continueRegularOutput"
+      "id": "backlog-fetch",
+      "name": "Find Stale Job Mail",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_ME",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "errorMessage": "Job mail older than 2h is still missing Job Application/Processed — the ingest is stuck. Check the Poll Gmail executions, then run Backfill (manual). If that doesn't clear it, the email was already seen once and Skip Already Seen drops it: find its row in Inbox/Feed, then label it Job Application/Processed by hand, or clear Skip Already Seen's deduplication history and backfill again. See DEPLOY.md §3.7."
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        440,
+        940
+      ],
+      "id": "backlog-alarm",
+      "name": "Stale Job Mail Alarm",
+      "executeOnce": true
     },
     {
       "parameters": {
@@ -777,8 +805,8 @@
         -40,
         20
       ],
-      "id": "sticky-17",
-      "name": "Note 17"
+      "id": "sticky-19",
+      "name": "Note 19"
     },
     {
       "parameters": {
@@ -793,8 +821,8 @@
         400,
         60
       ],
-      "id": "sticky-18",
-      "name": "Note 18"
+      "id": "sticky-20",
+      "name": "Note 20"
     },
     {
       "parameters": {
@@ -809,12 +837,28 @@
         820,
         20
       ],
-      "id": "sticky-19",
-      "name": "Note 19"
+      "id": "sticky-21",
+      "name": "Note 21"
     },
     {
       "parameters": {
-        "content": "## 4. Close the loop\nLabel is applied **after** the write — a crash loses a label, not a row.\n\nThe rebuild fires once per run and reaches GitHub Actions as a `repository_dispatch`, so the dashboard updates in seconds instead of waiting for the 6-hourly cron.",
+        "content": "## 5. Watchdog\nHourly: any job mail older than 2h that still lacks **Job Application/Processed** fails this execution. `scripts/check-live.mjs` (hourly in GitHub Actions) turns failed executions into an email, so a stuck ingest can't stay quiet.",
+        "width": 560,
+        "height": 160,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        1060
+      ],
+      "id": "sticky-22",
+      "name": "Note 22"
+    },
+    {
+      "parameters": {
+        "content": "## 4. Close the loop\nLabel is applied **after** the write — a crash loses a label, not a row.\n\nNo rebuild here: every Feed upsert pings the **Feed change → rebuild** workflow, which dispatches to GitHub Actions, so the dashboard updates in seconds instead of waiting for the 6-hourly cron.",
         "width": 400,
         "height": 280,
         "color": 6
@@ -825,8 +869,8 @@
         1760,
         20
       ],
-      "id": "sticky-20",
-      "name": "Note 20"
+      "id": "sticky-23",
+      "name": "Note 23"
     }
   ],
   "connections": {
@@ -1016,11 +1060,22 @@
         ]
       ]
     },
-    "Mark Email Processed": {
+    "Ingest Backlog Check": {
       "main": [
         [
           {
-            "node": "Trigger Dashboard Rebuild",
+            "node": "Find Stale Job Mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Stale Job Mail": {
+      "main": [
+        [
+          {
+            "node": "Stale Job Mail Alarm",
             "type": "main",
             "index": 0
           }
