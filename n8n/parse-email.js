@@ -162,11 +162,11 @@ if (!company) {
 // mistakes the leftover boilerplate for the job title.
 const LEAD_INS = [
   /^(?:re|fwd?)\s*:\s*/i,
-  /^invitation (?:to|for) (?:an? )?(?:interview|call|chat)\s*(?:for|with)?\s*[:\u2014\u2013-]?\s*/i,
-  /^(?:your )?application (?:for|to|update(?: for)?|status(?: for)?|received(?: for)?|confirmation(?: for)?)\s*[:\u2014\u2013-]?\s*/i,
-  /^thank(?:s| you) for (?:applying|your (?:application|interest))(?: (?:to|in|for|at))?\s*[:\u2014\u2013-]?\s*/i,
-  /^(?:next steps?|update|interview|assessment|invitation)\s*(?:on|for|regarding|about)?\s*(?:your )?(?:application)?\s*[:\u2014\u2013-]\s*/i,
-  /^you(?:r)? (?:have )?applied (?:to|for)\s*[:\u2014\u2013-]?\s*/i,
+  /^invitation (?:to|for) (?:an? )?(?:interview|call|chat)\s*(?:for|with)?\s*[:—–-]?\s*/i,
+  /^(?:your )?application (?:for|to|update(?: for)?|status(?: for)?|received(?: for)?|confirmation(?: for)?)\s*[:—–-]?\s*/i,
+  /^thank(?:s| you) for (?:applying|your (?:application|interest))(?: (?:to|in|for|at))?\s*[:—–-]?\s*/i,
+  /^(?:next steps?|update|interview|assessment|invitation)\s*(?:on|for|regarding|about)?\s*(?:your )?(?:application)?\s*[:—–-]\s*/i,
+  /^you(?:r)? (?:have )?applied (?:to|for)\s*[:—–-]?\s*/i,
 ];
 
 let title = subject.trim();
