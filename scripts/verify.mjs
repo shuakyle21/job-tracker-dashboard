@@ -157,6 +157,12 @@ async function assertIngestWorkflow() {
   } catch { mergeOk = false; }
   check("Feed merge tests pass", mergeOk);
 
+  let checkLiveOk = true;
+  try {
+    await run("node", ["scripts/test-check-live.mjs"], { cwd: ROOT });
+  } catch { checkLiveOk = false; }
+  check("live drift detector tests pass", checkLiveOk);
+
   let llmFallbackOk = true;
   try {
     await run("node", ["scripts/test-llm-fallback.mjs"], { cwd: ROOT });
@@ -291,7 +297,18 @@ async function assertIngestWorkflow() {
   check("ingest leaves the rebuild to the Feed webhook",
     !wf.nodes.some((n) => /\/dispatches$/.test(n.parameters?.url ?? "")));
 
-  assertGraph(wf, ["Poll Gmail", "Backfill (manual)"]);
+  // The watchdog must look at exactly the mail the trigger is responsible for,
+  // or it either misses a stuck ingest or cries wolf over newsletters.
+  const staleQ = byName["Find Stale Job Mail"]?.parameters.filters?.q ?? "";
+  check("backlog check searches the trigger's query, minus a grace period",
+    staleQ.startsWith(`=${q} before:`), staleQ);
+  check("stale job mail fails the execution",
+    wf.connections["Ingest Backlog Check"]?.main[0]?.[0]?.node === "Find Stale Job Mail"
+      && wf.connections["Find Stale Job Mail"]?.main[0]?.[0]?.node === "Stale Job Mail Alarm"
+      && byName["Stale Job Mail Alarm"]?.type === "n8n-nodes-base.stopAndError"
+      && !byName["Find Stale Job Mail"]?.onError && !byName["Find Stale Job Mail"]?.alwaysOutputData);
+
+  assertGraph(wf, ["Poll Gmail", "Backfill (manual)", "Ingest Backlog Check"]);
   return wf;
 }
 

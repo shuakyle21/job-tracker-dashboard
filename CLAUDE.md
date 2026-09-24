@@ -15,6 +15,8 @@ node scripts/test-parser.mjs                             # email classifier test
 node scripts/test-merge-feed.mjs                         # Feed merge (n8n → Feed) tests only
 node scripts/test-llm-fallback.mjs                       # LLM classifier fallback tests only
 node scripts/test-airtable-webhook.mjs                   # Feed webhook keep-alive tests only
+node scripts/test-check-live.mjs                         # live drift detector tests only
+N8N_API_URL=... N8N_API_KEY=... node scripts/check-live.mjs  # compare live n8n with the repo
 node scripts/build-n8n.mjs                               # regenerate both n8n workflows
 AIRTABLE_API_KEY=... AIRTABLE_BASE_ID=... node scripts/verify.mjs --live  # also build against the real base
 ```
@@ -85,6 +87,9 @@ the only feed data that belongs in git.
 | `scripts/test-llm-fallback.mjs` | runs the LLM fallback outside n8n |
 | `n8n/airtable-webhook.js` | Feed webhook keep-alive: create, refresh or re-enable — **source of truth** |
 | `scripts/test-airtable-webhook.mjs` | runs the keep-alive decision outside n8n |
+| `scripts/check-live.mjs` | compares the live n8n instance with the generated workflows |
+| `scripts/test-check-live.mjs` | runs that comparison against known drift, offline |
+| `.github/workflows/health.yml` | runs `check-live.mjs` hourly; a failed run is the alert |
 | `n8n/job-tracker-ingest.json` | **generated**, do not edit |
 | `n8n/job-tracker-feed-sync.json` | **generated**, do not edit — Airtable ping → rebuild, plus keep-alive |
 | `data/summary.json` | aggregates, committed each run — git history is the time series |
@@ -112,6 +117,14 @@ check against it.
 **The GitHub and LLM credentials are different n8n credential types on purpose** (Header Auth
 vs Bearer Auth). A shared Header Auth credential once sent the GitHub token to the LLM
 router. Keep them separate; there is a verify check.
+
+**The live n8n instance is checked from outside, hourly.** `scripts/check-live.mjs` (run by
+`.github/workflows/health.yml`) fails on any difference between a live workflow and its
+generated JSON, on a GitHub credential shared with another node, and on recent error
+executions. The ingest's **Stale Job Mail Alarm** turns "job mail still unprocessed after 2h"
+into an error execution for it to find. A silent Gmail trigger looks exactly like a quiet
+inbox, so don't remove either piece. If you change node names, the generated JSON and the
+live workflow have to change together.
 
 ## One thing that bit us already
 

@@ -35,6 +35,11 @@ const JOB_MAIL_QUERY = "(label:job-application"
   + ' OR "update on your application" OR subject:"your application" OR subject:"application received")'
   + " -label:job-application-processed -in:chats";
 
+// How long job mail may sit unprocessed before the watchdog calls it stuck.
+// Two polls' worth of slack on a 15-minute trigger would be enough; two hours
+// also rides out an n8n restart without paging anyone.
+const BACKLOG_GRACE_HOURS = 2;
+
 // The live base and its tables. Hard-coded on purpose: a resource locator in
 // `id` mode imports ready to run, where `list` mode imports blank and has to
 // be picked by hand in every node. IDs are not secrets — the token is.
@@ -428,12 +433,65 @@ const nodes = [
     onError: "continueRegularOutput",
     credentials: { gmailOAuth2: { id: "REPLACE_ME", name: "Gmail account" } },
   },
+
+  // Watchdog. A Gmail trigger that finds nothing produces no execution at all,
+  // so "no new mail" and "broken trigger" look identical from outside. Job mail
+  // still unprocessed two hours after it arrived can only mean the second; this
+  // turns it into a failed execution, which scripts/check-live.mjs reports.
+  // An expired Gmail token fails the fetch itself, which is just as loud.
+  {
+    parameters: { rule: { interval: [{ field: "hours", hoursInterval: 1 }] } },
+    type: "n8n-nodes-base.scheduleTrigger",
+    typeVersion: 1.2,
+    position: [0, 940],
+    id: "backlog-check",
+    name: "Ingest Backlog Check",
+  },
+  {
+    parameters: {
+      resource: "message",
+      operation: "getAll",
+      returnAll: false,
+      limit: 1,
+      simple: true,
+      filters: {
+        // Gmail reads a bare number after before: as epoch seconds.
+        q: ex(`${JOB_MAIL_QUERY} before:{{ Math.floor(Date.now() / 1000) - ${BACKLOG_GRACE_HOURS} * 3600 }}`),
+        readStatus: "both",
+        includeSpamTrash: false,
+      },
+      options: {},
+    },
+    type: "n8n-nodes-base.gmail",
+    typeVersion: 2.2,
+    position: [220, 940],
+    id: "backlog-fetch",
+    name: "Find Stale Job Mail",
+    credentials: { gmailOAuth2: { id: "REPLACE_ME", name: "Gmail account" } },
+  },
+  {
+    // Only reached when the search returned something: Gmail emits no items
+    // for an empty result, so a healthy inbox ends the execution above.
+    parameters: {
+      errorMessage: `Job mail older than ${BACKLOG_GRACE_HOURS}h is still missing Job Application/Processed — the ingest is stuck. `
+        + "Check the Poll Gmail executions, then run Backfill (manual). If that doesn't clear it, the email was already "
+        + "seen once and Skip Already Seen drops it: find its row in Inbox/Feed, then label it Job Application/Processed "
+        + "by hand, or clear Skip Already Seen's deduplication history and backfill again. See DEPLOY.md §3.7.",
+    },
+    type: "n8n-nodes-base.stopAndError",
+    typeVersion: 1,
+    position: [440, 940],
+    id: "backlog-alarm",
+    name: "Stale Job Mail Alarm",
+    executeOnce: true,
+  },
 ];
 
 const stickies = [
   ["## 1. Poll and dedupe\nQuery: mail under **Job Application**, or containing confirmation phrases (\"thank you for applying\", \"received your application\", …), minus **Job Application/Processed**.\n\n**Backfill (manual)**: run once to process mail already in the label.\n\n**Remove Duplicates** is the second net: it catches a re-delivery in the window between the Airtable write and the label being applied.", [-40, 20], 400, 280, 4],
   ["## 2. Classify\nPure function, no network. Source of truth is `n8n/parse-email.js` in the repo — it has tests. Edit it there and re-run `node scripts/build-n8n.mjs`, not here.", [400, 60], 380, 220, 3],
   ["## 3. Store\nInbox / Needs Review rows key on `message_id`, so re-running is an update, not a duplicate.\n\nClassified mail also upserts **Feed**, one row per application (`Application Key` = company|title, or platform|title|thread-id when the employer is unknown). `merge-feed.js` only moves a row forward: earliest date, highest stage, no status regressions — hand edits survive.", [820, 20], 860, 260, 5],
+  ["## 5. Watchdog\nHourly: any job mail older than 2h that still lacks **Job Application/Processed** fails this execution. `scripts/check-live.mjs` (hourly in GitHub Actions) turns failed executions into an email, so a stuck ingest can't stay quiet.", [-40, 1060], 560, 160, 2],
   ["## 4. Close the loop\nLabel is applied **after** the write — a crash loses a label, not a row.\n\nNo rebuild here: every Feed upsert pings the **Feed change → rebuild** workflow, which dispatches to GitHub Actions, so the dashboard updates in seconds instead of waiting for the 6-hourly cron.", [1760, 20], 400, 280, 6],
 ];
 
@@ -482,6 +540,8 @@ const workflow = {
     "Merge Into Feed": { main: one("Loop Feed Rows") },
     "Upsert Feed": { main: one("Mark Email Processed") },
     "Write to Needs Review": { main: one("Mark Email Processed") },
+    "Ingest Backlog Check": { main: one("Find Stale Job Mail") },
+    "Find Stale Job Mail": { main: one("Stale Job Mail Alarm") },
   },
   settings: { executionOrder: "v1", saveManualExecutions: true, saveExecutionProgress: true },
   pinData: {},
