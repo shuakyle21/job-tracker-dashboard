@@ -1,35 +1,35 @@
 {
-  "generatedAt": "2026-09-24T09:26:37.911Z",
-  "total": 41,
-  "sent": 41,
+  "generatedAt": "2026-09-24T11:52:14.212Z",
+  "total": 51,
+  "sent": 51,
   "unsent": 0,
-  "replied": 8,
-  "noReply": 33,
-  "open": 33,
-  "replyRate": 0.1951219512195122,
-  "interviewRate": 0.04878048780487805,
-  "ghostRate": 0.8048780487804879,
-  "rejected": 4,
-  "rejectionRate": 0.0975609756097561,
+  "replied": 11,
+  "noReply": 40,
+  "open": 42,
+  "replyRate": 0.21568627450980393,
+  "interviewRate": 0.058823529411764705,
+  "ghostRate": 0.7843137254901961,
+  "rejected": 5,
+  "rejectionRate": 0.09803921568627451,
   "reached": [
-    41,
-    8,
-    2,
-    2,
+    51,
+    13,
+    3,
+    3,
     0
   ],
   "atStage": [
-    33,
-    6,
+    38,
+    10,
     0,
-    2,
+    3,
     0
   ],
   "dropComposition": [
     [
       {
         "status": "Applied",
-        "count": 25
+        "count": 30
       },
       {
         "status": "Rejected",
@@ -51,25 +51,25 @@
     [
       {
         "status": "Applied",
-        "count": 3
+        "count": 5
       },
       {
         "status": "Viewed by Employer",
-        "count": 2
+        "count": 3
       },
       {
         "status": "Rejected",
-        "count": 1
+        "count": 2
       }
     ],
     [],
     [
       {
-        "status": "Applied",
-        "count": 1
+        "status": "In Review",
+        "count": 2
       },
       {
-        "status": "In Review",
+        "status": "Applied",
         "count": 1
       }
     ],
@@ -77,7 +77,7 @@
   ],
   "rejectedAt": [
     3,
-    1,
+    2,
     0,
     0,
     0
@@ -86,43 +86,43 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 29
+      "count": 36
     },
     {
       "status": "Rejected",
-      "count": 4
+      "count": 5
+    },
+    {
+      "status": "Viewed by Employer",
+      "count": 3
+    },
+    {
+      "status": "In Review",
+      "count": 3
     },
     {
       "status": "No Response",
       "count": 2
     },
     {
-      "status": "Viewed by Employer",
-      "count": 2
-    },
-    {
       "status": "Closed / Expired",
-      "count": 2
-    },
-    {
-      "status": "In Review",
       "count": 2
     }
   ],
   "channels": [
     {
       "name": "Jobstreet",
-      "sent": 22,
-      "replied": 2,
+      "sent": 27,
+      "replied": 3,
       "unsent": 0,
-      "rate": 0.09090909090909091
+      "rate": 0.1111111111111111
     },
     {
       "name": "Direct / Careers",
-      "sent": 13,
-      "replied": 3,
+      "sent": 18,
+      "replied": 5,
       "unsent": 0,
-      "rate": 0.23076923076923078
+      "rate": 0.2777777777777778
     },
     {
       "name": "Torre.ai",
@@ -167,7 +167,7 @@
     },
     {
       "month": "2026-09",
-      "count": 29
+      "count": 39
     }
   ],
   "workSetup": [
@@ -178,12 +178,16 @@
     {
       "label": "Onsite",
       "count": 4
+    },
+    {
+      "label": "Unspecified",
+      "count": 10
     }
   ],
   "ageing": [
     {
       "label": "0–7d",
-      "count": 10
+      "count": 19
     },
     {
       "label": "8–14d",
