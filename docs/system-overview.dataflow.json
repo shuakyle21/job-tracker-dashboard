@@ -276,9 +276,9 @@
       "dot": "rose",
       "title": "Safety",
       "items": [
-        "GitHub Dispatch (Header Auth) and LLM Router Auth (Bearer) are separate types",
-        "Build reads Feed with a read-only token; company names never reach the page",
-        "health.yml checks live n8n hourly: drift, errors, stale job mail"
+        "GitHub and LLM credentials are separate n8n types",
+        "Build reads Feed read-only; company names never reach the page",
+        "health.yml checks live n8n hourly against the repo"
       ]
     }
   ]
