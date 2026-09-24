@@ -274,11 +274,11 @@
     },
     {
       "dot": "rose",
-      "title": "Credentials",
+      "title": "Safety",
       "items": [
         "GitHub Dispatch (Header Auth) and LLM Router Auth (Bearer) are separate types",
         "Build reads Feed with a read-only token; company names never reach the page",
-        "verify.mjs gates every deploy"
+        "health.yml checks live n8n hourly: drift, errors, stale job mail"
       ]
     }
   ]
