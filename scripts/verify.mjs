@@ -166,11 +166,7 @@ async function assertIngestWorkflow() {
   // The workflow JSON is generated. If someone edits it in the n8n UI and
   // re-exports over this file, the tested parser and the running parser part
   // ways silently — which is the failure this check exists to make loud.
-  const committed = await readFile(join(ROOT, "n8n/job-tracker-ingest.json"), "utf8");
-  await run("node", ["scripts/build-n8n.mjs"], { cwd: ROOT });
-  const regenerated = await readFile(join(ROOT, "n8n/job-tracker-ingest.json"), "utf8");
-  check("workflow JSON matches its generator", committed === regenerated,
-    "run: node scripts/build-n8n.mjs");
+  const { ingest: regenerated } = await regenerateWorkflows();
 
   const wf = JSON.parse(regenerated);
   const byName = Object.fromEntries(wf.nodes.map((n) => [n.name, n]));
@@ -290,11 +286,20 @@ async function assertIngestWorkflow() {
   check("no Google Sheets nodes remain in the workflow",
     !wf.nodes.some((n) => n.type === "n8n-nodes-base.googleSheets"));
 
-  // One rebuild per run, not one per email.
-  check("rebuild fires once per run", byName["Trigger Dashboard Rebuild"]?.executeOnce === true);
+  // Feed-sync dispatches on every Feed write, the ingest's included. A second
+  // dispatch here would bring back the paired cancelled+passed runs.
+  check("ingest leaves the rebuild to the Feed webhook",
+    !wf.nodes.some((n) => /\/dispatches$/.test(n.parameters?.url ?? "")));
 
-  // Every node the trigger cannot reach is a node that never runs.
-  const reachable = new Set(["Poll Gmail", "Backfill (manual)"]);
+  assertGraph(wf, ["Poll Gmail", "Backfill (manual)"]);
+  return wf;
+}
+
+// Every node no trigger can reach is a node that never runs, and a connection
+// naming a node that isn't there blocks the import.
+function assertGraph(wf, triggers) {
+  const byName = Object.fromEntries(wf.nodes.map((n) => [n.name, n]));
+  const reachable = new Set(triggers);
   for (let i = 0; i < wf.nodes.length; i++) {
     for (const [src, conn] of Object.entries(wf.connections)) {
       if (!reachable.has(src)) continue;
@@ -306,16 +311,127 @@ async function assertIngestWorkflow() {
     .map((n) => n.name);
   check("no unreachable nodes", orphans.length === 0, orphans.join(", "));
 
-  // Import-blocking typos: a connection naming a node that isn't there.
   const dangling = Object.entries(wf.connections).flatMap(([src, c]) =>
     [...(byName[src] ? [] : [src]), ...c.main.flat().map((t) => t.node).filter((n) => !byName[n])]);
   check("all connections resolve to real nodes", dangling.length === 0, dangling.join(", "));
 }
 
+// The workflow JSON is generated. If someone edits it in the n8n UI and
+// re-exports over the file, the tested code and the running code part ways
+// silently — which is the failure these checks exist to make loud. Runs the
+// generator once and returns both files as it wrote them.
+let generated;
+async function regenerateWorkflows() {
+  if (generated) return generated;
+  const files = { ingest: "n8n/job-tracker-ingest.json", sync: "n8n/job-tracker-feed-sync.json" };
+  const read = (f) => readFile(join(ROOT, f), "utf8").catch(() => "");
+  const committed = { ingest: await read(files.ingest), sync: await read(files.sync) };
+  await run("node", ["scripts/build-n8n.mjs"], { cwd: ROOT });
+  generated = { ingest: await read(files.ingest), sync: await read(files.sync) };
+  check("workflow JSON matches its generator", committed.ingest === generated.ingest,
+    "run: node scripts/build-n8n.mjs");
+  check("Feed sync workflow JSON matches its generator", committed.sync === generated.sync,
+    "run: node scripts/build-n8n.mjs");
+  return generated;
+}
+
+async function assertSyncWorkflow() {
+  console.log("\nn8n Feed sync workflow");
+
+  let keepAliveOk = true;
+  try {
+    await run("node", ["scripts/test-airtable-webhook.mjs"], { cwd: ROOT });
+  } catch { keepAliveOk = false; }
+  check("webhook keep-alive tests pass", keepAliveOk);
+
+  const wf = JSON.parse((await regenerateWorkflows()).sync);
+  const byName = Object.fromEntries(wf.nodes.map((n) => [n.name, n]));
+  const keepAliveFile = await readFile(join(ROOT, "n8n/airtable-webhook.js"), "utf8");
+  check("embedded webhook keep-alive is the tested file",
+    byName["Decide Webhook Action"]?.parameters.jsCode === keepAliveFile);
+
+  // The URL the keep-alive registers with Airtable and the path n8n listens
+  // on are written in two places; if they disagree, pings go nowhere.
+  const receiver = byName["Airtable Feed Changed"];
+  const notificationUrl = keepAliveFile.match(/const NOTIFICATION_URL = '([^']+)'/)?.[1] ?? "";
+  check("registered URL is the receiver's production URL",
+    receiver?.type === "n8n-nodes-base.webhook"
+      && notificationUrl.startsWith("https://")
+      && notificationUrl.endsWith(`/webhook/${receiver.parameters.path}`),
+    `${notificationUrl} vs path ${receiver?.parameters.path}`);
+
+  // Airtable disables a webhook's notifications after ~a day of failed pings,
+  // so the receiver must answer before it does any work.
+  check("receiver answers the ping immediately", receiver?.parameters.responseMode === "onReceived");
+
+  const generatorSrc = await readFile(join(ROOT, "scripts/build-n8n.mjs"), "utf8");
+  const feedTable = generatorSrc.match(/const FEED_TABLE_ID = "([^"]+)"/)?.[1];
+  check("webhook is scoped to the Feed table",
+    Boolean(feedTable) && keepAliveFile.includes(`const FEED_TABLE_ID = '${feedTable}'`)
+      && /recordChangeScope: FEED_TABLE_ID/.test(keepAliveFile));
+
+  check("ping reaches the rebuild only through the base check",
+    wf.connections["Airtable Feed Changed"]?.main[0]?.[0]?.node === "Is Our Base?"
+      && wf.connections["Is Our Base?"]?.main[0]?.[0]?.node === "Trigger Dashboard Rebuild");
+
+  check("sync rebuild fires once per ping", byName["Trigger Dashboard Rebuild"]?.executeOnce === true);
+
+  // Nothing runs after the dispatch, so swallowing its error would only turn a
+  // revoked GitHub token into green executions and a dashboard that stops moving.
+  check("sync rebuild fails loudly", !byName["Trigger Dashboard Rebuild"]?.onError);
+
+  // The keep-alive failing is the loud signal. Swallowing its errors would let
+  // the webhook expire quietly and put hand edits back on the 6-hourly cron.
+  const keepAliveCalls = ["List Airtable Webhooks", "Create Webhook", "Refresh Webhook", "Enable Notifications"];
+  check("keep-alive Airtable calls fail loudly",
+    keepAliveCalls.every((n) => byName[n] && !byName[n].onError));
+
+  check("keep-alive runs on a schedule",
+    wf.connections["Daily Keep-Alive"]?.main[0]?.[0]?.node === "List Airtable Webhooks");
+
+  assertGraph(wf, ["Airtable Feed Changed", "Daily Keep-Alive", "Register Webhook (manual)"]);
+  return wf;
+}
+
+// Both workflows call GitHub and one calls the LLM router. A shared credential
+// once sent the GitHub token to the router on every fallback call; giving the
+// two different credential types makes that impossible to repeat on import.
+function assertCredentials(workflows) {
+  console.log("\nCredentials and triggers (both workflows)");
+  const nodes = workflows.flatMap((wf) => wf.nodes);
+  const dispatchers = nodes.filter((n) => /api\.github\.com\/.*\/dispatches/.test(n.parameters?.url ?? ""));
+  check("every GitHub dispatch uses the GitHub Dispatch header credential",
+    dispatchers.length > 0 && dispatchers.every((n) =>
+      n.parameters.genericAuthType === "httpHeaderAuth"
+        && n.credentials?.httpHeaderAuth?.name === "GitHub Dispatch"
+        && Object.keys(n.credentials).length === 1),
+    `${dispatchers.length} dispatch node(s)`);
+
+  const llm = nodes.find((n) => n.name === "Classify With LLM");
+  check("LLM router uses its own Bearer credential",
+    /^https:\/\/llmrouter\.[^/]+\/v1\/chat\/completions$/.test(llm?.parameters.url ?? "")
+      && llm?.parameters.genericAuthType === "httpBearerAuth"
+      && llm?.credentials?.httpBearerAuth?.name === "LLM Router Auth"
+      && Object.keys(llm.credentials).length === 1);
+
+  // Airtable's credential is the only one that may appear on api.airtable.com
+  // calls, and the GitHub credential must appear nowhere else.
+  const githubElsewhere = nodes.filter((n) => n.credentials?.httpHeaderAuth && !dispatchers.includes(n));
+  check("GitHub credential is used only for dispatches",
+    githubElsewhere.length === 0, githubElsewhere.map((n) => n.name).join(", "));
+
+  // Feed hand edits arrive by webhook now. A polling trigger on Feed next to
+  // it doubles every dispatch (this happened: two runs per edit, 23s apart).
+  const pollers = nodes.filter((n) => n.type === "n8n-nodes-base.airtableTrigger");
+  check("no Airtable polling trigger remains", pollers.length === 0, pollers.map((n) => n.name).join(", "));
+}
+
 console.log("Verifying build\n");
 await build({ FEED_FIXTURE: "./sample-feed.json" });
 const fixture = await assertBuildOutput("Fixture build");
-await assertIngestWorkflow();
+const ingestWf = await assertIngestWorkflow();
+const syncWf = await assertSyncWorkflow();
+assertCredentials([ingestWf, syncWf]);
 
 // Known-good numbers for the checked-in fixture. If aggregation logic changes
 // intentionally, update these; if it changes by accident, this catches it.

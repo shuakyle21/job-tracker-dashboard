@@ -1,0 +1,478 @@
+{
+  "name": "Job Tracker — Feed change → rebuild",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "job-tracker-feed-changed",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        200
+      ],
+      "id": "feed-changed",
+      "name": "Airtable Feed Changed",
+      "webhookId": "ec582629-12e7-45b6-966c-180c5df431bf"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "is-our-base",
+              "leftValue": "={{ $json.body?.base?.id ?? '' }}",
+              "rightValue": "appRlqw66Sxzjpnf6",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        220,
+        200
+      ],
+      "id": "is-our-base",
+      "name": "Is Our Base?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.github.com/repos/shuakyle21/job-tracker-dashboard/dispatches",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"event_type\":\"tracker-updated\",\"client_payload\":{\"source\":\"airtable-webhook\"}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        440,
+        180
+      ],
+      "id": "feed-rebuild",
+      "name": "Trigger Dashboard Rebuild",
+      "executeOnce": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ME",
+          "name": "GitHub Dispatch"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 3
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        520
+      ],
+      "id": "keep-alive-daily",
+      "name": "Daily Keep-Alive"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        720
+      ],
+      "id": "keep-alive-manual",
+      "name": "Register Webhook (manual)"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.airtable.com/v0/bases/appRlqw66Sxzjpnf6/webhooks",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "airtableTokenApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        220,
+        620
+      ],
+      "id": "list-webhooks",
+      "name": "List Airtable Webhooks",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "REPLACE_ME",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "// Body of the \"Decide Webhook Action\" Code node (mode: runOnceForEachItem).\n//\n// Source of truth, like parse-email.js: scripts/build-n8n.mjs inlines it into\n// n8n/job-tracker-feed-sync.json and scripts/verify.mjs fails if the two\n// drift. Test it outside n8n with: node scripts/test-airtable-webhook.mjs\n//\n// Contract: $json is Airtable's list-webhooks response ({ webhooks: [...] }).\n// Returns { json: { action, webhookId, createBody, others, reason } } where\n// action is 'create', 'refresh' or 'enable' (enable, then refresh).\n//\n// Why this exists: a webhook created with a personal access token expires 7\n// days after it was created or last refreshed — whatever the token's own\n// expiry is — and Airtable switches its notifications off after ~a day of\n// failed pings. Either one silently puts Feed edits back on the 6-hourly cron.\n// Running this daily keeps exactly one healthy webhook pointed at n8n.\n//\n// Unlike the email parser this one throws on a malformed list response: it\n// runs once a day, not per email, so a failed execution is the loud signal we\n// want, where a guessed 'create' could pile up duplicate webhooks (Airtable\n// allows 10 per base).\n\n// The receiver's production URL. scripts/verify.mjs checks it ends in the\n// Webhook node's path, so the two can't point at different places.\nconst NOTIFICATION_URL = 'https://n8n.shua-kyle.me/webhook/job-tracker-feed-changed';\nconst FEED_TABLE_ID = 'tblPZSpJ8P4iFuAhX';\n\n// Every change to Feed, from every source. No fromSources filter: records\n// written through the API (n8n itself, the Airtable MCP) must fire too. No\n// watchDataInFieldIds: whether a record *add* passes that filter is\n// unverified, and a spurious rebuild is harmless — deploy.yml's\n// cancel-in-progress collapses bursts to one run.\nconst SPECIFICATION = {\n  options: { filters: { dataTypes: ['tableData'], recordChangeScope: FEED_TABLE_ID } },\n};\n\nif (!$json || !Array.isArray($json.webhooks)) {\n  throw new Error('Airtable list-webhooks response has no webhooks array: '\n    + JSON.stringify($json).slice(0, 300));\n}\n\nconst now = Date.now();\nconst ours = $json.webhooks.filter((w) => w && w.notificationUrl === NOTIFICATION_URL);\n\n// An expired or disabled hook can't be revived by a refresh, so it doesn't\n// count as ours any more. A missing expirationTime means it never expires.\n// An unreadable one is treated as live: refreshing it fails loudly if it\n// isn't, where treating it as dead would add a duplicate webhook every day.\nconst expiry = (w) => {\n  const t = w.expirationTime ? Date.parse(w.expirationTime) : Infinity;\n  return Number.isNaN(t) ? Infinity : t;\n};\nconst alive = ours\n  .filter((w) => w.isHookEnabled !== false && expiry(w) > now)\n  .sort((a, b) => expiry(b) - expiry(a));\n\nconst best = alive[0];\nconst others = ours.filter((w) => w !== best).map((w) => w.id);\nconst createBody = { notificationUrl: NOTIFICATION_URL, specification: SPECIFICATION };\n\nlet action = 'create';\nlet reason = ours.length ? 'every webhook for this URL is expired or disabled' : 'no webhook for this URL';\nif (best) {\n  action = best.areNotificationsEnabled === false ? 'enable' : 'refresh';\n  reason = action === 'enable' ? 'notifications were switched off after failed pings' : 'healthy';\n}\n\nreturn { json: { action, webhookId: best ? best.id : '', createBody, others, reason } };\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        620
+      ],
+      "id": "decide-webhook",
+      "name": "Decide Webhook Action"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "webhook-exists",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "create",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        660,
+        620
+      ],
+      "id": "webhook-exists",
+      "name": "Webhook Exists?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "notifications-off",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "enable",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        880,
+        520
+      ],
+      "id": "notifications-off",
+      "name": "Notifications Off?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.airtable.com/v0/bases/appRlqw66Sxzjpnf6/webhooks/{{ $('Decide Webhook Action').item.json.webhookId }}/enableNotifications",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "airtableTokenApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"enable\":true}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1100,
+        440
+      ],
+      "id": "enable-notifications",
+      "name": "Enable Notifications",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "REPLACE_ME",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.airtable.com/v0/bases/appRlqw66Sxzjpnf6/webhooks/{{ $('Decide Webhook Action').item.json.webhookId }}/refresh",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "airtableTokenApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1320,
+        540
+      ],
+      "id": "refresh-webhook",
+      "name": "Refresh Webhook",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "REPLACE_ME",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.airtable.com/v0/bases/appRlqw66Sxzjpnf6/webhooks",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "airtableTokenApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Decide Webhook Action').item.json.createBody) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        880,
+        720
+      ],
+      "id": "create-webhook",
+      "name": "Create Webhook",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "REPLACE_ME",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Feed change → rebuild\nAirtable pings this webhook within seconds of any Feed change (hand edits included) and it fires one `repository_dispatch`. Source of truth: `scripts/build-n8n.mjs`. Edit there, not here.",
+        "width": 620,
+        "height": 160,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        0
+      ],
+      "id": "sync-sticky-12",
+      "name": "Note 12"
+    },
+    {
+      "parameters": {
+        "content": "## Keep the webhook alive\nA webhook created with a personal access token expires 7 days after its last refresh, whatever the token's own expiry is, and Airtable switches notifications off after ~a day of failed pings. Daily: refresh it, re-enable it, or create it. Logic: `n8n/airtable-webhook.js` (tested).",
+        "width": 620,
+        "height": 120,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        380
+      ],
+      "id": "sync-sticky-13",
+      "name": "Note 13"
+    }
+  ],
+  "connections": {
+    "Airtable Feed Changed": {
+      "main": [
+        [
+          {
+            "node": "Is Our Base?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Our Base?": {
+      "main": [
+        [
+          {
+            "node": "Trigger Dashboard Rebuild",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Daily Keep-Alive": {
+      "main": [
+        [
+          {
+            "node": "List Airtable Webhooks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Register Webhook (manual)": {
+      "main": [
+        [
+          {
+            "node": "List Airtable Webhooks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Airtable Webhooks": {
+      "main": [
+        [
+          {
+            "node": "Decide Webhook Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decide Webhook Action": {
+      "main": [
+        [
+          {
+            "node": "Webhook Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Exists?": {
+      "main": [
+        [
+          {
+            "node": "Notifications Off?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notifications Off?": {
+      "main": [
+        [
+          {
+            "node": "Enable Notifications",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Refresh Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enable Notifications": {
+      "main": [
+        [
+          {
+            "node": "Refresh Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "job-tracker-dashboard"
+  },
+  "tags": []
+}

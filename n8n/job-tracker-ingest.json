@@ -150,7 +150,7 @@
         "method": "POST",
         "url": "https://llmrouter.boyemma.com/v1/chat/completions",
         "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
+        "genericAuthType": "httpBearerAuth",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({\n        model: \"auto\",\n        messages: [\n          { role: \"system\", content: \"You classify job-application emails. Reply with only a JSON object: {\\\"status\\\": one of applied, viewed by employer, in review, assessment, interview scheduled, offer, rejected, talent pool}. If none fit, reply {\\\"status\\\": \\\"\\\"}.\" },\n          { role: \"user\", content: $('Parse Job Email').item.json.raw_text },\n        ],\n      }) }}",
@@ -168,7 +168,7 @@
       "name": "Classify With LLM",
       "onError": "continueRegularOutput",
       "credentials": {
-        "httpHeaderAuth": {
+        "httpBearerAuth": {
           "id": "REPLACE_ME",
           "name": "LLM Router Auth"
         }
@@ -731,41 +731,6 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.github.com/repos/shuakyle21/job-tracker-dashboard/dispatches",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Accept",
-              "value": "application/vnd.github+json"
-            },
-            {
-              "name": "X-GitHub-Api-Version",
-              "value": "2022-11-28"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "{\"event_type\": \"tracker-updated\"}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
-      "position": [
-        2020,
-        300
-      ],
-      "id": "rebuild",
-      "name": "Trigger Dashboard Rebuild",
-      "executeOnce": true,
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
         "content": "## 1. Poll and dedupe\nQuery: mail under **Job Application**, or containing confirmation phrases (\"thank you for applying\", \"received your application\", …), minus **Job Application/Processed**.\n\n**Backfill (manual)**: run once to process mail already in the label.\n\n**Remove Duplicates** is the second net: it catches a re-delivery in the window between the Airtable write and the label being applied.",
         "width": 400,
         "height": 280,
@@ -777,8 +742,8 @@
         -40,
         20
       ],
-      "id": "sticky-17",
-      "name": "Note 17"
+      "id": "sticky-16",
+      "name": "Note 16"
     },
     {
       "parameters": {
@@ -793,8 +758,8 @@
         400,
         60
       ],
-      "id": "sticky-18",
-      "name": "Note 18"
+      "id": "sticky-17",
+      "name": "Note 17"
     },
     {
       "parameters": {
@@ -809,12 +774,12 @@
         820,
         20
       ],
-      "id": "sticky-19",
-      "name": "Note 19"
+      "id": "sticky-18",
+      "name": "Note 18"
     },
     {
       "parameters": {
-        "content": "## 4. Close the loop\nLabel is applied **after** the write — a crash loses a label, not a row.\n\nThe rebuild fires once per run and reaches GitHub Actions as a `repository_dispatch`, so the dashboard updates in seconds instead of waiting for the 6-hourly cron.",
+        "content": "## 4. Close the loop\nLabel is applied **after** the write — a crash loses a label, not a row.\n\nNo rebuild here: every Feed upsert pings the **Feed change → rebuild** workflow, which dispatches to GitHub Actions, so the dashboard updates in seconds instead of waiting for the 6-hourly cron.",
         "width": 400,
         "height": 280,
         "color": 6
@@ -825,8 +790,8 @@
         1760,
         20
       ],
-      "id": "sticky-20",
-      "name": "Note 20"
+      "id": "sticky-19",
+      "name": "Note 19"
     }
   ],
   "connections": {
@@ -1010,17 +975,6 @@
         [
           {
             "node": "Mark Email Processed",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Mark Email Processed": {
-      "main": [
-        [
-          {
-            "node": "Trigger Dashboard Rebuild",
             "type": "main",
             "index": 0
           }
