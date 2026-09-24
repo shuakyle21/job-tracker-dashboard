@@ -290,10 +290,23 @@ Setup:
    Rebuild**, set **GitHub Dispatch**: a *Header Auth* credential, name `Authorization`, value
    `Bearer github_pat_...`, a fine-grained PAT with **Contents: read and write** on this repo
    only. Set the Airtable token on the four Airtable HTTP nodes. Activate it.
-4. Open **Register Webhook (manual)** and click *Execute workflow* once. **Create Webhook**
-   should return an id starting `ach`. Rerunning it is harmless: it refreshes that webhook.
-5. Edit any Feed cell. **Actions** should show a `repository_dispatch` run within about
-   15 seconds, and its *Trigger source* step prints `source=airtable-webhook`.
+4. Check the receiver routes before Airtable depends on it:
+   `curl -X POST -H 'Content-Type: application/json' -d '{}' https://<your n8n>/webhook/job-tracker-feed-changed`
+   must return 200, and n8n must show one execution that stopped at **Is Our Base?** (false
+   branch) with no error and no dispatch.
+5. Open **Register Webhook (manual)** and click *Execute workflow*. **Create Webhook** should
+   return an id starting `ach`. Run it a **second** time: **Decide Webhook Action** must output
+   `action: "refresh"`, not `create`. A second `create` means the list response didn't match
+   what `n8n/airtable-webhook.js` expects, and it would add a duplicate webhook every day.
+6. Retire the old paths, or every edit still fires twice: unpublish any older workflow that
+   polls Feed, and remove any Airtable Trigger node on Feed from the ingest workflow.
+7. Edit a Feed cell. **Actions** should show one `repository_dispatch` run within about 15
+   seconds, and its *Trigger source* step prints `source=airtable-webhook` (that step exists
+   once this change is on `main`, since `repository_dispatch` always runs `main`'s workflow).
+   Make two or three more edits a few minutes apart: each should get its own receiver
+   execution. Two runs for one edit means either Airtable sent a second ping (two receiver
+   executions; harmless, cancel-in-progress absorbs it) or an old poller is still live (one
+   receiver execution; finish step 6).
 
 The receiver's URL is public (so is this repo), and the check on the base id only stops casual
 hits. The most a deliberate one can do is start a rebuild. Checking Airtable's
