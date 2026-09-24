@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-09-24T15:04:15.565Z",
+  "generatedAt": "2026-09-24T17:15:24.321Z",
   "total": 46,
   "sent": 46,
   "unsent": 0,
-  "replied": 11,
-  "noReply": 35,
-  "open": 37,
-  "replyRate": 0.2391304347826087,
+  "replied": 12,
+  "noReply": 34,
+  "open": 32,
+  "replyRate": 0.2608695652173913,
   "interviewRate": 0.06521739130434782,
-  "ghostRate": 0.7608695652173914,
+  "ghostRate": 0.7391304347826086,
   "rejected": 5,
   "rejectionRate": 0.10869565217391304,
   "reached": [
@@ -29,30 +29,26 @@
     [
       {
         "status": "Applied",
-        "count": 27
+        "count": 23
+      },
+      {
+        "status": "No Response",
+        "count": 4
       },
       {
         "status": "Rejected",
         "count": 3
       },
       {
-        "status": "No Response",
-        "count": 2
-      },
-      {
         "status": "Closed / Expired",
-        "count": 2
+        "count": 3
       },
       {
-        "status": "In Review",
-        "count": 1
+        "status": "Assessment",
+        "count": 2
       }
     ],
     [
-      {
-        "status": "Applied",
-        "count": 3
-      },
       {
         "status": "Viewed by Employer",
         "count": 3
@@ -60,6 +56,14 @@
       {
         "status": "Rejected",
         "count": 2
+      },
+      {
+        "status": "No Response",
+        "count": 2
+      },
+      {
+        "status": "Applied",
+        "count": 1
       }
     ],
     [],
@@ -86,7 +90,11 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 31
+      "count": 25
+    },
+    {
+      "status": "No Response",
+      "count": 6
     },
     {
       "status": "Rejected",
@@ -97,15 +105,15 @@
       "count": 3
     },
     {
-      "status": "In Review",
+      "status": "Closed / Expired",
       "count": 3
     },
     {
-      "status": "No Response",
+      "status": "Assessment",
       "count": 2
     },
     {
-      "status": "Closed / Expired",
+      "status": "In Review",
       "count": 2
     }
   ],
@@ -113,9 +121,9 @@
     {
       "name": "Jobstreet",
       "sent": 24,
-      "replied": 3,
+      "replied": 4,
       "unsent": 0,
-      "rate": 0.125
+      "rate": 0.16666666666666666
     },
     {
       "name": "Direct / Careers",
@@ -173,15 +181,11 @@
   "workSetup": [
     {
       "label": "Remote",
-      "count": 37
+      "count": 42
     },
     {
       "label": "Onsite",
       "count": 4
-    },
-    {
-      "label": "Unspecified",
-      "count": 5
     }
   ],
   "ageing": [
@@ -195,7 +199,7 @@
     },
     {
       "label": "15–30d",
-      "count": 21
+      "count": 16
     },
     {
       "label": "31–60d",
