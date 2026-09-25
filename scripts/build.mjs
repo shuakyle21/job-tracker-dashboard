@@ -465,7 +465,7 @@ const HEAD = `<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Job Search Analytics</title>
+<title>Job Search Analytics Dashboard</title>
 </head>
 <body>
 `;
