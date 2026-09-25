@@ -152,7 +152,7 @@ are two rows.
 |---|---|---|
 | `Job Platform` | Single select: JobStreet, LinkedIn, Indeed, Kalibrr, OnlineJobs.ph, Torre, Company Website, Direct Email, Other | n8n, when empty |
 | `Company` | Single line text | n8n, when empty |
-| `Application Key` | Single line text | n8n: `company|job title` lowercased, or `platform|job title|thread id` when the board hides the employer (Indeed, or any board whose extractors miss the company) |
+| `Application Key` | Single line text | n8n: `company|job title` lowercased. Keys you type by hand match regardless of case or spaces around `|` |
 
 Each classified email also upserts Feed on `Application Key`, so every application gets one
 row that fills itself in. The merge (`n8n/merge-feed.js`, tested by
@@ -165,15 +165,16 @@ row that fills itself in. The merge (`n8n/merge-feed.js`, tested by
 - `Job Platform`, `Company`, `Source` and `Job Role` are only filled when empty, so your edits
   win.
 
-The thread id in the unknown-employer key is what keeps two different applications with the
-same title on the same board (e.g. two "Software Engineer" applications via Indeed) from
-colliding into one row. The trade-off: if a board answers a follow-up in a new Gmail thread
-instead of replying within the original one, you get a second, disconnected Feed row for what
-is really the same application, rather than a merge — safer than the alternative, but worth
-knowing. This also means upgrading from an older version of this workflow: existing Feed rows
-keyed `platform|title` (no thread id) stop matching once this ships. There's no migration —
-the next email for that application creates a fresh row, and the old one is left as-is,
-still hand-editable.
+An email whose employer can't be read (Indeed confirmations never name one) is **not** written
+to Feed. It stops at Needs Review, because without a company there is no key that a later email
+about the same job could match. Add or fix that application's Feed row by hand. `Merge Into
+Feed` also fails the execution rather than write a key with an empty half, so a bug upstream
+shows up in `check-live.mjs` instead of as a quiet duplicate.
+
+The lookup compares keys lowercased and without spaces around `|`, so a hand-typed
+`Acme | Backend Engineer` and a generated `acme|backend engineer` are the same application, and
+the merge writes your row's key back unchanged. Anything beyond that (a `Corporation` suffix, a
+different title wording) is a different key and a new row.
 
 Rows you add by hand without an `Application Key` are left alone. `Company`, `Job Role` and
 `Application Key` identify employers, and `build.mjs` never reads them: `verify.mjs` fails if

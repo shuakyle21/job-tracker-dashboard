@@ -188,8 +188,9 @@ const cases = [
         + "hear from them.\n\n"
         + "Never provide your bank or credit card details when applying for a job.\n",
     }),
-    want: { status: "applied", job_title: "Web Developer – AI & Automation Specialist",
-      job_platform: "JobStreet", status_label: "Applied", parsed: true },
+    want: { status: "applied", job_title: "Web Developer – AI & Automation Specialist | AU Client - WFH",
+      company: "SourceU", job_platform: "JobStreet", status_label: "Applied", parsed: true,
+      application_key: "sourceu|web developer – ai & automation specialist|au client - wfh" },
   },
   {
     name: "LinkedIn sent (title on the next line)",
@@ -202,41 +203,65 @@ const cases = [
       job_platform: "LinkedIn", parsed: true },
   },
   {
-    // Indeed's confirmation never names the employer. The board identifies it,
-    // so it is still a tracker row rather than needs-review.
-    name: "Indeed application, no company",
+    // Indeed's confirmation never names the employer. Without a company there
+    // is no reliable `company|role` key, so it stops at Needs Review instead
+    // of creating a Feed row that nothing else can ever match.
+    name: "Indeed application, no company → Needs Review",
     input: email({
       subject: "Indeed Application: REMOTE - Full Stack Engineer",
       from: { value: [{ address: "indeedapply@indeed.com", name: "Indeed Apply" }] },
       text: "Your application has been submitted. Good luck!",
     }),
-    want: { status: "applied", job_title: "REMOTE - Full Stack Engineer", company: "", job_platform: "Indeed", parsed: true,
-      application_key: "indeed|remote - full stack engineer|thr-1" },
+    want: { status: "applied", job_title: "REMOTE - Full Stack Engineer", company: "", job_platform: "Indeed",
+      parsed: false, status_label: "Needs Review", application_key: "" },
   },
   {
-    // Two distinct real employers, same board, same common title. Without the
-    // thread id in the fallback key these would collapse onto one Feed row
-    // and silently blend two unrelated applications' status/dates.
-    name: "Indeed, no company, thread A",
+    // Real Feed row: "jobstreet|web developer – ai & automation specialist|<thread>".
+    // A board confirmation whose extractors missed the employer is the same case.
+    name: "JobStreet, company not found → Needs Review",
     input: email({
-      threadId: "thr-aaa",
-      subject: "Indeed Application: Software Engineer",
-      from: { value: [{ address: "indeedapply@indeed.com", name: "Indeed Apply" }] },
-      text: "Your application has been submitted. Good luck!",
+      subject: "Your application was successfully submitted",
+      from: { value: [{ address: "noreply@e.jobstreet.com", name: "Jobstreet" }] },
+      text: "Hi Alex, your application for Web Developer was received.",
     }),
-    want: { status: "applied", company: "", job_platform: "Indeed",
-      application_key: "indeed|software engineer|thr-aaa" },
+    want: { company: "", parsed: false, status_label: "Needs Review", application_key: "" },
   },
   {
-    name: "Indeed, no company, thread B (distinct application, same title)",
+    // Real duplicate: VA Masters' "Developer & Automation Expert" got two Feed
+    // rows. Invisible characters copied out of an email (here a zero-width
+    // space, as in a real Turnitin key) must not make an otherwise identical
+    // key look different.
+    name: "zero-width characters never reach the title or the key",
     input: email({
-      threadId: "thr-bbb",
-      subject: "Indeed Application: Software Engineer",
-      from: { value: [{ address: "indeedapply@indeed.com", name: "Indeed Apply" }] },
-      text: "Your application has been submitted. Good luck!",
+      subject: "Your application was successfully submitted",
+      from: { value: [{ address: "noreply@e.jobstreet.com", name: "Jobstreet" }] },
+      text: "Hi Alex, your application for \u200BDeveloper &\u00A0Automation Expert was successfully submitted to VA Masters\uFEFF\nView your application",
     }),
-    want: { status: "applied", company: "", job_platform: "Indeed",
-      application_key: "indeed|software engineer|thr-bbb" },
+    want: { job_title: "Developer & Automation Expert", company: "VA Masters", parsed: true,
+      application_key: "va masters|developer & automation expert" },
+  },
+  {
+    // A key with an empty part ("acme|ai developer|") would make Merge Into
+    // Feed fail the whole execution. The parser catches it first and routes
+    // the email to Needs Review, so that failure stays a last resort.
+    name: "title ending in a separator → Needs Review",
+    input: email({
+      subject: "Your application was successfully submitted",
+      from: { value: [{ address: "noreply@e.jobstreet.com", name: "Jobstreet" }] },
+      text: "Hi Alex, your application for AI Developer | was successfully submitted to Acme Group\nView",
+    }),
+    want: { company: "Acme Group", parsed: false, status_label: "Needs Review", application_key: "" },
+  },
+  {
+    // A title that itself contains "|" is keyed without spaces around it, the
+    // same canonical form Find Feed Row reduces a hand-typed key to.
+    name: "pipes inside a title are keyed without surrounding spaces",
+    input: email({
+      subject: "Your application was successfully submitted",
+      from: { value: [{ address: "noreply@e.jobstreet.com", name: "Jobstreet" }] },
+      text: "Hi Alex, your application for AI Finance Support Specialist | WFH was successfully submitted to Intogreat Solutions\nView",
+    }),
+    want: { application_key: "intogreat solutions|ai finance support specialist|wfh" },
   },
   {
     name: "Workable ATS",
@@ -377,6 +402,18 @@ for (const c of cases) {
   for (const [field, want] of Object.entries(c.want)) {
     expect(`${c.name} → ${field}`, got[field], want);
   }
+}
+
+// Everything parsed goes to Feed, keyed on application_key. A parsed row with
+// an empty part or stray spaces around "|" would make a Feed row no later
+// email can match — that is how duplicates start.
+console.log("\nFeed key invariant");
+for (const c of cases) {
+  const got = parse(c.input).json;
+  if (!got.parsed) continue;
+  const parts = got.application_key.split("|");
+  expect(`${c.name} → well-formed application_key`,
+    Boolean(got.company) && parts.length >= 2 && parts.every((p) => p !== "" && p === p.trim()), true);
 }
 
 // The parser must never throw, whatever Gmail hands it. A missing field is a

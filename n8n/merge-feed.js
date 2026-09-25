@@ -48,9 +48,23 @@ const status = !oldStatus || (newStatus && (RANK[newStatus] ?? 0) >= (RANK[oldSt
 
 const dates = [row['Date Applied'], email.received_at].filter(Boolean).sort();
 
+// Only parsed emails get here, and parse-email.js only parses one with a
+// company and a title. A key that breaks that is a bug upstream; writing it
+// would create a Feed row no later email can match. Fail the execution instead:
+// scripts/check-live.mjs reports error executions, a quiet bad row it cannot see.
+const keyParts = String(email.application_key || '').split('|');
+if (!email.company || keyParts.length < 2 || keyParts.some((p) => !p || p !== p.trim())) {
+  throw new Error('Refusing to write a malformed Feed key ' + JSON.stringify(email.application_key)
+    + ' (company ' + JSON.stringify(email.company) + ') for message ' + email.message_id);
+}
+
 return {
   json: {
-    'Application Key': email.application_key,
+    // Find Feed Row matches a key regardless of case and spacing around "|",
+    // but the upsert matches it exactly. Writing the row's own key back is what
+    // makes the upsert update that row (e.g. a hand-typed "va masters | dev")
+    // instead of creating a twin next to it.
+    'Application Key': row['Application Key'] || email.application_key,
     'Job Role': row['Job Role'] || email.job_title,
     'Company': row['Company'] || email.company,
     'Job Platform': row['Job Platform'] || email.job_platform,

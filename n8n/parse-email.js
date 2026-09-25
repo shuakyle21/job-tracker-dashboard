@@ -9,10 +9,14 @@
 // parsed:false and is routed to the needs-review tab rather than dropped.
 
 const msg = $json;
-const subject = String(msg.subject || '');
+// Zero-width characters and no-break spaces ride along when mail is written
+// in a rich editor. Invisible here, they still make "va masters|dev" and
+// "va masters|\u200Bdev" different Feed keys, so they go before anything reads the text.
+const plain = (s) => String(s || '').replace(/[\u200B-\u200D\u2060\uFEFF]/g, '').replace(/\u00A0/g, ' ');
+const subject = plain(msg.subject);
 const from = String(msg.from?.value?.[0]?.address || msg.from?.text || msg.From || '');
 const fromName = String(msg.from?.value?.[0]?.name || '');
-const body = String(msg.text || msg.textAsHtml || msg.snippet || '');
+const body = plain(msg.text || msg.textAsHtml || msg.snippet);
 
 // Subject carries the strongest signal and the least boilerplate, so weight it
 // by searching it first; fall back to the body only when the subject is mute.
@@ -203,8 +207,10 @@ const clean = (s) => String(s || '').replace(/\s+/g, ' ').trim()
 // stray "a"/"the" out of unrelated boilerplate, like a safety disclaimer.
 const isPlausibleTitle = (s) => !/^(?:a|an|the|this|that|it)$/i.test(s);
 const EXTRACTORS = [
-  // JobStreet: "your application for <T> was successfully submitted to <C>"
-  [body, /application for (.+?) was successfully submitted to (.+?)(?=\s*(?:\n|jobstreet\b|$))/i, 1, 2],
+  // JobStreet: "your application for <T> was successfully submitted to <C>".
+  // A long title wraps onto a second line; allow one wrap, or the employer is
+  // lost and the email stops at Needs Review.
+  [body, /application for (.+?(?:\n.+?)?) was successfully submitted to (.+?)(?=\s*(?:\n|jobstreet\b|$))/i, 1, 2],
   // JobStreet: "<C> has viewed your application for <T>"
   [subject, /^(.+?) has viewed your application for (.+)$/i, 2, 1],
   // LinkedIn: subject names the company; the body's next line is the title.
@@ -255,13 +261,28 @@ const onJobBoard = JOB_BOARDS.some(([, name]) => name === jobPlatform);
 // A board's display name ("Indeed Apply", "LinkedIn") is not the employer.
 if (onJobBoard && !gotCompany) company = '';
 
+// --- application key --------------------------------------------------------
+// Canonical key text. Spaces around "|" are dropped so a title containing one
+// ("AI Specialist | WFH") keys the same way Find Feed Row reduces a hand-typed
+// "company | role" key.
+const norm = (s) => String(s).toLowerCase().replace(/\s+/g, ' ').replace(/ ?\| ?/g, '|').trim();
+// One Feed row per application: every email about the same job at the same
+// employer lands on the same key, whatever thread or date it comes with, which
+// is what the forward-merge (merge-feed.js) depends on. Empty unless company
+// and title are both known and no part of the key is blank ("acme|dev|"), so
+// a malformed key stops here, at Needs Review, instead of failing Merge Into
+// Feed. The LLM fallback reads the same field, so it can't parse one either.
+const key = norm(company) + '|' + norm(title);
+const applicationKey = key.split('|').every(Boolean) ? key : '';
+
 // --- confidence and routing ----------------------------------------------
 // A row is only trustworthy enough to land in the tracker when the email said
 // something recognisable AND we know who sent it. Everything else goes to
-// needs-review, where a human decides in ten seconds. The one exception: a job
-// board confirmation (Indeed) that names the job but not the employer is still
-// traceable, because the board itself identifies where the application lives.
-const parsed = Boolean(status) && Boolean(title) && (Boolean(company) || onJobBoard);
+// needs-review, where a human decides in ten seconds. That includes a job
+// board confirmation (Indeed) that names the job but not the employer: without
+// a company there is no `company|role` Feed key, and a guessed one only makes
+// a row that later emails about the same job never match.
+const parsed = Boolean(status) && Boolean(applicationKey);
 
 let confidence = 'low';
 if (status && company && title) confidence = 'high';
@@ -279,8 +300,6 @@ const isoDate = Number.isNaN(asDate.getTime())
   : asDate.toISOString().slice(0, 10);
 
 const threadId = String(msg.threadId || '');
-const norm = (s) => String(s).toLowerCase().replace(/\s+/g, ' ').trim();
-
 return {
   json: {
     message_id: String(msg.id || msg.messageId || ''),
@@ -296,25 +315,7 @@ return {
       : /onlinejobs/i.test(from) ? 'OnlineJobs.ph'
       : 'Email',
     job_platform: jobPlatform,
-    // One Feed row per application: every email about the same job at the
-    // same employer lands on the same key. Where the employer is unknown
-    // (Indeed, or any board whose sentence-extractors missed the company),
-    // the board stands in for the employer, and the Gmail thread id is
-    // appended as a disambiguator — otherwise two different real employers
-    // that share a board and a common title (e.g. two "Software Engineer"
-    // applications via Indeed) would collapse onto the same Feed row and
-    // silently blend each other's dates/status. This does NOT run when the
-    // company is known: known-company applications must keep exactly
-    // `company|title` so that later emails about the *same* application
-    // (different thread, different received_at) still collapse onto the one
-    // row the forward-merge (merge-feed.js) depends on. Trade-off: if a board
-    // answers with a new Gmail thread instead of replying in the original
-    // one, this produces a second, disconnected Feed row for what is really
-    // the same application — accepted as a much safer failure mode than
-    // silently merging two unrelated applications.
-    application_key: company
-      ? norm(company) + '|' + norm(title)
-      : norm(jobPlatform) + '|' + norm(title) + (threadId ? '|' + threadId : ''),
+    application_key: applicationKey,
     // The Gmail sub-label under "Job Application/". Anything routed to
     // needs-review is labelled that, whatever status was guessed.
     status_label: parsed ? (STATUS_LABELS[status] || 'Needs Review') : 'Needs Review',

@@ -76,6 +76,21 @@ const cases = [
     email: email({ status: "" }),
     want: { "Status": "In Review" },
   },
+  {
+    // Real duplicate: the hand-typed key has spaces around "|". Find Feed Row
+    // ignores that spacing, but the upsert matches Application Key exactly —
+    // writing the email's own key would create a second row next to this one.
+    name: "found row keeps its own key so the upsert updates it",
+    row: { id: "rec1", fields: { "Application Key": "va masters | developer & automation expert", "Status": "In Review" } },
+    email: email({ application_key: "va masters|developer & automation expert", status: "viewed by employer", max_stage: 2 }),
+    want: { "Application Key": "va masters | developer & automation expert", "Status": "Viewed by Employer", "Max Stage": 2 },
+  },
+  {
+    name: "no existing row writes the email's key",
+    row: {},
+    email: email(),
+    want: { "Application Key": "acme|backend engineer" },
+  },
 ];
 
 console.log("Feed merge tests\n");
@@ -83,6 +98,19 @@ for (const c of cases) {
   const got = merge(c.row, c.email);
   for (const [field, want] of Object.entries(c.want)) expect(`${c.name} → ${field}`, got[field], want);
 }
+
+// Only parsed emails reach Feed, and the parser only parses an email with a
+// company and a title. A key that breaks that means a bug upstream: stop the
+// execution loudly rather than write a row no later email can match.
+console.log("\nMalformed keys stop the write");
+for (const key of ["", "|backend engineer", "acme|", "acme | backend engineer", " acme|backend engineer", "acme"]) {
+  let threw = false;
+  try { merge({}, email({ application_key: key })); } catch { threw = true; }
+  expect(`throws on ${JSON.stringify(key)}`, threw, true);
+}
+let threwOnMissingCompany = false;
+try { merge({}, email({ company: "" })); } catch { threwOnMissingCompany = true; }
+expect("throws on an empty company", threwOnMissingCompany, true);
 
 console.log(failures ? `\n${failures} check(s) failed\n` : "\nAll merge checks passed\n");
 process.exit(failures ? 1 : 0);

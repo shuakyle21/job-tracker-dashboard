@@ -29,6 +29,7 @@ function expect(label, got, want) {
 const unparsedRow = (over = {}) => ({
   status: "", status_label: "Needs Review", parsed: false, confidence: "low",
   company: "Acme Robotics", job_title: "Backend Engineer", job_platform: "Company Website",
+  application_key: "acme robotics|backend engineer",
   ...over,
 });
 
@@ -67,14 +68,15 @@ for (const [field, want] of Object.entries(unparsedRow())) {
 }
 
 {
-  // No named company: only a recognized job board makes the guess trustworthy.
-  const boardOnly = unparsedRow({ company: "", job_platform: "Indeed" });
+  // No company means no `company|role` Feed key, so a job board alone is not
+  // enough: the email stays at Needs Review, same rule as parse-email.js.
+  const boardOnly = unparsedRow({ company: "", job_platform: "Indeed", application_key: "" });
   const got = apply(chatReply(JSON.stringify({ status: "applied" })), boardOnly);
-  expect("job-board email without a company still qualifies", got.parsed, true);
+  expect("job-board email without a company stays unparsed", got.parsed, false);
 }
 
 {
-  const noCompanyNoBoard = unparsedRow({ company: "" });
+  const noCompanyNoBoard = unparsedRow({ company: "", application_key: "" });
   const got = apply(chatReply(JSON.stringify({ status: "applied" })), noCompanyNoBoard);
   expect("no company and not a known board stays unparsed", got.parsed, false);
 }

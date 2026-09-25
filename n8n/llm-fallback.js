@@ -33,11 +33,10 @@ if (!parsed) {
   try {
     const guess = JSON.parse($json?.choices?.[0]?.message?.content ?? '');
     const candidate = String(guess?.status || '').toLowerCase().trim();
-    // A board's own confirmation is traceable even without a named employer
-    // (Indeed) — same bar parse-email.js uses for `parsed`.
-    const onJobBoard = !['Company Website', 'Direct Email'].includes(original.job_platform);
-    if (Object.prototype.hasOwnProperty.call(STATUS_LABELS, candidate)
-        && original.job_title && (original.company || onJobBoard)) {
+    // Same bar parse-email.js uses for `parsed`: application_key is only set
+    // when company and title are both known and well-formed. Without it the
+    // email has no Feed row to land on, so it stays at Needs Review.
+    if (Object.prototype.hasOwnProperty.call(STATUS_LABELS, candidate) && original.application_key) {
       status = candidate;
       status_label = STATUS_LABELS[status];
       parsed = true;

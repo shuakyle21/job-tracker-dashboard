@@ -162,6 +162,10 @@ const REVIEW_FIELDS = [
   "status", "company", "job_title", "confidence",
 ];
 
+// Application Key as Find Feed Row compares it: lowercased, trimmed, and with
+// no spaces around "|", the same form parse-email.js's norm() produces.
+const FEED_KEY_FORMULA = 'REGEX_REPLACE(LOWER(TRIM({Application Key})), " *[|] *", "|")';
+
 // Merge Into Feed returns exactly these, so the upsert writes a full row and
 // never blanks a field by leaving it out.
 const FEED_FIELDS = [
@@ -378,7 +382,12 @@ const nodes = [
       table: { __rl: true, mode: "id", value: FEED_TABLE_ID },
       // JSON.stringify quotes and escapes the key the way an Airtable formula
       // string literal expects, so a title containing quotes can't break it.
-      filterByFormula: ex("{{ '{Application Key} = ' + JSON.stringify($('Parse Job Email').item.json.application_key) }}"),
+      // The stored key is reduced to the parser's canonical form first: keys
+      // typed by hand ("va masters | developer") differ from generated ones
+      // ("va masters|developer") only in case and spacing, and an exact
+      // comparison gave that application two Feed rows. "[|]" rather than
+      // "\\|" keeps backslashes out of the formula.
+      filterByFormula: ex(`{{ ${JSON.stringify(FEED_KEY_FORMULA + " = ")} + JSON.stringify($('Parse Job Email').item.json.application_key) }}`),
       returnAll: false,
       limit: 1,
       options: {},
@@ -490,7 +499,7 @@ const nodes = [
 const stickies = [
   ["## 1. Poll and dedupe\nQuery: mail under **Job Application**, or containing confirmation phrases (\"thank you for applying\", \"received your application\", …), minus **Job Application/Processed**.\n\n**Backfill (manual)**: run once to process mail already in the label.\n\n**Remove Duplicates** is the second net: it catches a re-delivery in the window between the Airtable write and the label being applied.", [-40, 20], 400, 280, 4],
   ["## 2. Classify\nPure function, no network. Source of truth is `n8n/parse-email.js` in the repo — it has tests. Edit it there and re-run `node scripts/build-n8n.mjs`, not here.", [400, 60], 380, 220, 3],
-  ["## 3. Store\nInbox / Needs Review rows key on `message_id`, so re-running is an update, not a duplicate.\n\nClassified mail also upserts **Feed**, one row per application (`Application Key` = company|title, or platform|title|thread-id when the employer is unknown). `merge-feed.js` only moves a row forward: earliest date, highest stage, no status regressions — hand edits survive.", [820, 20], 860, 260, 5],
+  ["## 3. Store\nInbox / Needs Review rows key on `message_id`, so re-running is an update, not a duplicate.\n\nClassified mail also upserts **Feed**, one row per application (`Application Key` = company|title; mail with no known employer stops at Needs Review). `merge-feed.js` only moves a row forward: earliest date, highest stage, no status regressions — hand edits survive.", [820, 20], 860, 260, 5],
   ["## 5. Watchdog\nHourly: any job mail older than 2h that still lacks **Job Application/Processed** fails this execution. `scripts/check-live.mjs` (hourly in GitHub Actions) turns failed executions into an email, so a stuck ingest can't stay quiet.", [-40, 1060], 560, 160, 2],
   ["## 4. Close the loop\nLabel is applied **after** the write — a crash loses a label, not a row.\n\nNo rebuild here: every Feed upsert pings the **Feed change → rebuild** workflow, which dispatches to GitHub Actions, so the dashboard updates in seconds instead of waiting for the 6-hourly cron.", [1760, 20], 400, 280, 6],
 ];
