@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-09-25T05:02:16.860Z",
+  "generatedAt": "2026-09-25T06:08:21.199Z",
   "total": 46,
   "sent": 46,
   "unsent": 0,
-  "replied": 12,
-  "noReply": 34,
+  "replied": 13,
+  "noReply": 33,
   "open": 32,
-  "replyRate": 0.2608695652173913,
+  "replyRate": 0.2826086956521739,
   "interviewRate": 0.06521739130434782,
-  "ghostRate": 0.7391304347826086,
+  "ghostRate": 0.717391304347826,
   "rejected": 5,
   "rejectionRate": 0.10869565217391304,
   "reached": [
@@ -29,7 +29,7 @@
     [
       {
         "status": "Applied",
-        "count": 23
+        "count": 22
       },
       {
         "status": "No Response",
@@ -46,6 +46,10 @@
       {
         "status": "Assessment",
         "count": 2
+      },
+      {
+        "status": "(blank)",
+        "count": 1
       }
     ],
     [
@@ -90,7 +94,7 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 25
+      "count": 24
     },
     {
       "status": "No Response",
@@ -115,6 +119,10 @@
     {
       "status": "In Review",
       "count": 2
+    },
+    {
+      "status": "(blank)",
+      "count": 1
     }
   ],
   "channels": [
@@ -127,10 +135,10 @@
     },
     {
       "name": "Direct / Careers",
-      "sent": 16,
+      "sent": 15,
       "replied": 5,
       "unsent": 0,
-      "rate": 0.3125
+      "rate": 0.3333333333333333
     },
     {
       "name": "Torre.ai",
@@ -141,6 +149,13 @@
     },
     {
       "name": "LinkedIn",
+      "sent": 1,
+      "replied": 1,
+      "unsent": 0,
+      "rate": 1
+    },
+    {
+      "name": "(blank)",
       "sent": 1,
       "replied": 1,
       "unsent": 0,
@@ -175,23 +190,27 @@
     },
     {
       "month": "2026-09",
-      "count": 34
+      "count": 33
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 42
+      "count": 41
     },
     {
       "label": "Onsite",
       "count": 4
+    },
+    {
+      "label": "Unspecified",
+      "count": 1
     }
   ],
   "ageing": [
     {
       "label": "0–7d",
-      "count": 11
+      "count": 10
     },
     {
       "label": "8–14d",
