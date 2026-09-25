@@ -14,6 +14,84 @@ within minutes. No spreadsheet, no manual data entry beyond the parts that still
 
 Job Tracker turns job-application emails into a private, automated analytics dashboard. Gmail and n8n capture and classify application updates, Airtable stores the structured feed, and GitHub Actions builds and deploys a static dashboard to Vercel. It is dependency-free, privacy-conscious, and designed to make the job search easier to understand without adding more manual tracking.
 
+## Why it exists: framing the problem
+
+The project is structured around the [INFORMS Analytics Framework](https://www.informs.org/Certification-Continuing-Ed/Analytics-Certification)
+(the seven domains behind the Certified Analytics Professional exam). Its first principle is
+that analytics starts with the problem, not the data: frame the *business* question, then
+translate it into an *analytics* question with metrics that can answer it. Everything below that
+(the parser, the pipeline, the charts) exists to serve these two framings.
+
+### Domain I: business problem framing
+
+**The problem.** I apply steadily and rarely reach an interview. Sending more applications is the
+obvious fix, and it's a guess. The real question is *where* applications stall and *which* of the
+things I control change that: the channel, the volume, and the effort per application.
+
+**The decision it supports.** Where to spend next week's applying hours: which channels to keep,
+whether to trade volume for tailoring, and which open applications need a follow-up.
+
+**Stakeholder.** One job seeker. The page is public, so it also has to be safe to show anyone.
+
+**Success looks like:** the dashboard changes a weekly decision, and the interview rate trends up
+month over month. Keeping the tracker current without manual entry is necessary but not
+sufficient.
+
+### Domain II: analytics problem framing
+
+Each business question becomes a measurable one, answered by a specific chart.
+
+| Business question | Analytics question | Metric | Where |
+|---|---|---|---|
+| Why am I not getting interviews? | At which stage do applications stop, and is it silence or a "no"? | Stage-to-stage conversion; stalled vs rejected at each stage | Stage flow, Funnel |
+| Am I applying enough? | How many applications go out per month, and is the pace steady? | Applications per month, by `Date Applied` | Applications per month |
+| Which channels are worth it? | Does the reply rate differ by channel? | Replies ÷ applications, per `Source` | Channels |
+| Does effort pay off? | Do tailored applications, or ones with a cover letter, get more replies? | Resume, cover letter and tailoring counts | Application quality |
+| What needs action now? | Which open applications are ageing without a reply? | Open applications by age bucket; follow-ups due | Ageing |
+
+Definitions: a *reply* is any employer response, rejections included. The *interview rate* is
+applications that reached an interview ÷ all applications. The *ghost rate* is applications with
+no reply at all ÷ all applications.
+
+**Working hypotheses for the missing interview signal.** These are what the charts test, not
+conclusions:
+
+1. **Screening, not interviewing, is the bottleneck.** Most losses happen at *Applied* and are
+   silence rather than rejections, so the résumé isn't getting past the first screen.
+2. **Channel matters.** Job-board applications get fewer replies than applications through a
+   company's own careers page.
+3. **Effort matters more than volume.** Tailored applications, or ones with a cover letter, reply
+   more often than untailored ones.
+4. **Pace is uneven.** Monthly volume swings too much to separate the effect of volume from
+   everything else.
+
+**A snapshot, as of 2026-09-25** (151 applications since April; the live page is always current):
+
+- **Applications per month:** 6, 13, 7 and 7 from April to July, then 78 in August and 39 in
+  September so far.
+- **Stages:** 25 of 151 got past *Applied*, 8 reached an assessment, and 6 reached an interview.
+  That's a 4% interview rate.
+- **Silence vs rejection:** of the 126 that stopped at *Applied*, 26 were rejections. The other 100
+  are still silent or were closed without a decision. That supports hypothesis 1.
+- **Replies by channel:** careers pages 33%, JobStreet 21% and Indeed 23%. LinkedIn is 57%, but
+  most of those replies are LinkedIn's automated rejections, so its rate overstates interest.
+
+**Assumptions and constraints.**
+- Only what reaches Gmail counts. A missing reply is recorded as silence, not as a rejection.
+- Samples per channel are small, so treat any rate built on fewer than about 20 applications as a
+  hint, not a finding.
+- The public page must never show an employer, which rules out per-company analysis on it.
+
+### The other five domains
+
+| Domain | Here |
+|---|---|
+| III. Data | Gmail is the source of record. n8n extracts one row per application into Airtable's `Feed`, and the forward-only merge keeps it clean: earliest date, highest stage, no status regressions |
+| IV. Methodology selection | Descriptive funnel analytics. Pattern rules classify email, with an LLM only as a capped fallback, because every classification must be explainable and testable |
+| V. Model building | `n8n/parse-email.js` and `n8n/merge-feed.js`, each with its own test suite in `scripts/` |
+| VI. Deployment | GitHub Actions builds and deploys to Vercel within seconds of any Feed change |
+| VII. Lifecycle management | `verify.mjs` gates every deploy. The hourly health check catches a stuck or drifted n8n. `data/summary.json` is committed every run, so git history is the time series |
+
 ## What it does
 
 You apply for jobs the way you always have: LinkedIn, JobStreet, company career pages, cold
