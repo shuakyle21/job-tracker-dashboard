@@ -267,8 +267,13 @@
             <div id="chartChannels"></div>
           </div>
           <div id="cadence" class="rounded-sm border border-stroke bg-white p-5 shadow-default dark:border-strokedark dark:bg-boxdark xl:col-span-5">
-            <h2 class="mb-2 text-lg font-semibold text-black dark:text-white">Applications per month</h2>
-            <div id="chartMonthly"></div>
+            <div class="mb-2 flex flex-wrap items-baseline justify-between gap-x-3">
+              <h2 class="text-lg font-semibold text-black dark:text-white">Applications per month</h2>
+              <p id="monthlyHint" class="hidden whitespace-nowrap text-xs text-body dark:text-bodydark2">← scroll for earlier months</p>
+            </div>
+            <div id="monthlyScroll" style="overflow-x:auto;overscroll-behavior-x:contain">
+              <div id="chartMonthly"></div>
+            </div>
           </div>
         </section>
 
@@ -402,7 +407,38 @@
     c.render(); charts.push(c);
   }
 
+  // Minimum width per month on the cadence chart before its card scrolls. It's a
+  // CSS min-width on the chart's box, not a fixed ApexCharts width: ApexCharts
+  // stays "100%" of that box and keeps its own resize handling, which otherwise
+  // shrinks a fixed-width chart back to the card on the next resize.
+  const MONTH_PX = 56;
+  const monthlyMin = D.monthly.length * MONTH_PX;
+  document.getElementById("chartMonthly").style.minWidth = monthlyMin + "px";
+  // The card opens on the latest month and stays pinned there while the layout
+  // settles (the Tailwind CDN lays cards out after the first render, and
+  // ApexCharts redraws when they resize), until the reader scrolls back.
+  // Widths are only known after layout, so a ResizeObserver does the work.
+  const monthlyScroll = document.getElementById("monthlyScroll");
+  // A re-render (the theme toggle) empties the box for a moment, which resets the
+  // scroll; monthlyLeft keeps the reader's place across it.
+  let monthlyPinned = true, monthlyLeft = 0, monthlyRedrawing = false;
+  monthlyScroll.addEventListener("scroll", () => {
+    if (monthlyRedrawing) return;
+    const s = monthlyScroll;
+    monthlyPinned = s.scrollLeft + s.clientWidth >= s.scrollWidth - 2;
+    monthlyLeft = s.scrollLeft;
+  }, { passive: true });
+  function fitMonthly() {
+    const s = monthlyScroll;
+    document.getElementById("monthlyHint").classList.toggle("hidden", monthlyMin <= s.clientWidth);
+    s.scrollLeft = monthlyPinned ? s.scrollWidth : monthlyLeft;
+  }
+  const monthlyObserver = new ResizeObserver(fitMonthly);
+  monthlyObserver.observe(monthlyScroll);
+  monthlyObserver.observe(document.getElementById("chartMonthly"));
+
   function renderAll() {
+    monthlyRedrawing = true;
     charts.splice(0).forEach(c => c.destroy());
     const dark = isDark();
     const ink = dark ? "#AEB7C0" : "#64748B";
@@ -475,15 +511,22 @@
       } } },
     });
 
-    /* cadence — single series area */
+    /* cadence — single series area. Each month gets at least MONTH_PX of width;
+       once the months outgrow the card, the card scrolls instead, so a long
+       history never squeezes into unreadable ticks. It opens on the latest
+       month, which is the one you check. */
+    const years = new Set(D.monthly.map(m => m.month.slice(0, 4)));
     mount("#chartMonthly", {
       ...base,
-      chart: { ...base.chart, type: "area", height: 320 },
+      chart: { ...base.chart, type: "area", height: 320,
+        events: { mounted: () => { fitMonthly(); monthlyRedrawing = false; } } },
       series: [{ name: "Applications", data: D.monthly.map(m => m.count) }],
       xaxis: {
+        // Once the history spans more than one year, "Apr" alone is ambiguous.
         categories: D.monthly.map(m => {
           const [y, mm] = m.month.split("-");
-          return new Date(Date.UTC(+y, +mm - 1, 1)).toLocaleString("en", { month: "short", timeZone: "UTC" });
+          const label = new Date(Date.UTC(+y, +mm - 1, 1)).toLocaleString("en", { month: "short", timeZone: "UTC" });
+          return years.size > 1 ? `${label} '${y.slice(2)}` : label;
         }),
         axisBorder: { show: false }, axisTicks: { show: false },
       },
