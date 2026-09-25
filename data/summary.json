@@ -1,25 +1,25 @@
 {
-  "generatedAt": "2026-09-25T08:25:01.706Z",
-  "total": 150,
-  "sent": 150,
+  "generatedAt": "2026-09-25T11:55:26.719Z",
+  "total": 148,
+  "sent": 148,
   "unsent": 0,
-  "replied": 51,
-  "noReply": 99,
-  "open": 106,
-  "replyRate": 0.34,
-  "interviewRate": 0.04,
-  "ghostRate": 0.66,
-  "rejected": 33,
-  "rejectionRate": 0.22,
+  "replied": 50,
+  "noReply": 98,
+  "open": 102,
+  "replyRate": 0.33783783783783783,
+  "interviewRate": 0.04054054054054054,
+  "ghostRate": 0.6621621621621622,
+  "rejected": 34,
+  "rejectionRate": 0.22972972972972974,
   "reached": [
-    150,
+    148,
     25,
     8,
     6,
     0
   ],
   "atStage": [
-    125,
+    123,
     17,
     2,
     6,
@@ -29,23 +29,19 @@
     [
       {
         "status": "Applied",
-        "count": 87
+        "count": 85
       },
       {
         "status": "Rejected",
-        "count": 26
+        "count": 27
       },
       {
         "status": "No Response",
-        "count": 4
+        "count": 5
       },
       {
         "status": "Closed / Expired",
         "count": 4
-      },
-      {
-        "status": "(blank)",
-        "count": 2
       },
       {
         "status": "Assessment",
@@ -101,7 +97,7 @@
     []
   ],
   "rejectedAt": [
-    26,
+    27,
     5,
     0,
     2,
@@ -111,11 +107,11 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 88
+      "count": 86
     },
     {
       "status": "Rejected",
-      "count": 33
+      "count": 34
     },
     {
       "status": "Viewed by Employer",
@@ -123,7 +119,7 @@
     },
     {
       "status": "No Response",
-      "count": 6
+      "count": 7
     },
     {
       "status": "Closed / Expired",
@@ -136,10 +132,6 @@
     {
       "status": "In Review",
       "count": 3
-    },
-    {
-      "status": "(blank)",
-      "count": 2
     },
     {
       "status": "Interviewed",
@@ -171,9 +163,9 @@
     {
       "name": "Indeed",
       "sent": 13,
-      "replied": 3,
+      "replied": 4,
       "unsent": 0,
-      "rate": 0.23076923076923078
+      "rate": 0.3076923076923077
     },
     {
       "name": "Direct Email",
@@ -188,13 +180,6 @@
       "replied": 2,
       "unsent": 0,
       "rate": 0.5
-    },
-    {
-      "name": "(blank)",
-      "sent": 2,
-      "replied": 2,
-      "unsent": 0,
-      "rate": 1
     },
     {
       "name": "Torre.ai",
@@ -273,10 +258,6 @@
     {
       "label": "Onsite",
       "count": 4
-    },
-    {
-      "label": "Unspecified",
-      "count": 2
     }
   ],
   "ageing": [
@@ -298,7 +279,7 @@
     },
     {
       "label": "60d+",
-      "count": 16
+      "count": 14
     }
   ],
   "followUps": {
