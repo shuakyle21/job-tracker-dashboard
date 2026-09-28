@@ -1,25 +1,25 @@
 {
-  "generatedAt": "2026-09-28T14:02:49.649Z",
-  "total": 152,
-  "sent": 152,
+  "generatedAt": "2026-09-28T23:19:32.529Z",
+  "total": 151,
+  "sent": 151,
   "unsent": 0,
   "replied": 50,
-  "noReply": 102,
-  "open": 106,
-  "replyRate": 0.32894736842105265,
-  "interviewRate": 0.03289473684210526,
-  "ghostRate": 0.6710526315789473,
+  "noReply": 101,
+  "open": 105,
+  "replyRate": 0.33112582781456956,
+  "interviewRate": 0.033112582781456956,
+  "ghostRate": 0.6688741721854304,
   "rejected": 34,
-  "rejectionRate": 0.2236842105263158,
+  "rejectionRate": 0.2251655629139073,
   "reached": [
-    152,
+    151,
     28,
     9,
     5,
     0
   ],
   "atStage": [
-    124,
+    123,
     19,
     4,
     5,
@@ -29,7 +29,7 @@
     [
       {
         "status": "Applied",
-        "count": 88
+        "count": 87
       },
       {
         "status": "Rejected",
@@ -111,7 +111,7 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 90
+      "count": 89
     },
     {
       "status": "Rejected",
@@ -159,10 +159,10 @@
     },
     {
       "name": "LinkedIn",
-      "sent": 25,
+      "sent": 24,
       "replied": 13,
       "unsent": 0,
-      "rate": 0.52
+      "rate": 0.5416666666666666
     },
     {
       "name": "Indeed",
@@ -251,13 +251,13 @@
     },
     {
       "month": "2026-09",
-      "count": 42
+      "count": 41
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 148
+      "count": 147
     },
     {
       "label": "Onsite",
@@ -267,7 +267,7 @@
   "ageing": [
     {
       "label": "0–7d",
-      "count": 12
+      "count": 11
     },
     {
       "label": "8–14d",
