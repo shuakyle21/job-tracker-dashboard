@@ -1,25 +1,25 @@
 {
-  "generatedAt": "2026-09-29T12:59:01.116Z",
-  "total": 153,
-  "sent": 153,
+  "generatedAt": "2026-09-29T22:19:40.159Z",
+  "total": 151,
+  "sent": 151,
   "unsent": 0,
   "replied": 51,
-  "noReply": 102,
-  "open": 107,
-  "replyRate": 0.3333333333333333,
-  "interviewRate": 0.032679738562091505,
-  "ghostRate": 0.6666666666666666,
-  "rejected": 34,
-  "rejectionRate": 0.2222222222222222,
+  "noReply": 100,
+  "open": 104,
+  "replyRate": 0.33774834437086093,
+  "interviewRate": 0.033112582781456956,
+  "ghostRate": 0.6622516556291391,
+  "rejected": 35,
+  "rejectionRate": 0.23178807947019867,
   "reached": [
-    153,
+    151,
     28,
     9,
     5,
     0
   ],
   "atStage": [
-    125,
+    123,
     19,
     4,
     5,
@@ -29,7 +29,7 @@
     [
       {
         "status": "Applied",
-        "count": 88
+        "count": 86
       },
       {
         "status": "Rejected",
@@ -77,7 +77,11 @@
     [
       {
         "status": "Assessment",
-        "count": 4
+        "count": 3
+      },
+      {
+        "status": "Rejected",
+        "count": 1
       }
     ],
     [
@@ -103,7 +107,7 @@
   "rejectedAt": [
     27,
     5,
-    0,
+    1,
     2,
     0
   ],
@@ -111,11 +115,11 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 90
+      "count": 88
     },
     {
       "status": "Rejected",
-      "count": 34
+      "count": 35
     },
     {
       "status": "Viewed by Employer",
@@ -131,7 +135,7 @@
     },
     {
       "status": "Assessment",
-      "count": 5
+      "count": 4
     },
     {
       "status": "In Review",
@@ -145,10 +149,10 @@
   "channels": [
     {
       "name": "Direct / Careers",
-      "sent": 58,
+      "sent": 56,
       "replied": 19,
       "unsent": 0,
-      "rate": 0.3275862068965517
+      "rate": 0.3392857142857143
     },
     {
       "name": "Jobstreet",
@@ -251,13 +255,13 @@
     },
     {
       "month": "2026-09",
-      "count": 43
+      "count": 41
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 149
+      "count": 147
     },
     {
       "label": "Onsite",
@@ -267,7 +271,7 @@
   "ageing": [
     {
       "label": "0–7d",
-      "count": 10
+      "count": 7
     },
     {
       "label": "8–14d",
