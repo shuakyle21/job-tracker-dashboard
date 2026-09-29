@@ -1,26 +1,26 @@
 {
-  "generatedAt": "2026-09-29T05:48:28.993Z",
-  "total": 150,
-  "sent": 150,
+  "generatedAt": "2026-09-29T12:59:01.116Z",
+  "total": 153,
+  "sent": 153,
   "unsent": 0,
-  "replied": 49,
-  "noReply": 101,
-  "open": 105,
-  "replyRate": 0.32666666666666666,
-  "interviewRate": 0.03333333333333333,
-  "ghostRate": 0.6733333333333333,
-  "rejected": 33,
-  "rejectionRate": 0.22,
+  "replied": 51,
+  "noReply": 102,
+  "open": 107,
+  "replyRate": 0.3333333333333333,
+  "interviewRate": 0.032679738562091505,
+  "ghostRate": 0.6666666666666666,
+  "rejected": 34,
+  "rejectionRate": 0.2222222222222222,
   "reached": [
-    150,
-    27,
+    153,
+    28,
     9,
     5,
     0
   ],
   "atStage": [
-    123,
-    18,
+    125,
+    19,
     4,
     5,
     0
@@ -29,11 +29,11 @@
     [
       {
         "status": "Applied",
-        "count": 87
+        "count": 88
       },
       {
         "status": "Rejected",
-        "count": 26
+        "count": 27
       },
       {
         "status": "No Response",
@@ -51,7 +51,7 @@
     [
       {
         "status": "Viewed by Employer",
-        "count": 7
+        "count": 8
       },
       {
         "status": "Rejected",
@@ -101,7 +101,7 @@
     []
   ],
   "rejectedAt": [
-    26,
+    27,
     5,
     0,
     2,
@@ -111,15 +111,15 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 89
+      "count": 90
     },
     {
       "status": "Rejected",
-      "count": 33
+      "count": 34
     },
     {
       "status": "Viewed by Employer",
-      "count": 7
+      "count": 8
     },
     {
       "status": "No Response",
@@ -145,17 +145,17 @@
   "channels": [
     {
       "name": "Direct / Careers",
-      "sent": 56,
-      "replied": 18,
+      "sent": 58,
+      "replied": 19,
       "unsent": 0,
-      "rate": 0.32142857142857145
+      "rate": 0.3275862068965517
     },
     {
       "name": "Jobstreet",
-      "sent": 38,
-      "replied": 7,
+      "sent": 39,
+      "replied": 8,
       "unsent": 0,
-      "rate": 0.18421052631578946
+      "rate": 0.20512820512820512
     },
     {
       "name": "LinkedIn",
@@ -251,13 +251,13 @@
     },
     {
       "month": "2026-09",
-      "count": 40
+      "count": 43
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 146
+      "count": 149
     },
     {
       "label": "Onsite",
@@ -267,7 +267,7 @@
   "ageing": [
     {
       "label": "0–7d",
-      "count": 8
+      "count": 10
     },
     {
       "label": "8–14d",
