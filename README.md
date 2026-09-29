@@ -3,7 +3,7 @@
 Gmail receives an application confirmation, n8n reads it, and a dashboard on Vercel updates
 within minutes. No spreadsheet, no manual data entry beyond the parts that still need a person.
 
-![The n8n ingest workflow](img/n8n-workflow.png)
+![The n8n ingest workflow](n8n-workflow/n8n-workflow.png)
 
 ## Dashboard Preview
 
