@@ -1,26 +1,26 @@
 {
-  "generatedAt": "2026-09-28T23:19:32.529Z",
-  "total": 151,
-  "sent": 151,
+  "generatedAt": "2026-09-29T05:48:28.993Z",
+  "total": 150,
+  "sent": 150,
   "unsent": 0,
-  "replied": 50,
+  "replied": 49,
   "noReply": 101,
   "open": 105,
-  "replyRate": 0.33112582781456956,
-  "interviewRate": 0.033112582781456956,
-  "ghostRate": 0.6688741721854304,
-  "rejected": 34,
-  "rejectionRate": 0.2251655629139073,
+  "replyRate": 0.32666666666666666,
+  "interviewRate": 0.03333333333333333,
+  "ghostRate": 0.6733333333333333,
+  "rejected": 33,
+  "rejectionRate": 0.22,
   "reached": [
-    151,
-    28,
+    150,
+    27,
     9,
     5,
     0
   ],
   "atStage": [
     123,
-    19,
+    18,
     4,
     5,
     0
@@ -55,7 +55,7 @@
       },
       {
         "status": "Rejected",
-        "count": 6
+        "count": 5
       },
       {
         "status": "In Review",
@@ -102,7 +102,7 @@
   ],
   "rejectedAt": [
     26,
-    6,
+    5,
     0,
     2,
     0
@@ -115,7 +115,7 @@
     },
     {
       "status": "Rejected",
-      "count": 34
+      "count": 33
     },
     {
       "status": "Viewed by Employer",
@@ -145,10 +145,10 @@
   "channels": [
     {
       "name": "Direct / Careers",
-      "sent": 57,
-      "replied": 19,
+      "sent": 56,
+      "replied": 18,
       "unsent": 0,
-      "rate": 0.3333333333333333
+      "rate": 0.32142857142857145
     },
     {
       "name": "Jobstreet",
@@ -251,13 +251,13 @@
     },
     {
       "month": "2026-09",
-      "count": 41
+      "count": 40
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 147
+      "count": 146
     },
     {
       "label": "Onsite",
@@ -267,23 +267,23 @@
   "ageing": [
     {
       "label": "0–7d",
-      "count": 11
+      "count": 8
     },
     {
       "label": "8–14d",
-      "count": 7
+      "count": 9
     },
     {
       "label": "15–30d",
-      "count": 20
+      "count": 15
     },
     {
       "label": "31–60d",
-      "count": 53
+      "count": 57
     },
     {
       "label": "60d+",
-      "count": 14
+      "count": 16
     }
   ],
   "followUps": {
