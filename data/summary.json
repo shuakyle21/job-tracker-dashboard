@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-09-30T12:41:05.305Z",
+  "generatedAt": "2026-09-30T22:20:01.201Z",
   "total": 157,
   "sent": 157,
   "unsent": 0,
   "replied": 51,
   "noReply": 106,
-  "open": 110,
+  "open": 109,
   "replyRate": 0.3248407643312102,
   "interviewRate": 0.03821656050955414,
   "ghostRate": 0.6751592356687898,
@@ -29,7 +29,7 @@
     [
       {
         "status": "Applied",
-        "count": 91
+        "count": 90
       },
       {
         "status": "Rejected",
@@ -37,7 +37,7 @@
       },
       {
         "status": "No Response",
-        "count": 5
+        "count": 6
       },
       {
         "status": "Closed / Expired",
@@ -115,7 +115,7 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 94
+      "count": 93
     },
     {
       "status": "Rejected",
@@ -127,7 +127,7 @@
     },
     {
       "status": "No Response",
-      "count": 7
+      "count": 8
     },
     {
       "status": "Closed / Expired",
@@ -149,10 +149,10 @@
   "channels": [
     {
       "name": "Direct / Careers",
-      "sent": 59,
+      "sent": 58,
       "replied": 19,
       "unsent": 0,
-      "rate": 0.3220338983050847
+      "rate": 0.3275862068965517
     },
     {
       "name": "Jobstreet",
@@ -177,10 +177,10 @@
     },
     {
       "name": "Direct Email",
-      "sent": 8,
+      "sent": 9,
       "replied": 2,
       "unsent": 0,
-      "rate": 0.25
+      "rate": 0.2222222222222222
     },
     {
       "name": "Kalibrr",
@@ -251,11 +251,11 @@
     },
     {
       "month": "2026-08",
-      "count": 77
+      "count": 78
     },
     {
       "month": "2026-09",
-      "count": 47
+      "count": 46
     }
   ],
   "workSetup": [
@@ -271,7 +271,7 @@
   "ageing": [
     {
       "label": "0–7d",
-      "count": 11
+      "count": 10
     },
     {
       "label": "8–14d",
@@ -296,8 +296,8 @@
     "dueWeek": 0
   },
   "quality": {
-    "resume": 145,
+    "resume": 148,
     "cover": 7,
-    "tailored": 11
+    "tailored": 14
   }
 }
