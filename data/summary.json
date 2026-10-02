@@ -1,26 +1,26 @@
 {
-  "generatedAt": "2026-10-02T05:44:51.036Z",
+  "generatedAt": "2026-10-02T12:42:48.346Z",
   "total": 162,
   "sent": 162,
   "unsent": 0,
-  "replied": 52,
-  "noReply": 110,
-  "open": 112,
-  "replyRate": 0.32098765432098764,
+  "replied": 54,
+  "noReply": 108,
+  "open": 111,
+  "replyRate": 0.3333333333333333,
   "interviewRate": 0.037037037037037035,
-  "ghostRate": 0.6790123456790124,
-  "rejected": 36,
-  "rejectionRate": 0.2222222222222222,
+  "ghostRate": 0.6666666666666666,
+  "rejected": 37,
+  "rejectionRate": 0.22839506172839505,
   "reached": [
     162,
-    29,
+    30,
     10,
     6,
     0
   ],
   "atStage": [
-    133,
-    19,
+    132,
+    20,
     4,
     6,
     0
@@ -29,11 +29,11 @@
     [
       {
         "status": "Applied",
-        "count": 93
+        "count": 91
       },
       {
         "status": "Rejected",
-        "count": 28
+        "count": 29
       },
       {
         "status": "No Response",
@@ -51,7 +51,7 @@
     [
       {
         "status": "Viewed by Employer",
-        "count": 8
+        "count": 9
       },
       {
         "status": "Rejected",
@@ -105,7 +105,7 @@
     []
   ],
   "rejectedAt": [
-    28,
+    29,
     5,
     1,
     2,
@@ -115,19 +115,19 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 96
+      "count": 94
     },
     {
       "status": "Rejected",
-      "count": 36
+      "count": 37
+    },
+    {
+      "status": "Viewed by Employer",
+      "count": 9
     },
     {
       "status": "No Response",
       "count": 9
-    },
-    {
-      "status": "Viewed by Employer",
-      "count": 8
     },
     {
       "status": "Closed / Expired",
@@ -150,16 +150,16 @@
     {
       "name": "Direct / Careers",
       "sent": 59,
-      "replied": 20,
+      "replied": 21,
       "unsent": 0,
-      "rate": 0.3389830508474576
+      "rate": 0.3559322033898305
     },
     {
       "name": "Jobstreet",
       "sent": 45,
-      "replied": 8,
+      "replied": 9,
       "unsent": 0,
-      "rate": 0.17777777777777778
+      "rate": 0.2
     },
     {
       "name": "LinkedIn",
@@ -275,7 +275,7 @@
   "ageing": [
     {
       "label": "0–7d",
-      "count": 15
+      "count": 14
     },
     {
       "label": "8–14d",
@@ -300,7 +300,7 @@
     "dueWeek": 0
   },
   "quality": {
-    "resume": 152,
+    "resume": 153,
     "cover": 7,
     "tailored": 15
   }
