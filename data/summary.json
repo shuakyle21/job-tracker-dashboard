@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-09T22:42:01.077Z",
+  "generatedAt": "2026-10-10T05:57:47.304Z",
   "total": 178,
   "sent": 178,
   "unsent": 0,
@@ -279,7 +279,7 @@
     },
     {
       "label": "8–14d",
-      "count": 14
+      "count": 13
     },
     {
       "label": "15–30d",
@@ -287,11 +287,11 @@
     },
     {
       "label": "31–60d",
-      "count": 55
+      "count": 50
     },
     {
       "label": "60d+",
-      "count": 27
+      "count": 33
     }
   ],
   "followUps": {
