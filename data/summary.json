@@ -1,26 +1,26 @@
 {
-  "generatedAt": "2026-10-15T21:27:35.057Z",
-  "total": 189,
-  "sent": 189,
+  "generatedAt": "2026-10-16T04:37:30.561Z",
+  "total": 191,
+  "sent": 191,
   "unsent": 0,
-  "replied": 64,
+  "replied": 66,
   "noReply": 125,
-  "open": 136,
-  "replyRate": 0.3386243386243386,
-  "interviewRate": 0.037037037037037035,
-  "ghostRate": 0.6613756613756614,
+  "open": 138,
+  "replyRate": 0.34554973821989526,
+  "interviewRate": 0.03664921465968586,
+  "ghostRate": 0.6544502617801047,
   "rejected": 39,
-  "rejectionRate": 0.20634920634920634,
+  "rejectionRate": 0.20418848167539266,
   "reached": [
-    189,
-    49,
+    191,
+    51,
     13,
     7,
     0
   ],
   "atStage": [
     140,
-    36,
+    38,
     6,
     7,
     0
@@ -51,7 +51,7 @@
     [
       {
         "status": "Viewed by Employer",
-        "count": 12
+        "count": 13
       },
       {
         "status": "Applied",
@@ -59,7 +59,7 @@
       },
       {
         "status": "In Review",
-        "count": 5
+        "count": 6
       },
       {
         "status": "Rejected",
@@ -123,18 +123,18 @@
     },
     {
       "status": "Viewed by Employer",
-      "count": 12
+      "count": 13
     },
     {
       "status": "No Response",
       "count": 9
     },
     {
-      "status": "Assessment",
-      "count": 6
+      "status": "In Review",
+      "count": 7
     },
     {
-      "status": "In Review",
+      "status": "Assessment",
       "count": 6
     },
     {
@@ -156,10 +156,10 @@
     },
     {
       "name": "Jobstreet",
-      "sent": 51,
-      "replied": 11,
+      "sent": 53,
+      "replied": 13,
       "unsent": 0,
-      "rate": 0.21568627450980393
+      "rate": 0.24528301886792453
     },
     {
       "name": "LinkedIn",
@@ -259,13 +259,13 @@
     },
     {
       "month": "2026-10",
-      "count": 31
+      "count": 33
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 185
+      "count": 187
     },
     {
       "label": "Onsite",
@@ -279,15 +279,15 @@
     },
     {
       "label": "8–14d",
-      "count": 16
+      "count": 14
     },
     {
       "label": "15–30d",
-      "count": 21
+      "count": 23
     },
     {
       "label": "31–60d",
-      "count": 42
+      "count": 44
     },
     {
       "label": "60d+",
