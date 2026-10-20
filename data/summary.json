@@ -1,26 +1,26 @@
 {
-  "generatedAt": "2026-10-20T11:44:53.290Z",
-  "total": 197,
-  "sent": 197,
+  "generatedAt": "2026-10-20T17:14:19.114Z",
+  "total": 199,
+  "sent": 199,
   "unsent": 0,
   "replied": 69,
-  "noReply": 128,
-  "open": 143,
-  "replyRate": 0.350253807106599,
-  "interviewRate": 0.03553299492385787,
-  "ghostRate": 0.649746192893401,
+  "noReply": 130,
+  "open": 145,
+  "replyRate": 0.34673366834170855,
+  "interviewRate": 0.035175879396984924,
+  "ghostRate": 0.6532663316582915,
   "rejected": 40,
-  "rejectionRate": 0.20304568527918782,
+  "rejectionRate": 0.20100502512562815,
   "reached": [
-    197,
-    53,
+    199,
+    54,
     13,
     7,
     0
   ],
   "atStage": [
-    144,
-    40,
+    145,
+    41,
     6,
     7,
     0
@@ -29,7 +29,7 @@
     [
       {
         "status": "Applied",
-        "count": 100
+        "count": 101
       },
       {
         "status": "Rejected",
@@ -59,7 +59,7 @@
       },
       {
         "status": "Applied",
-        "count": 11
+        "count": 12
       },
       {
         "status": "In Review",
@@ -119,7 +119,7 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 114
+      "count": 116
     },
     {
       "status": "Rejected",
@@ -157,10 +157,10 @@
   "channels": [
     {
       "name": "Direct / Careers",
-      "sent": 79,
+      "sent": 80,
       "replied": 29,
       "unsent": 0,
-      "rate": 0.3670886075949367
+      "rate": 0.3625
     },
     {
       "name": "Jobstreet",
@@ -171,10 +171,10 @@
     },
     {
       "name": "LinkedIn",
-      "sent": 28,
+      "sent": 29,
       "replied": 14,
       "unsent": 0,
-      "rate": 0.5
+      "rate": 0.4827586206896552
     },
     {
       "name": "Indeed",
@@ -274,13 +274,13 @@
     },
     {
       "month": "2026-10",
-      "count": 38
+      "count": 40
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 192
+      "count": 194
     },
     {
       "label": "Onsite",
@@ -294,7 +294,7 @@
   "ageing": [
     {
       "label": "0–7d",
-      "count": 13
+      "count": 15
     },
     {
       "label": "8–14d",
