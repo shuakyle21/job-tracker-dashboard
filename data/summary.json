@@ -1,25 +1,25 @@
 {
-  "generatedAt": "2026-10-19T22:24:07.763Z",
-  "total": 194,
-  "sent": 194,
+  "generatedAt": "2026-10-20T04:56:27.865Z",
+  "total": 195,
+  "sent": 195,
   "unsent": 0,
-  "replied": 68,
+  "replied": 69,
   "noReply": 126,
   "open": 141,
-  "replyRate": 0.35051546391752575,
-  "interviewRate": 0.03608247422680412,
-  "ghostRate": 0.6494845360824743,
-  "rejected": 39,
-  "rejectionRate": 0.20103092783505155,
+  "replyRate": 0.35384615384615387,
+  "interviewRate": 0.035897435897435895,
+  "ghostRate": 0.6461538461538462,
+  "rejected": 40,
+  "rejectionRate": 0.20512820512820512,
   "reached": [
-    194,
+    195,
     53,
     13,
     7,
     0
   ],
   "atStage": [
-    141,
+    142,
     40,
     6,
     7,
@@ -44,6 +44,10 @@
         "count": 4
       },
       {
+        "status": "(blank)",
+        "count": 1
+      },
+      {
         "status": "Assessment",
         "count": 1
       }
@@ -59,11 +63,11 @@
       },
       {
         "status": "In Review",
-        "count": 7
+        "count": 6
       },
       {
         "status": "Rejected",
-        "count": 5
+        "count": 6
       },
       {
         "status": "No Response",
@@ -106,7 +110,7 @@
   ],
   "rejectedAt": [
     31,
-    5,
+    6,
     1,
     2,
     0
@@ -119,7 +123,7 @@
     },
     {
       "status": "Rejected",
-      "count": 39
+      "count": 40
     },
     {
       "status": "Viewed by Employer",
@@ -131,7 +135,7 @@
     },
     {
       "status": "In Review",
-      "count": 8
+      "count": 7
     },
     {
       "status": "Assessment",
@@ -140,6 +144,10 @@
     {
       "status": "Closed / Expired",
       "count": 5
+    },
+    {
+      "status": "(blank)",
+      "count": 1
     },
     {
       "status": "Interviewed",
@@ -195,6 +203,13 @@
       "replied": 0,
       "unsent": 0,
       "rate": 0
+    },
+    {
+      "name": "(blank)",
+      "sent": 1,
+      "replied": 1,
+      "unsent": 0,
+      "rate": 1
     },
     {
       "name": "Koronadal City",
@@ -270,20 +285,24 @@
     {
       "label": "Onsite",
       "count": 4
+    },
+    {
+      "label": "Unspecified",
+      "count": 1
     }
   ],
   "ageing": [
     {
       "label": "0–7d",
-      "count": 13
+      "count": 11
     },
     {
       "label": "8–14d",
-      "count": 14
+      "count": 9
     },
     {
       "label": "15–30d",
-      "count": 21
+      "count": 27
     },
     {
       "label": "31–60d",
