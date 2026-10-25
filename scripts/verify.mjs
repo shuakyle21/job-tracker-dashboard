@@ -226,6 +226,15 @@ async function assertIngestWorkflow() {
   check("LLM fallback statuses match the parser's STATUS_LABELS",
     statusBlock.length > 0 && JSON.stringify(parse(statusBlock)) === JSON.stringify(parse(fallbackStatusBlock)));
 
+  // Same guard for STAGE_OF_STATUS, which the fallback uses to credit max_stage.
+  const stageBlock = (src) => Object.fromEntries(
+    [...(src.match(/const STAGE_OF_STATUS = \{([\s\S]*?)\};/)?.[1] ?? "").matchAll(/'([^']+)':\s*(\d+)/g)]
+      .map((m) => [m[1], Number(m[2])]));
+  const parserStages = stageBlock(parserFile);
+  check("LLM fallback stages match the parser's STAGE_OF_STATUS",
+    Object.keys(parserStages).length > 0
+      && JSON.stringify(parserStages) === JSON.stringify(stageBlock(llmFallbackFile)));
+
   const markIds = byName["Mark Email Processed"]?.parameters.labelIds ?? [];
   check("processed email gets scope, processed and status labels",
     markIds[0]?.includes(labels.scope) && /\.parsed\b/.test(markIds[0])

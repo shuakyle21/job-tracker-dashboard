@@ -313,7 +313,7 @@ const nodes = [
       jsonBody: ex(`{{ JSON.stringify({
         model: ${JSON.stringify(LLM_MODEL)},
         messages: [
-          { role: "system", content: "You classify job-application emails. Reply with only a JSON object: {\\"status\\": one of applied, viewed by employer, in review, assessment, interview scheduled, offer, rejected, talent pool}. If none fit, reply {\\"status\\": \\"\\"}." },
+          { role: "system", content: "You classify job-application emails. Reply with only a JSON object: {\\"status\\": one of applied, viewed by employer, in review, assessment, interview scheduled, offer, rejected, talent pool, \\"company\\": the hiring employer or null, \\"job_title\\": the role applied for or null}. Copy company and job_title exactly as written in the email. Use null rather than guess. A job board (LinkedIn, Indeed, JobStreet, Kalibrr, OnlineJobs.ph, Torre) is never the company. If no status fits, reply {\\"status\\": \\"\\"}." },
           { role: "user", content: $('Parse Job Email').item.json.raw_text },
         ],
       }) }}`),
