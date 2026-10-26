@@ -181,6 +181,14 @@ async function assertIngestWorkflow() {
   check("embedded parser is the tested file",
     byName["Parse Job Email"]?.parameters.jsCode === parserFile);
 
+  // Pushing a Code node to n8n turns a backslash-u escape into the character
+  // itself, so live code containing one never matches its file and
+  // check-live fails forever. Build such characters from code points instead.
+  const codeNodes = wf.nodes.filter((n) => typeof n.parameters?.jsCode === "string");
+  const escaped = codeNodes.filter((n) => /\\u[0-9a-fA-F{]/.test(n.parameters.jsCode));
+  check("Code nodes contain no backslash-u escapes",
+    escaped.length === 0, escaped.map((n) => n.name).join(", "));
+
   const mergeFile = await readFile(join(ROOT, "n8n/merge-feed.js"), "utf8");
   check("embedded Feed merge is the tested file",
     byName["Merge Into Feed"]?.parameters.jsCode === mergeFile);

@@ -241,6 +241,18 @@ const cases = [
       application_key: "va masters|developer & automation expert" },
   },
   {
+    // The other three invisible characters the parser strips: zero-width
+    // non-joiner, zero-width joiner and word joiner.
+    name: "zero-width joiners and word joiners never reach the key",
+    input: email({
+      subject: "Your application was successfully submitted",
+      from: { value: [{ address: "noreply@e.jobstreet.com", name: "Jobstreet" }] },
+      text: "Hi Alex, your application for Developer‌ &⁠ Automation‍ Expert was successfully submitted to VA Masters\nView your application",
+    }),
+    want: { job_title: "Developer & Automation Expert", company: "VA Masters", parsed: true,
+      application_key: "va masters|developer & automation expert" },
+  },
+  {
     // A key with an empty part ("acme|ai developer|") would make Merge Into
     // Feed fail the whole execution. The parser catches it first and routes
     // the email to Needs Review, so that failure stays a last resort.
