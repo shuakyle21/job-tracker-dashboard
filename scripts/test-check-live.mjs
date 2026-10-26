@@ -44,6 +44,33 @@ for (const wf of [ingest, sync]) {
   expect(`${wf.name}: a clean import is not drift`, got.length === 0, got.join("; "));
 }
 
+// n8n leaves a parameter out of the saved node when it equals the default.
+// These are the ones the live instance actually dropped.
+{
+  const live = asImported(ingest);
+  delete node(live, "Fetch Job Mail").parameters.resource;
+  delete node(live, "Write to Inbox").parameters.authentication;
+  delete node(live, "Merge Into Feed").parameters.language;
+  delete node(live, "Ingest Backlog Check").parameters.rule.interval[0].hoursInterval;
+  const got = diffWorkflows(ingest, live);
+  expect("parameters n8n omitted as defaults are not drift", got.length === 0, got.join("; "));
+}
+
+{
+  const live = asImported(ingest);
+  node(live, "Fetch Job Mail").parameters.resource = "thread";
+  const got = diffWorkflows(ingest, live);
+  expect("a parameter changed to another value is still caught", got.some((p) => p.includes("Fetch Job Mail") && p.includes("resource")), got.join("; "));
+}
+
+for (const [name, path] of [["Poll Gmail", ["filters", "q"]], ["Parse Job Email", ["jsCode"]], ["Classify With LLM", ["agentId"]]]) {
+  const live = asImported(ingest);
+  const params = node(live, name).parameters;
+  delete path.slice(0, -1).reduce((o, k) => o[k], params)[path.at(-1)];
+  const got = diffWorkflows(ingest, live);
+  expect(`a removed ${path.join(".")} on "${name}" is still caught`, got.some((p) => p.includes(name)), got.join("; "));
+}
+
 {
   const live = asImported(ingest);
   node(live, "Poll Gmail").parameters.filters.labelIds = ["Label_14", "Label_1523943501121152783", "INBOX"];

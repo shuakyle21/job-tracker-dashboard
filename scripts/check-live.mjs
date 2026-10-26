@@ -86,6 +86,30 @@ function firstDifference(a, b, path = "") {
   return `${path || "(value)"}: expected ${JSON.stringify(a)?.slice(0, 120)}, live ${JSON.stringify(b)?.slice(0, 120)}`;
 }
 
+// n8n drops a parameter from the saved node when its value equals the node
+// type's default, so `resource: "message"` or `language: "javaScript"` in the
+// generated JSON comes back missing. That isn't drift. A missing key is
+// therefore taken as "left at its default", except for these keys, which
+// carry the workflow's actual logic and never have a meaningful default. A
+// cleared Gmail query once let the trigger poll the whole mailbox.
+const NEVER_DEFAULT = new Set(["jsCode", "q", "url", "jsonBody", "message", "agentId", "conditions", "outputSchema"]);
+
+/** `expected` without the keys n8n left out of `live` as defaults. */
+export function dropOmittedDefaults(expected, live) {
+  if (Array.isArray(expected) && Array.isArray(live)) {
+    return expected.map((v, i) => (i < live.length ? dropOmittedDefaults(v, live[i]) : v));
+  }
+  if (expected && typeof expected === "object" && live && typeof live === "object" && !Array.isArray(expected)) {
+    const out = {};
+    for (const [k, v] of Object.entries(expected)) {
+      if (live[k] === undefined && !NEVER_DEFAULT.has(k)) continue;
+      out[k] = live[k] === undefined ? v : dropOmittedDefaults(v, live[k]);
+    }
+    return out;
+  }
+  return expected;
+}
+
 const isNote = (n) => n.type === "n8n-nodes-base.stickyNote";
 
 /** Differences between a generated workflow and the live one, as sentences. */
@@ -97,7 +121,10 @@ export function diffWorkflows(generated, live) {
   for (const name of liv.keys()) if (!gen.has(name)) problems.push(`node "${name}" exists on the instance but not in the generator`);
   for (const [name, node] of gen) {
     if (!liv.has(name)) continue;
-    const d = firstDifference(normalizeNode(node), normalizeNode(liv.get(name)));
+    const expected = normalizeNode(node);
+    const actual = normalizeNode(liv.get(name));
+    expected.parameters = dropOmittedDefaults(expected.parameters, actual.parameters);
+    const d = firstDifference(expected, actual);
     if (d) problems.push(`node "${name}" differs at ${d}`);
   }
   const want = edges(generated);
