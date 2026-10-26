@@ -11,8 +11,13 @@
 const msg = $json;
 // Zero-width characters and no-break spaces ride along when mail is written
 // in a rich editor. Invisible here, they still make "va masters|dev" and
-// "va masters|\u200Bdev" different Feed keys, so they go before anything reads the text.
-const plain = (s) => String(s || '').replace(/[\u200B-\u200D\u2060\uFEFF]/g, '').replace(/\u00A0/g, ' ');
+// "va masters|<zero-width space>dev" different Feed keys, so they go before
+// anything reads the text. Built from code points, not backslash-u escapes:
+// pushing this code to n8n decodes those escapes into the invisible
+// characters themselves, and check-live then can't match it to this file.
+const INVISIBLE = new RegExp('[' + String.fromCharCode(0x200B, 0x200C, 0x200D, 0x2060, 0xFEFF) + ']', 'g');
+const NO_BREAK_SPACE = new RegExp(String.fromCharCode(0x00A0), 'g');
+const plain = (s) => String(s || '').replace(INVISIBLE, '').replace(NO_BREAK_SPACE, ' ');
 const subject = plain(msg.subject);
 const from = String(msg.from?.value?.[0]?.address || msg.from?.text || msg.From || '');
 const fromName = String(msg.from?.value?.[0]?.name || '');
