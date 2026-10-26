@@ -1,26 +1,26 @@
 {
-  "generatedAt": "2026-10-25T20:55:15.830Z",
-  "total": 204,
-  "sent": 204,
+  "generatedAt": "2026-10-26T03:48:39.401Z",
+  "total": 207,
+  "sent": 207,
   "unsent": 0,
-  "replied": 70,
-  "noReply": 134,
-  "open": 150,
-  "replyRate": 0.3431372549019608,
-  "interviewRate": 0.03431372549019608,
-  "ghostRate": 0.6568627450980392,
-  "rejected": 40,
-  "rejectionRate": 0.19607843137254902,
+  "replied": 72,
+  "noReply": 135,
+  "open": 152,
+  "replyRate": 0.34782608695652173,
+  "interviewRate": 0.033816425120772944,
+  "ghostRate": 0.6521739130434783,
+  "rejected": 41,
+  "rejectionRate": 0.19806763285024154,
   "reached": [
-    204,
-    56,
+    207,
+    57,
     14,
     7,
     0
   ],
   "atStage": [
-    148,
-    42,
+    150,
+    43,
     7,
     7,
     0
@@ -29,11 +29,11 @@
     [
       {
         "status": "Applied",
-        "count": 104
+        "count": 105
       },
       {
         "status": "Rejected",
-        "count": 31
+        "count": 32
       },
       {
         "status": "No Response",
@@ -55,7 +55,7 @@
     [
       {
         "status": "Viewed by Employer",
-        "count": 14
+        "count": 15
       },
       {
         "status": "Applied",
@@ -109,7 +109,7 @@
     []
   ],
   "rejectedAt": [
-    31,
+    32,
     6,
     1,
     2,
@@ -119,15 +119,15 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 120
+      "count": 121
     },
     {
       "status": "Rejected",
-      "count": 40
+      "count": 41
     },
     {
       "status": "Viewed by Employer",
-      "count": 14
+      "count": 15
     },
     {
       "status": "No Response",
@@ -157,10 +157,10 @@
   "channels": [
     {
       "name": "Direct / Careers",
-      "sent": 83,
-      "replied": 30,
+      "sent": 85,
+      "replied": 31,
       "unsent": 0,
-      "rate": 0.3614457831325301
+      "rate": 0.36470588235294116
     },
     {
       "name": "Jobstreet",
@@ -171,10 +171,10 @@
     },
     {
       "name": "LinkedIn",
-      "sent": 31,
-      "replied": 14,
+      "sent": 32,
+      "replied": 15,
       "unsent": 0,
-      "rate": 0.45161290322580644
+      "rate": 0.46875
     },
     {
       "name": "Indeed",
@@ -274,13 +274,13 @@
     },
     {
       "month": "2026-10",
-      "count": 45
+      "count": 48
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 199
+      "count": 202
     },
     {
       "label": "Onsite",
@@ -294,11 +294,11 @@
   "ageing": [
     {
       "label": "0–7d",
-      "count": 9
+      "count": 11
     },
     {
       "label": "8–14d",
-      "count": 13
+      "count": 12
     },
     {
       "label": "15–30d",
@@ -306,11 +306,11 @@
     },
     {
       "label": "31–60d",
-      "count": 38
+      "count": 36
     },
     {
       "label": "60d+",
-      "count": 59
+      "count": 62
     }
   ],
   "followUps": {
