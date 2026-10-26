@@ -176,10 +176,15 @@ const DEAD_STATUSES = new Set([
   "rejected", "closed / expired", "withdrawn", "no response", "talent pool",
 ]);
 
+// Max Stage can only raise a row above what its status implies, never lower it.
+// "Rejected" needs the raise (it says nothing about depth). But a stale Max Stage
+// of 1 on an "Assessment" row would draw it at "Applied" in the Sankey while the
+// status mix shows it as Assessment, and the two charts would disagree.
 function stageOf(rec) {
+  const fromStatus = STAGE_OF_STATUS[rec.status?.toLowerCase()] ?? 1;
   const explicit = parseInt(rec.max_stage, 10);
-  if (Number.isInteger(explicit) && explicit >= 1 && explicit <= 5) return explicit;
-  return STAGE_OF_STATUS[rec.status?.toLowerCase()] ?? 1;
+  if (Number.isInteger(explicit) && explicit >= 1 && explicit <= 5) return Math.max(explicit, fromStatus);
+  return fromStatus;
 }
 
 const isYes = (v) => /^(yes|true|y|✓|1)$/i.test(v ?? "");
@@ -475,7 +480,14 @@ const FOOT = `
 `;
 
 async function main() {
-  const raw = await fetchFeedRecords();
+  const all = await fetchFeedRecords();
+
+  // A row with no fields at all is an accidental blank line in Airtable, not an
+  // application. Counting it adds a "(blank)" slice, inflates Sent, and (since a
+  // blank status isn't "no reply") counts as a reply. Name it so it gets deleted.
+  const empty = all.filter(r => !r.fields || Object.keys(r.fields).length === 0);
+  for (const r of empty) console.warn(`  warn  skipping empty Feed row ${r.id} — delete it in Airtable`);
+  const raw = all.filter(r => !empty.includes(r));
 
   if (!raw.length) throw new Error("Feed table returned zero records — check AIRTABLE_BASE_ID/AIRTABLE_TABLE_NAME.");
   if (!("Status" in raw[0].fields)) {
