@@ -217,17 +217,19 @@ ids are already filled in. Credentials are not:
 |---|---|
 | **Poll Gmail**, **Fetch Job Mail**, **Mark Email Processed** | your Gmail credential |
 | **Write to Inbox**, **Write to Needs Review**, **Find Feed Row**, **Upsert Feed** | an Airtable personal access token with `data.records:read` and `data.records:write` on this base. This is a *second* token: the `AIRTABLE_API_KEY` secret in §2.6 is read-only and belongs to the dashboard build |
-| **Classify With LLM** | **LLM Router Auth**, a *Bearer Auth* credential. Token: your router API key, without the `Bearer ` prefix (n8n adds it). Used for the OpenAI-compatible endpoint set in `scripts/build-n8n.mjs`'s `LLM_ENDPOINT`. Only called for emails the rules in `n8n/parse-email.js` couldn't classify |
+| **Classify With LLM** | nothing. It messages the n8n Agent **Job Email Classifier** (id in `scripts/build-n8n.mjs`'s `CLASSIFIER_AGENT_ID`), which holds its own model credential. The Agent must be published and must have no tools and no memory. Only called for emails the rules in `n8n/parse-email.js` couldn't classify |
 
 This workflow doesn't call GitHub. Rebuilds come from the Feed webhook in §3.6, which fires on
 every Feed write, the ingest's own upserts included. Set that up too, or new mail only reaches
 the dashboard on the 6-hourly cron.
 
-The LLM credential is a different *type* from the GitHub one (Bearer Auth vs Header Auth) on
-purpose. When both were Header Auth, one credential got attached to both nodes, so the GitHub
-token was sent to the LLM router on every fallback call (and the router rejected it, so the
-fallback never worked). n8n only offers credentials of a node's own type, so that mix-up can't
-happen again. `verify.mjs` checks it.
+**Classify With LLM** carries no credential on purpose. When it was an HTTP node, one Header Auth
+credential got attached to both it and the GitHub dispatch, so the GitHub token was sent to the
+LLM router on every fallback call. `verify.mjs` fails if the node gains any credential.
+
+The classifier Agent reads untrusted email text, so it has no tools and no memory: an injected
+instruction has nothing to call, and one email can't leak into the next. Don't attach tools to
+it. The tool-equipped **Job AI Agent** is a separate Agent.
 
 ### 3.4 Backfill, test, then enable
 
@@ -325,8 +327,7 @@ starts. `node scripts/check-live.mjs` (or the `health.yml` run) lists every diff
 To replace it:
 
 1. n8n ▸ Import from File → `n8n/job-tracker-ingest.json`. That creates a new workflow. Set the
-   credentials from §3.3, including the Bearer Auth **LLM Router Auth** on
-   **Classify With LLM**.
+   credentials from §3.3. **Classify With LLM** needs none.
 2. Deactivate the old workflow, then archive it. `check-live.mjs` fails while two active or
    unarchived workflows share the name.
 3. Activate the new one and run **Backfill (manual)** once. Mail the old workflow never labelled

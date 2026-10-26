@@ -8,10 +8,10 @@
 // email. Reads $json (the classifier node's reply) and
 // $('Parse Job Email').item.json (the original row), returns { json } in the
 // exact same shape parse-email.js produces. scripts/build-n8n.mjs generates
-// "Classify With LLM" as an HTTP Request node, so the reply is OpenAI's
-// { choices[0].message.content }. A Message an Agent node's
-// { structuredOutput, text } is also read, so swapping the node later needs
-// no change here. Swap it in build-n8n.mjs, never by hand in the n8n UI:
+// "Classify With LLM" as a Message an Agent node, so the reply is
+// { structuredOutput, text }. OpenAI's { choices[0].message.content } is
+// still read, so going back to a plain HTTP Request node needs no change here.
+// Change the node in build-n8n.mjs, never by hand in the n8n UI:
 // check-live.mjs flags any live node that differs from the generated JSON.
 //
 // It never throws — a malformed reply, an unrecognized status, or an

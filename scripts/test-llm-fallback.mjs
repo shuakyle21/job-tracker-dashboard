@@ -74,6 +74,13 @@ for (const [field, want] of Object.entries(unparsedRow())) {
   expect(`unrecognized status leaves row unchanged → ${field}`, got[field], want);
 }
 
+// The classifier Agent answers status:null for job alerts and newsletters,
+// even when it names a company. That must stay in Needs Review.
+for (const [field, want] of Object.entries(unparsedRow())) {
+  const got = apply(agentReply({ status: null, company: "Acme Robotics", job_title: null, max_stage: 1 }), unparsedRow());
+  expect(`null status leaves row unchanged → ${field}`, got[field], want);
+}
+
 for (const [field, want] of Object.entries(unparsedRow())) {
   const got = apply({ error: { message: "agent timed out" } }, unparsedRow());
   expect(`error passthrough leaves row unchanged → ${field}`, got[field], want);
