@@ -12,7 +12,8 @@
  *   node scripts/verify.mjs --live     # also build once against AIRTABLE_API_KEY/AIRTABLE_BASE_ID
  */
 
-import { readFile, rm } from "node:fs/promises";
+import { readFile, rm, writeFile, mkdtemp } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { dirname, join } from "node:path";
@@ -487,6 +488,31 @@ check("93 sent, 4 unsent", fixture.sent === 93 && fixture.unsent === 4);
 check("reply rate is 49.5%", Math.round(fixture.replyRate * 1000) === 495);
 check("five months of history", fixture.monthly.length === 5);
 check("rejected by stage is 15,2,0,2,0", fixture.rejectedAt.join(",") === "15,2,0,2,0", fixture.rejectedAt.join(","));
+
+// Two rows the live base actually had: an empty Airtable line, and an
+// "Assessment" with a stale Max Stage of 1. The first must not count at all; the
+// second must sit at Assessment in the funnel, matching the status mix.
+console.log("\nEdge-case rows");
+{
+  const base = JSON.parse(await readFile(join(ROOT, "sample-feed.json"), "utf8"));
+  base.records.push(
+    { id: "recEdgeEmpty00001", createdTime: "2026-05-01T00:00:00.000Z", fields: {} },
+    { id: "recEdgeLowStage01", createdTime: "2026-05-01T00:00:00.000Z",
+      fields: { "Date Applied": "2026-05-01", Source: "Jobstreet", Status: "Assessment", "Max Stage": 1 } },
+  );
+  const dir = await mkdtemp(join(tmpdir(), "verify-edge-"));
+  const path = join(dir, "feed.json");
+  await writeFile(path, JSON.stringify(base));
+  await build({ FEED_FIXTURE: path });
+  const edge = JSON.parse(await readFile(join(ROOT, "data/summary.json"), "utf8"));
+  await rm(dir, { recursive: true, force: true });
+  check("an empty Feed row is not counted", edge.total === fixture.total + 1, `${edge.total} vs ${fixture.total + 1}`);
+  check("no (blank) status slice", !edge.byStatus.some(s => s.status === "(blank)"));
+  check("Max Stage never pulls a row below its status",
+    edge.reached[2] === fixture.reached[2] + 1, `${edge.reached[2]} vs ${fixture.reached[2] + 1}`);
+  // Restore the plain fixture build so dist/ and data/ stay deterministic.
+  await build({ FEED_FIXTURE: "./sample-feed.json" });
+}
 
 if (process.argv.includes("--live")) {
   if (!process.env.AIRTABLE_API_KEY || !process.env.AIRTABLE_BASE_ID) {
