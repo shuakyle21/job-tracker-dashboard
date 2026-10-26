@@ -114,9 +114,10 @@ daily keep-alive (`n8n/airtable-webhook.js`) has to keep running. Don't add an A
 polling trigger on Feed as well: every edit would fire two dispatches, and there is a verify
 check against it.
 
-**The GitHub and LLM credentials are different n8n credential types on purpose** (Header Auth
-vs Bearer Auth). A shared Header Auth credential once sent the GitHub token to the LLM
-router. Keep them separate; there is a verify check.
+**The LLM node carries no credential, and its Agent has no tools.** "Classify With LLM" messages
+the n8n Agent "Job Email Classifier", which owns its model credential. A shared Header Auth
+credential once sent the GitHub token to the LLM router, so a verify check fails if the node
+gains any credential. The Agent reads untrusted email text, so keep its tools and memory off.
 
 **The live n8n instance is checked from outside, hourly.** `scripts/check-live.mjs` (run by
 `.github/workflows/health.yml`) fails on any difference between a live workflow and its

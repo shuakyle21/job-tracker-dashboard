@@ -189,7 +189,7 @@ async function assertIngestWorkflow() {
   check("embedded LLM fallback is the tested file",
     byName["Apply LLM Fallback"]?.parameters.jsCode === llmFallbackFile);
 
-  // A slow or down LLM router must never stall Gmail polling — the item has
+  // A failed or down LLM Agent must never stall Gmail polling — the item has
   // to fall through to Needs Review, not hang the whole execution.
   check("LLM fallback degrades gracefully on error",
     byName["Classify With LLM"]?.onError === "continueRegularOutput");
@@ -425,9 +425,9 @@ async function assertSyncWorkflow() {
   return wf;
 }
 
-// Both workflows call GitHub and one calls the LLM router. A shared credential
-// once sent the GitHub token to the router on every fallback call; giving the
-// two different credential types makes that impossible to repeat on import.
+// Both workflows call GitHub. A shared credential once sent the GitHub token
+// to the LLM router on every fallback call, so the GitHub credential may sit
+// on dispatch nodes only, and the LLM node carries none.
 function assertCredentials(workflows) {
   console.log("\nCredentials and triggers (both workflows)");
   const nodes = workflows.flatMap((wf) => wf.nodes);
@@ -439,12 +439,18 @@ function assertCredentials(workflows) {
         && Object.keys(n.credentials).length === 1),
     `${dispatchers.length} dispatch node(s)`);
 
+  // The classifier is an n8n Agent call. It needs no node credential (the
+  // model credential lives on the Agent), so any credential here could only
+  // be one that doesn't belong. perItem keeps each reply paired with its own
+  // email, and structured output is what llm-fallback.js reads first.
   const llm = nodes.find((n) => n.name === "Classify With LLM");
-  check("LLM router uses its own Bearer credential",
-    /^https:\/\/llmrouter\.[^/]+\/v1\/chat\/completions$/.test(llm?.parameters.url ?? "")
-      && llm?.parameters.genericAuthType === "httpBearerAuth"
-      && llm?.credentials?.httpBearerAuth?.name === "LLM Router Auth"
-      && Object.keys(llm.credentials).length === 1);
+  check("LLM classifier calls the tool-free Agent with no node credential",
+    llm?.type === "n8n-nodes-base.messageAnAgent"
+      && /^[A-Za-z0-9]{16}$/.test(llm.parameters.agentId?.value ?? "")
+      && llm.parameters.advanced?.invokeMode === "perItem"
+      && llm.parameters.useStructuredOutput === true
+      && !llm.parameters.advanced?.sessionId
+      && Object.keys(llm.credentials ?? {}).length === 0);
 
   // Airtable's credential is the only one that may appear on api.airtable.com
   // calls, and the GitHub credential must appear nowhere else.

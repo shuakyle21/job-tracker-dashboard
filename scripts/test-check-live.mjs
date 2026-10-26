@@ -81,10 +81,9 @@ for (const wf of [ingest, sync]) {
 
 {
   const live = asImported(ingest);
-  node(live, "Classify With LLM").parameters.genericAuthType = "httpHeaderAuth";
   node(live, "Classify With LLM").credentials = { httpHeaderAuth: { id: "x", name: "Header Auth account" } };
   const got = diffWorkflows(ingest, live);
-  expect("LLM credential type drift is caught", got.some((p) => p.includes("Classify With LLM")), got.join("; "));
+  expect("a credential added to the LLM node is caught", got.some((p) => p.includes("Classify With LLM")), got.join("; "));
 }
 
 {

@@ -51,10 +51,12 @@ const REVIEW_TABLE_ID = "tblwEyImuS3hgYGFK";
 const FEED_TABLE_ID = "tblPZSpJ8P4iFuAhX";
 
 // Hybrid fallback: only called for emails the rules in parse-email.js
-// couldn't classify. Placeholder model — change to whatever this router
-// actually serves.
-const LLM_ENDPOINT = "https://llmrouter.boyemma.com/v1/chat/completions";
-const LLM_MODEL = "auto";
+// couldn't classify. "Job Email Classifier" is an n8n Agent with no tools and
+// no memory, on purpose: it reads untrusted email text, so it must have
+// nothing an injected instruction could use, and one email must never leak
+// into the next. Its model and credential live on the Agent, not here. The
+// tool-equipped "Job AI Agent" it was copied from stays separate.
+const CLASSIFIER_AGENT_ID = "aHMQ5tbJ9ZTTD6bT";
 
 // Airtable POSTs a ping here whenever Feed changes. The full production URL
 // lives in n8n/airtable-webhook.js (it is what the keep-alive registers);
@@ -64,13 +66,11 @@ const FEED_WEBHOOK_PATH = "job-tracker-feed-changed";
 // n8n expressions are plain strings that begin with "=".
 const ex = (s) => `=${s}`;
 
-// Credential placeholders are named, and the two outbound HTTP credentials are
-// different *types* on purpose. Both used to be Header Auth, the import picked
-// the same one for both, and the GitHub token went to the LLM router on every
-// fallback call. n8n's picker only offers credentials of the node's own type,
-// so a Bearer Auth node can never be handed the GitHub header again.
+// Credential placeholders are named. The GitHub token once went to the LLM
+// router because both HTTP nodes shared a Header Auth credential. The LLM call
+// now goes through the Agent, which carries no node credential at all, and
+// verify.mjs keeps it that way.
 const GITHUB_CREDENTIAL = { httpHeaderAuth: { id: "REPLACE_ME", name: "GitHub Dispatch" } };
-const LLM_CREDENTIAL = { httpBearerAuth: { id: "REPLACE_ME", name: "LLM Router Auth" } };
 const AIRTABLE_CREDENTIAL = { airtableTokenApi: { id: "REPLACE_ME", name: "Airtable account" } };
 
 // The repository_dispatch deploy.yml listens for. `source` only says which
@@ -298,34 +298,44 @@ const nodes = [
     name: "Needs LLM Fallback?",
   },
   {
-    // Same outbound-call shape as "Trigger Dashboard Rebuild": a dedicated
-    // HTTP Request node with a credential set by hand in the n8n UI, not an
-    // inline fetch()/$env in the Code node. onError + a bounded timeout mean
-    // a slow or down router can never stall Gmail polling — the item just
-    // falls through to Needs Review via Apply LLM Fallback's own fallback.
+    // The input JSON is the shape the Agent's instructions describe. perItem
+    // keeps one call per email, so $('Parse Job Email').item in Apply LLM
+    // Fallback still pairs each reply with its own email; the default
+    // (allItems) would hand every email one shared reply. No sessionId: each
+    // execution gets a fresh session. onError means a failed or down Agent
+    // falls through to Needs Review instead of stalling Gmail polling. Unlike
+    // the old HTTP node, this one has no timeout setting.
     parameters: {
-      method: "POST",
-      url: LLM_ENDPOINT,
-      authentication: "genericCredentialType",
-      genericAuthType: "httpBearerAuth",
-      sendBody: true,
-      specifyBody: "json",
-      jsonBody: ex(`{{ JSON.stringify({
-        model: ${JSON.stringify(LLM_MODEL)},
-        messages: [
-          { role: "system", content: "You classify job-application emails. Reply with only a JSON object: {\\"status\\": one of applied, viewed by employer, in review, assessment, interview scheduled, offer, rejected, talent pool, \\"company\\": the hiring employer or null, \\"job_title\\": the role applied for or null}. Copy company and job_title exactly as written in the email. Use null rather than guess. A job board (LinkedIn, Indeed, JobStreet, Kalibrr, OnlineJobs.ph, Torre) is never the company. If no status fits, reply {\\"status\\": \\"\\"}." },
-          { role: "user", content: $('Parse Job Email').item.json.raw_text },
-        ],
+      agentId: { __rl: true, mode: "id", value: CLASSIFIER_AGENT_ID },
+      message: ex(`{{ JSON.stringify({
+        subject: $('Parse Job Email').item.json.subject,
+        raw_text: $('Parse Job Email').item.json.raw_text,
+        from_address: $('Parse Job Email').item.json.from_address,
+        known_from_rules: {
+          company: $('Parse Job Email').item.json.company || '',
+          job_title: $('Parse Job Email').item.json.job_title || '',
+        },
       }) }}`),
-      options: { timeout: 15000 },
+      useStructuredOutput: true,
+      schemaType: "manual",
+      outputSchema: JSON.stringify({
+        type: "object",
+        properties: {
+          status: { type: ["string", "null"] },
+          company: { type: ["string", "null"] },
+          job_title: { type: ["string", "null"] },
+          max_stage: { type: "integer" },
+        },
+        required: ["status", "company", "job_title"],
+      }),
+      advanced: { enableStreaming: false, invokeMode: "perItem" },
     },
-    type: "n8n-nodes-base.httpRequest",
-    typeVersion: 4.5,
+    type: "n8n-nodes-base.messageAnAgent",
+    typeVersion: 3.1,
     position: [620, 460],
     id: "llm-classify",
     name: "Classify With LLM",
     onError: "continueRegularOutput",
-    credentials: LLM_CREDENTIAL,
   },
   {
     parameters: { mode: "runOnceForEachItem", language: "javaScript", jsCode: llmFallbackSource },
