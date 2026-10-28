@@ -259,6 +259,18 @@ async function assertIngestWorkflow() {
     labelSources.length === 2 && labelSources.includes("Upsert Feed") && labelSources.includes("Write to Needs Review"),
     labelSources.join(", "));
 
+  // Both parse paths must arrive at Classified? as one batch, or the slower
+  // LLM batch reaches Loop Feed Rows after it finished and Upsert Feed gets
+  // raw Airtable records with no Application Key.
+  const into = (n) => Object.entries(wf.connections)
+    .filter(([, c]) => c.main.some((o) => o.some((t) => t.node === n))).map(([src]) => src);
+  check("rules and LLM paths join before Classified?",
+    byName["Join Parsed Paths"]?.type === "n8n-nodes-base.merge"
+      && byName["Join Parsed Paths"]?.parameters.mode === "append"
+      && JSON.stringify(into("Classified?")) === JSON.stringify(["Join Parsed Paths"])
+      && into("Join Parsed Paths").sort().join() === "Apply LLM Fallback,Needs LLM Fallback?",
+    into("Classified?").join(", "));
+
   check("unclassified email has its own branch",
     wf.connections["Classified?"]?.main[1]?.[0]?.node === "Write to Needs Review");
 

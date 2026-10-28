@@ -360,6 +360,20 @@ const nodes = [
     name: "Apply LLM Fallback",
   },
   {
+    // Rule-parsed and LLM-parsed emails must reach Classified? as one batch.
+    // Without this, the rules branch arrived first, Loop Feed Rows finished,
+    // and the LLM branch arrived minutes later (the Agent is slow): the loop
+    // passed that second batch's raw Airtable records straight to Upsert Feed,
+    // which failed with "Record must include columns to merge on". Append
+    // still runs when only one branch has items.
+    parameters: { mode: "append" },
+    type: "n8n-nodes-base.merge",
+    typeVersion: 3.2,
+    position: [960, 340],
+    id: "join-parsed",
+    name: "Join Parsed Paths",
+  },
+  {
     parameters: {
       conditions: {
         options: { caseSensitive: true, leftValue: "", typeValidation: "strict", version: 2 },
@@ -565,11 +579,12 @@ const workflow = {
     "Needs LLM Fallback?": {
       main: [
         [{ node: "Classify With LLM", type: "main", index: 0 }],
-        [{ node: "Classified?", type: "main", index: 0 }],
+        [{ node: "Join Parsed Paths", type: "main", index: 0 }],
       ],
     },
     "Classify With LLM": { main: one("Apply LLM Fallback") },
-    "Apply LLM Fallback": { main: one("Classified?") },
+    "Apply LLM Fallback": { main: [[{ node: "Join Parsed Paths", type: "main", index: 1 }]] },
+    "Join Parsed Paths": { main: one("Classified?") },
     "Classified?": {
       main: [
         [{ node: "Write to Inbox", type: "main", index: 0 }],

@@ -188,6 +188,19 @@
     },
     {
       "parameters": {
+        "mode": "append"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        960,
+        340
+      ],
+      "id": "join-parsed",
+      "name": "Join Parsed Paths"
+    },
+    {
+      "parameters": {
         "conditions": {
           "options": {
             "caseSensitive": true,
@@ -803,8 +816,8 @@
         -40,
         20
       ],
-      "id": "sticky-19",
-      "name": "Note 19"
+      "id": "sticky-20",
+      "name": "Note 20"
     },
     {
       "parameters": {
@@ -819,8 +832,8 @@
         400,
         60
       ],
-      "id": "sticky-20",
-      "name": "Note 20"
+      "id": "sticky-21",
+      "name": "Note 21"
     },
     {
       "parameters": {
@@ -835,8 +848,8 @@
         820,
         20
       ],
-      "id": "sticky-21",
-      "name": "Note 21"
+      "id": "sticky-22",
+      "name": "Note 22"
     },
     {
       "parameters": {
@@ -851,8 +864,8 @@
         -40,
         1060
       ],
-      "id": "sticky-22",
-      "name": "Note 22"
+      "id": "sticky-23",
+      "name": "Note 23"
     },
     {
       "parameters": {
@@ -867,8 +880,8 @@
         1760,
         20
       ],
-      "id": "sticky-23",
-      "name": "Note 23"
+      "id": "sticky-24",
+      "name": "Note 24"
     }
   ],
   "connections": {
@@ -938,7 +951,7 @@
         ],
         [
           {
-            "node": "Classified?",
+            "node": "Join Parsed Paths",
             "type": "main",
             "index": 0
           }
@@ -957,6 +970,17 @@
       ]
     },
     "Apply LLM Fallback": {
+      "main": [
+        [
+          {
+            "node": "Join Parsed Paths",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Join Parsed Paths": {
       "main": [
         [
           {
