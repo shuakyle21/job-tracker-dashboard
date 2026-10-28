@@ -87,7 +87,7 @@ not "Full Account" — a token scoped to one team can't touch anything else if i
 | `VERCEL_ORG_ID` | the Team ID from 2.3 |
 | `VERCEL_PROJECT_ID` | the Project ID from 2.3 |
 | `PUBLIC_URL` | optional — no longer read by the workflow (see 2.6); a bookmark for your own custom domain if you set one |
-| `N8N_API_URL` | your n8n base URL, e.g. `https://n8n.example.com`. Used only by `health.yml` (§3.8) |
+| `N8N_API_URL` | your n8n origin only, e.g. `https://n8n.example.com`: no `/workflow/…` or `/api/…` path. Used only by `health.yml` (§3.8) |
 | `N8N_API_KEY` | an n8n API key (n8n ▸ Settings ▸ n8n API). Used only by `health.yml` (§3.8) |
 
 None of these belong on your laptop once they're in GitHub — that's the whole reason they're
@@ -259,8 +259,10 @@ The workflow works for a week, then quietly stops. Publish the app, or use a ser
 account. This is the single most common way this kind of pipeline dies, and it dies
 silently — n8n shows a credential error in the execution log and nowhere else.
 
-That credential error now surfaces in two ways: the hourly **Ingest Backlog Check** fails when
-it can't read Gmail, and `health.yml` (§3.8) emails you about the failed execution.
+That credential error now surfaces in three ways: a Telegram message tagged CREDENTIAL from the
+Error alert (§3.9), the hourly **Ingest Backlog Check** failing when it can't read Gmail, and
+`health.yml` (§3.8) emailing you about the failed execution. Repeated "needs to be reconnected"
+errors a week apart mean the app is still in Testing.
 
 ### 3.6 Feed edits → rebuild in seconds
 
@@ -334,14 +336,9 @@ To replace it:
    `Job Application/Processed` gets processed now. That's safe: Feed merges only move forward,
    and Inbox and Needs Review upsert on `message_id`.
 4. Until the backfill has cleared that mail, **Stale Job Mail Alarm** fails every hour and
-   `health.yml` will say so. That's expected. If it keeps failing after the backfill:
-   - more than 500 messages were waiting: run Backfill again;
-   - or the email was already *seen* once but never labelled (for example **Mark Email
-     Processed** failed). **Skip Already Seen** remembers every message id it has passed, so
-     Backfill drops that email too. Search Gmail with the trigger's query, find the email's row
-     in Inbox or Feed, then add `Job Application/Processed` by hand. If the row is missing, clear
-     Skip Already Seen's deduplication history and backfill again; that's safe, since every
-     write is an upsert.
+   `health.yml` will say so. That's expected. Backfill takes 100 messages per run (500 hit
+   Gmail's per-minute quota), so run it again until the alarm stops. Backfill bypasses **Skip
+   Already Seen** on purpose, so mail whose write or label failed earlier is processed too.
 
 ### 3.8 Health check (so you don't have to look)
 
@@ -361,6 +358,34 @@ outside n8n. A failed run means GitHub emails you. It fails when:
 
 Setup: add `N8N_API_URL` and `N8N_API_KEY` (§2.5), then **Actions ▸ n8n health ▸ Run workflow**.
 Add the secrets before merging `health.yml`, or it fails every hour until you do.
+
+Error executions are only visible here if they are saved: both workflows set
+`saveDataErrorExecution: "all"`, and this check fails if the live setting differs.
+
+### 3.9 Error alerts (Telegram)
+
+`n8n/job-tracker-error-alert.json` (**Job Tracker — Error alert**) is the `errorWorkflow` of the
+ingest and the Feed sync. n8n runs it for every failed execution, and for polling-trigger
+failures that never became an execution (an expired Gmail token or a quota hit in **Poll
+Gmail**). It sends one Telegram message with the workflow, the failing node, the error and a
+link, tagged CREDENTIAL, QUOTA or ERROR. The same error is sent at most once per 6 hours, so a
+stuck ingest pings you four times a day rather than every hour. Logic: `n8n/error-alert.js`
+(tested by `scripts/test-error-alert.mjs`). Telegram, not Gmail: the alert must not depend on
+the service it reports on.
+
+Write nodes no longer swallow errors. A failed Airtable write or Gmail label now fails the
+execution (and alerts) instead of labelling the email with no row behind it; **Backfill
+(manual)** writes it again.
+
+First-time setup (the id must exist before the other two can point at it):
+
+1. Put your Telegram chat id in `TELEGRAM_CHAT_ID` in `scripts/build-n8n.mjs` (from any Receipt
+   Bot execution: `message.chat.id`), then `node scripts/build-n8n.mjs`.
+2. Import `n8n/job-tracker-error-alert.json`; set **Send Alert** to the **Telegram account** Telegram
+   credential. It needs no activation.
+3. Copy its workflow id into `ERROR_WORKFLOW_ID`, regenerate, run `node scripts/verify.mjs`, then
+   update and publish the ingest and Feed sync from the regenerated JSON.
+4. Test: open **Error Trigger** ▸ Fetch test event ▸ Execute workflow. A message should arrive.
 
 ---
 

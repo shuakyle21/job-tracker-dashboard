@@ -14,6 +14,7 @@ import { diffWorkflows, findSharedCredentials, recentErrors, runningVersion } fr
 const ROOT = join(dirname(new URL(import.meta.url).pathname), "..");
 const ingest = JSON.parse(await readFile(join(ROOT, "n8n/job-tracker-ingest.json"), "utf8"));
 const sync = JSON.parse(await readFile(join(ROOT, "n8n/job-tracker-feed-sync.json"), "utf8"));
+const alert = JSON.parse(await readFile(join(ROOT, "n8n/job-tracker-error-alert.json"), "utf8"));
 
 let failures = 0;
 function expect(label, ok, detail = "") {
@@ -39,7 +40,7 @@ function asImported(wf) {
 
 console.log("check-live comparison tests\n");
 
-for (const wf of [ingest, sync]) {
+for (const wf of [ingest, sync, alert]) {
   const got = diffWorkflows(wf, asImported(wf));
   expect(`${wf.name}: a clean import is not drift`, got.length === 0, got.join("; "));
 }
@@ -133,7 +134,7 @@ for (const [name, path] of [["Poll Gmail", ["filters", "q"]], ["Parse Job Email"
 
 {
   const live = asImported(ingest);
-  node(live, "Write to Inbox").onError = "continueRegularOutput";
+  node(live, "Classify With LLM").onError = "continueRegularOutput";
   node(live, "Parse Job Email").onError = "stopWorkflow";
   Object.assign(node(live, "Parse Job Email"), { maxTries: 3, waitBetweenTries: 1000 });
   const got = diffWorkflows(ingest, live);
@@ -159,6 +160,16 @@ for (const [name, path] of [["Poll Gmail", ["filters", "q"]], ["Parse Job Email"
     diffWorkflows(ingest, running).some((p) => p.includes("Poll Feed For Hand Edits")));
   const clean = runningVersion({ ...asImported(ingest), versionId: "v1", activeVersionId: "v1" });
   expect("a published draft is not reported", clean.problems.length === 0 && clean.running.nodes.length === ingest.nodes.length);
+}
+
+// Settings decide whether a failure is saved and alerted at all.
+{
+  const live = asImported(ingest);
+  live.settings = { ...live.settings, saveDataErrorExecution: "none" };
+  delete live.settings.errorWorkflow;
+  const got = diffWorkflows(ingest, live);
+  expect("unsaved error executions are drift", got.some((p) => p.startsWith("settings.saveDataErrorExecution")), got.join("; "));
+  expect("a missing error workflow is drift", got.some((p) => p.startsWith("settings.errorWorkflow")), got.join("; "));
 }
 
 {

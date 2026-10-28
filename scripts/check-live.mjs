@@ -24,7 +24,12 @@ import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const ROOT = join(dirname(new URL(import.meta.url).pathname), "..");
-const GENERATED = ["n8n/job-tracker-ingest.json", "n8n/job-tracker-feed-sync.json"];
+const GENERATED = ["n8n/job-tracker-ingest.json", "n8n/job-tracker-feed-sync.json", "n8n/job-tracker-error-alert.json"];
+
+// Workflow settings that decide whether a failure is seen at all. The live
+// ingest once ran with saveDataErrorExecution "none" and no errorWorkflow,
+// so its failures left nothing for this script or the Error alert to find.
+const SETTINGS = ["saveDataErrorExecution", "errorWorkflow"];
 
 // Node settings that change behaviour. Positions, ids and credential ids/names
 // are the instance's business and are ignored; credential *types* are not.
@@ -131,6 +136,10 @@ export function diffWorkflows(generated, live) {
   const have = edges(live);
   for (const e of want) if (!have.includes(e)) problems.push(`connection missing: ${e}`);
   for (const e of have) if (!want.includes(e)) problems.push(`unexpected connection: ${e}`);
+  for (const k of SETTINGS) {
+    const [a, b] = [generated.settings?.[k], live.settings?.[k]];
+    if (a !== b) problems.push(`settings.${k}: expected ${JSON.stringify(a)}, live ${JSON.stringify(b)}`);
+  }
   return problems;
 }
 
@@ -184,6 +193,11 @@ async function main() {
     console.error("N8N_API_URL and N8N_API_KEY must be set");
     process.exit(1);
   }
+  // It was once set to a workflow page, which failed as "Cannot GET /workflow/…/api/v1/workflows".
+  if (/\/(workflow|api)\//.test(base + "/")) {
+    console.error(`N8N_API_URL must be the instance origin, e.g. https://n8n.example.com (got ${base})`);
+    process.exit(1);
+  }
   // Wider than the hourly schedule on purpose: Actions cron is best-effort and
   // a run can land an hour late, which would skip a one-shot failure (the
   // daily keep-alive, a single failed dispatch) entirely. Reporting an error
@@ -219,7 +233,9 @@ async function main() {
     const { running: wf, problems: versionProblems } = runningVersion(fetched);
     live.push(wf);
     const found = [...versionProblems];
-    if (!wf.active) found.push("workflow is not active");
+    // An Error Trigger workflow runs without being active.
+    const errorOnly = generated.nodes.some((n) => n.type === "n8n-nodes-base.errorTrigger");
+    if (!wf.active && !errorOnly) found.push("workflow is not active");
     found.push(...diffWorkflows(generated, wf));
 
     const executions = (await api(`/executions?workflowId=${wf.id}&status=error&limit=50`)).data ?? [];

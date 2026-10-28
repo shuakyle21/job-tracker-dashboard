@@ -468,7 +468,9 @@
   },
   "settings": {
     "executionOrder": "v1",
-    "saveManualExecutions": true
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "errorWorkflow": "6fkIPNYzphxYMATD"
   },
   "pinData": {},
   "meta": {

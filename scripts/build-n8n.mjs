@@ -19,6 +19,16 @@ const parserSource = await readFile(join(ROOT, "n8n/parse-email.js"), "utf8");
 const mergeSource = await readFile(join(ROOT, "n8n/merge-feed.js"), "utf8");
 const llmFallbackSource = await readFile(join(ROOT, "n8n/llm-fallback.js"), "utf8");
 const webhookKeepAliveSource = await readFile(join(ROOT, "n8n/airtable-webhook.js"), "utf8");
+const errorAlertSource = await readFile(join(ROOT, "n8n/error-alert.js"), "utf8");
+
+// Every failed execution of the ingest and Feed sync runs the Error alert
+// workflow, which messages Telegram. Fill these in after the alert workflow
+// is first imported (DEPLOY.md §3.9). Neither is a secret without the bot token.
+const ERROR_WORKFLOW_ID = "6fkIPNYzphxYMATD";
+const TELEGRAM_CHAT_ID = "6432422052";
+// Error executions must be saved, or check-live.mjs has nothing to find and
+// the alert has no execution link. The live ingest once ran with "none".
+const ALERTED = { saveDataErrorExecution: "all", errorWorkflow: ERROR_WORKFLOW_ID };
 // Gmail label ids for "Job Application", "Job Application/Processed" and one
 // sub-label per parser status_label. Ids, not names: the Gmail node's
 // addLabels takes ids, and a renamed label keeps its id.
@@ -189,11 +199,10 @@ function airtableNode(name, tableId, fields, position, key = "message_id") {
     position,
     id: `airtable-${tableId}`,
     name,
-    // An Airtable hiccup must not strand the email unlabelled and un-rebuilt.
-    // Continuing on error keeps the chain moving; the execution log still shows
-    // the failure, and the next poll retries the row because the label was the
-    // thing that would have excluded it.
-    onError: "continueRegularOutput",
+    // No onError. Continuing past a failed write labelled the email Processed
+    // with no row behind it: the application was lost, because Poll Gmail never
+    // re-delivers. Failing leaves the email unlabelled, the Error alert fires,
+    // and Backfill (manual) writes it again — every write here is an upsert.
     retryOnFail: true,
     maxTries: 3,
     waitBetweenTries: 2000,
@@ -241,7 +250,9 @@ const nodes = [
       resource: "message",
       operation: "getAll",
       returnAll: false,
-      limit: 500,
+      // 500 full-message fetches blew Gmail's per-user per-minute quota. The
+      // query skips processed mail, so repeated runs work through a backlog.
+      limit: 100,
       simple: false,
       filters: { q: JOB_MAIL_QUERY, readStatus: "both", includeSpamTrash: false },
       options: {},
@@ -410,7 +421,11 @@ const nodes = [
     // No match is the normal case for a new application; without this the
     // item disappears and the email never reaches Feed or gets labelled.
     alwaysOutputData: true,
-    onError: "continueRegularOutput",
+    // No onError: a swallowed Airtable error looks exactly like "no match",
+    // and Merge Into Feed then creates a duplicate row.
+    retryOnFail: true,
+    maxTries: 3,
+    waitBetweenTries: 2000,
     credentials: AIRTABLE_CREDENTIAL,
   },
   {
@@ -447,9 +462,12 @@ const nodes = [
     id: "mark-handled",
     name: "Mark Email Processed",
     // Deliberately AFTER both writes: a crash between the two loses a label,
-    // not a row. A duplicate-free re-poll is cheap; a silently dropped
-    // application email is not.
-    onError: "continueRegularOutput",
+    // not a row. No onError: a swallowed label failure (a Gmail quota hit)
+    // left mail unlabelled until the hourly stale alarm, with no clue why.
+    // Retries ride out a per-minute quota spike.
+    retryOnFail: true,
+    maxTries: 3,
+    waitBetweenTries: 5000,
     credentials: { gmailOAuth2: { id: "REPLACE_ME", name: "Gmail account" } },
   },
 
@@ -493,9 +511,7 @@ const nodes = [
     // for an empty result, so a healthy inbox ends the execution above.
     parameters: {
       errorMessage: `Job mail older than ${BACKLOG_GRACE_HOURS}h is still missing Job Application/Processed — the ingest is stuck. `
-        + "Check the Poll Gmail executions, then run Backfill (manual). If that doesn't clear it, the email was already "
-        + "seen once and Skip Already Seen drops it: find its row in Inbox/Feed, then label it Job Application/Processed "
-        + "by hand, or clear Skip Already Seen's deduplication history and backfill again. See DEPLOY.md §3.7.",
+        + "Check the Poll Gmail executions and the Telegram alerts, then run Backfill (manual). See DEPLOY.md §3.7.",
     },
     type: "n8n-nodes-base.stopAndError",
     typeVersion: 1,
@@ -507,10 +523,10 @@ const nodes = [
 ];
 
 const stickies = [
-  ["## 1. Poll and dedupe\nQuery: mail under **Job Application**, or containing confirmation phrases (\"thank you for applying\", \"received your application\", …), minus **Job Application/Processed**.\n\n**Backfill (manual)**: run once to process mail already in the label.\n\n**Remove Duplicates** is the second net: it catches a re-delivery in the window between the Airtable write and the label being applied.", [-40, 20], 400, 280, 4],
+  ["## 1. Poll and dedupe\nQuery: mail under **Job Application**, or containing confirmation phrases (\"thank you for applying\", \"received your application\", …), minus **Job Application/Processed**.\n\n**Backfill (manual)**: processes up to 100 unlabelled job emails, and re-writes any whose write failed. It skips **Remove Duplicates** on purpose.\n\n**Remove Duplicates** (poll path only) catches a re-delivery between the Airtable write and the label.", [-40, 20], 400, 280, 4],
   ["## 2. Classify\nPure function, no network. Source of truth is `n8n/parse-email.js` in the repo — it has tests. Edit it there and re-run `node scripts/build-n8n.mjs`, not here.", [400, 60], 380, 220, 3],
   ["## 3. Store\nInbox / Needs Review rows key on `message_id`, so re-running is an update, not a duplicate.\n\nClassified mail also upserts **Feed**, one row per application (`Application Key` = company|title; mail with no known employer stops at Needs Review). `merge-feed.js` only moves a row forward: earliest date, highest stage, no status regressions — hand edits survive.", [820, 20], 860, 260, 5],
-  ["## 5. Watchdog\nHourly: any job mail older than 2h that still lacks **Job Application/Processed** fails this execution. `scripts/check-live.mjs` (hourly in GitHub Actions) turns failed executions into an email, so a stuck ingest can't stay quiet.", [-40, 1060], 560, 160, 2],
+  ["## 5. Watchdog\nHourly: any job mail older than 2h that still lacks **Job Application/Processed** fails this execution. Any failed execution messages Telegram via **Job Tracker — Error alert**; `scripts/check-live.mjs` (hourly in GitHub Actions) also emails.", [-40, 1060], 560, 160, 2],
   ["## 4. Close the loop\nLabel is applied **after** the write — a crash loses a label, not a row.\n\nNo rebuild here: every Feed upsert pings the **Feed change → rebuild** workflow, which dispatches to GitHub Actions, so the dashboard updates in seconds instead of waiting for the 6-hourly cron.", [1760, 20], 400, 280, 6],
 ];
 
@@ -533,7 +549,10 @@ const workflow = {
   connections: {
     "Poll Gmail": { main: one("Skip Already Seen") },
     "Backfill (manual)": { main: one("Fetch Job Mail") },
-    "Fetch Job Mail": { main: one("Skip Already Seen") },
+    // Backfill skips the dedupe on purpose: it is how mail whose write failed
+    // gets written again, and Skip Already Seen would drop exactly that mail.
+    // Every write downstream is an upsert or a forward-only merge.
+    "Fetch Job Mail": { main: one("Parse Job Email") },
     "Skip Already Seen": { main: one("Parse Job Email") },
     "Parse Job Email": { main: one("Needs LLM Fallback?") },
     "Needs LLM Fallback?": {
@@ -562,7 +581,7 @@ const workflow = {
     "Ingest Backlog Check": { main: one("Find Stale Job Mail") },
     "Find Stale Job Mail": { main: one("Stale Job Mail Alarm") },
   },
-  settings: { executionOrder: "v1", saveManualExecutions: true, saveExecutionProgress: true },
+  settings: { executionOrder: "v1", saveManualExecutions: true, saveExecutionProgress: true, ...ALERTED },
   pinData: {},
   meta: { instanceId: "job-tracker-dashboard" },
   tags: [],
@@ -705,7 +724,7 @@ const syncWorkflow = {
     "Notifications Off?": { main: [one("Enable Notifications")[0], one("Refresh Webhook")[0]] },
     "Enable Notifications": { main: one("Refresh Webhook") },
   },
-  settings: { executionOrder: "v1", saveManualExecutions: true },
+  settings: { executionOrder: "v1", saveManualExecutions: true, ...ALERTED },
   pinData: {},
   meta: { instanceId: "job-tracker-dashboard" },
   tags: [],
@@ -715,3 +734,74 @@ const syncOut = join(ROOT, "n8n/job-tracker-feed-sync.json");
 await writeFile(syncOut, JSON.stringify(syncWorkflow, null, 2) + "\n");
 console.log(`Wrote ${syncOut}`);
 console.log(`  ${syncNodes.length} nodes`);
+
+// ---------------------------------------------------------------------------
+// Error alert. A separate workflow, n8n/job-tracker-error-alert.json, set as
+// the errorWorkflow of both workflows above. n8n runs it for every failed
+// execution and for polling-trigger failures that never became one (an
+// expired Gmail token, a quota hit in Poll Gmail). Telegram, not Gmail: the
+// alert must not depend on the service whose failure it reports.
+// It has no errorWorkflow of its own, so a Telegram failure can't loop.
+// ---------------------------------------------------------------------------
+
+const alertWorkflow = {
+  name: "Job Tracker — Error alert",
+  nodes: [
+    {
+      parameters: {},
+      type: "n8n-nodes-base.errorTrigger",
+      typeVersion: 1,
+      position: [0, 0],
+      id: "error-trigger",
+      name: "Error Trigger",
+    },
+    {
+      parameters: { mode: "runOnceForAllItems", language: "javaScript", jsCode: errorAlertSource },
+      type: "n8n-nodes-base.code",
+      typeVersion: 2,
+      position: [220, 0],
+      id: "format-alert",
+      name: "Format Alert",
+    },
+    {
+      parameters: {
+        chatId: TELEGRAM_CHAT_ID,
+        text: ex("{{ $json.text }}"),
+        additionalFields: { appendAttribution: false },
+      },
+      type: "n8n-nodes-base.telegram",
+      typeVersion: 1.2,
+      position: [440, 0],
+      id: "send-alert",
+      name: "Send Alert",
+      webhookId: "job-tracker-error-alert",
+      retryOnFail: true,
+      maxTries: 3,
+      waitBetweenTries: 5000,
+      credentials: { telegramApi: { id: "REPLACE_ME", name: "Telegram account" } },
+    },
+    {
+      parameters: {
+        content: "## Error alert\nRuns for every failed execution of the Job Tracker ingest and Feed sync. Same error at most once per 6h. Logic: `n8n/error-alert.js` (tested). Source of truth: `scripts/build-n8n.mjs`.",
+        width: 620, height: 140, color: 2,
+      },
+      type: "n8n-nodes-base.stickyNote",
+      typeVersion: 1,
+      position: [-40, -200],
+      id: "alert-sticky-3",
+      name: "Note 3",
+    },
+  ],
+  connections: {
+    "Error Trigger": { main: one("Format Alert") },
+    "Format Alert": { main: one("Send Alert") },
+  },
+  settings: { executionOrder: "v1", saveDataErrorExecution: "all" },
+  pinData: {},
+  meta: { instanceId: "job-tracker-dashboard" },
+  tags: [],
+};
+
+const alertOut = join(ROOT, "n8n/job-tracker-error-alert.json");
+await writeFile(alertOut, JSON.stringify(alertWorkflow, null, 2) + "\n");
+console.log(`Wrote ${alertOut}`);

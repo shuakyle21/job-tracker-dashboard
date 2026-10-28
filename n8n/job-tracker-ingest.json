@@ -53,7 +53,7 @@
         "resource": "message",
         "operation": "getAll",
         "returnAll": false,
-        "limit": 500,
+        "limit": 100,
         "simple": false,
         "filters": {
           "q": "(label:job-application OR \"thank you for applying\" OR \"thanks for applying\" OR \"application has been received\" OR \"received your application\" OR \"successfully submitted\" OR \"your application was sent\" OR \"application sent to\" OR \"has viewed your application\" OR \"your application was viewed\" OR \"update on your application\" OR subject:\"your application\" OR subject:\"application received\") -label:job-application-processed -in:chats",
@@ -357,7 +357,6 @@
       ],
       "id": "airtable-tbl2ASezOoTqS4qok",
       "name": "Write to Inbox",
-      "onError": "continueRegularOutput",
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 2000,
@@ -495,7 +494,6 @@
       ],
       "id": "airtable-tblwEyImuS3hgYGFK",
       "name": "Write to Needs Review",
-      "onError": "continueRegularOutput",
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 2000,
@@ -548,7 +546,9 @@
       "id": "find-feed-row",
       "name": "Find Feed Row",
       "alwaysOutputData": true,
-      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
       "credentials": {
         "airtableTokenApi": {
           "id": "REPLACE_ME",
@@ -688,7 +688,6 @@
       ],
       "id": "airtable-tblPZSpJ8P4iFuAhX",
       "name": "Upsert Feed",
-      "onError": "continueRegularOutput",
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 2000,
@@ -718,7 +717,9 @@
       ],
       "id": "mark-handled",
       "name": "Mark Email Processed",
-      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
       "credentials": {
         "gmailOAuth2": {
           "id": "REPLACE_ME",
@@ -777,7 +778,7 @@
     },
     {
       "parameters": {
-        "errorMessage": "Job mail older than 2h is still missing Job Application/Processed — the ingest is stuck. Check the Poll Gmail executions, then run Backfill (manual). If that doesn't clear it, the email was already seen once and Skip Already Seen drops it: find its row in Inbox/Feed, then label it Job Application/Processed by hand, or clear Skip Already Seen's deduplication history and backfill again. See DEPLOY.md §3.7."
+        "errorMessage": "Job mail older than 2h is still missing Job Application/Processed — the ingest is stuck. Check the Poll Gmail executions and the Telegram alerts, then run Backfill (manual). See DEPLOY.md §3.7."
       },
       "type": "n8n-nodes-base.stopAndError",
       "typeVersion": 1,
@@ -791,7 +792,7 @@
     },
     {
       "parameters": {
-        "content": "## 1. Poll and dedupe\nQuery: mail under **Job Application**, or containing confirmation phrases (\"thank you for applying\", \"received your application\", …), minus **Job Application/Processed**.\n\n**Backfill (manual)**: run once to process mail already in the label.\n\n**Remove Duplicates** is the second net: it catches a re-delivery in the window between the Airtable write and the label being applied.",
+        "content": "## 1. Poll and dedupe\nQuery: mail under **Job Application**, or containing confirmation phrases (\"thank you for applying\", \"received your application\", …), minus **Job Application/Processed**.\n\n**Backfill (manual)**: processes up to 100 unlabelled job emails, and re-writes any whose write failed. It skips **Remove Duplicates** on purpose.\n\n**Remove Duplicates** (poll path only) catches a re-delivery between the Airtable write and the label.",
         "width": 400,
         "height": 280,
         "color": 4
@@ -839,7 +840,7 @@
     },
     {
       "parameters": {
-        "content": "## 5. Watchdog\nHourly: any job mail older than 2h that still lacks **Job Application/Processed** fails this execution. `scripts/check-live.mjs` (hourly in GitHub Actions) turns failed executions into an email, so a stuck ingest can't stay quiet.",
+        "content": "## 5. Watchdog\nHourly: any job mail older than 2h that still lacks **Job Application/Processed** fails this execution. Any failed execution messages Telegram via **Job Tracker — Error alert**; `scripts/check-live.mjs` (hourly in GitHub Actions) also emails.",
         "width": 560,
         "height": 160,
         "color": 2
@@ -897,7 +898,7 @@
       "main": [
         [
           {
-            "node": "Skip Already Seen",
+            "node": "Parse Job Email",
             "type": "main",
             "index": 0
           }
@@ -1083,7 +1084,9 @@
   "settings": {
     "executionOrder": "v1",
     "saveManualExecutions": true,
-    "saveExecutionProgress": true
+    "saveExecutionProgress": true,
+    "saveDataErrorExecution": "all",
+    "errorWorkflow": "6fkIPNYzphxYMATD"
   },
   "pinData": {},
   "meta": {

@@ -332,6 +332,19 @@ async function assertIngestWorkflow() {
       && byName["Stale Job Mail Alarm"]?.type === "n8n-nodes-base.stopAndError"
       && !byName["Find Stale Job Mail"]?.onError && !byName["Find Stale Job Mail"]?.alwaysOutputData);
 
+  // A swallowed write labelled the email Processed with no row behind it, and
+  // the application was lost. Writes must fail the execution instead.
+  const writes = wf.nodes.filter((n) => (n.type === "n8n-nodes-base.airtable" || n.type === "n8n-nodes-base.gmail")
+    && n.name !== "Poll Gmail" && n.onError);
+  check("Airtable and Gmail nodes fail loudly", writes.length === 0, writes.map((n) => n.name).join(", "));
+
+  // Backfill is how mail whose write failed gets written again; the dedupe
+  // would drop exactly that mail. The poll path still needs it.
+  check("Backfill bypasses Skip Already Seen, Poll Gmail doesn't",
+    wf.connections["Fetch Job Mail"]?.main[0]?.[0]?.node === "Parse Job Email"
+      && wf.connections["Poll Gmail"]?.main[0]?.[0]?.node === "Skip Already Seen");
+
+  assertAlerted(wf);
   assertGraph(wf, ["Poll Gmail", "Backfill (manual)", "Ingest Backlog Check"]);
   return wf;
 }
@@ -364,14 +377,17 @@ function assertGraph(wf, triggers) {
 let generated;
 async function regenerateWorkflows() {
   if (generated) return generated;
-  const files = { ingest: "n8n/job-tracker-ingest.json", sync: "n8n/job-tracker-feed-sync.json" };
+  const files = { ingest: "n8n/job-tracker-ingest.json", sync: "n8n/job-tracker-feed-sync.json",
+    alert: "n8n/job-tracker-error-alert.json" };
   const read = (f) => readFile(join(ROOT, f), "utf8").catch(() => "");
-  const committed = { ingest: await read(files.ingest), sync: await read(files.sync) };
+  const committed = { ingest: await read(files.ingest), sync: await read(files.sync), alert: await read(files.alert) };
   await run("node", ["scripts/build-n8n.mjs"], { cwd: ROOT });
-  generated = { ingest: await read(files.ingest), sync: await read(files.sync) };
+  generated = { ingest: await read(files.ingest), sync: await read(files.sync), alert: await read(files.alert) };
   check("workflow JSON matches its generator", committed.ingest === generated.ingest,
     "run: node scripts/build-n8n.mjs");
   check("Feed sync workflow JSON matches its generator", committed.sync === generated.sync,
+    "run: node scripts/build-n8n.mjs");
+  check("Error alert workflow JSON matches its generator", committed.alert === generated.alert,
     "run: node scripts/build-n8n.mjs");
   return generated;
 }
@@ -430,8 +446,32 @@ async function assertSyncWorkflow() {
   check("keep-alive runs on a schedule",
     wf.connections["Daily Keep-Alive"]?.main[0]?.[0]?.node === "List Airtable Webhooks");
 
+  assertAlerted(wf);
   assertGraph(wf, ["Airtable Feed Changed", "Daily Keep-Alive", "Register Webhook (manual)"]);
   return wf;
+}
+
+// A failure must be saved (check-live reads saved executions) and must reach
+// the Error alert. The live ingest once had neither.
+function assertAlerted(wf) {
+  check(`${wf.name}: error executions are saved and alerted`,
+    wf.settings?.saveDataErrorExecution === "all" && Boolean(wf.settings?.errorWorkflow));
+}
+
+async function assertAlertWorkflow() {
+  console.log("\nn8n Error alert workflow");
+  let ok = true;
+  try { await run("node", ["scripts/test-error-alert.mjs"], { cwd: ROOT }); } catch { ok = false; }
+  check("error alert tests pass", ok);
+
+  const wf = JSON.parse((await regenerateWorkflows()).alert);
+  const byName = Object.fromEntries(wf.nodes.map((n) => [n.name, n]));
+  const alertFile = await readFile(join(ROOT, "n8n/error-alert.js"), "utf8");
+  check("embedded error alert is the tested file", byName["Format Alert"]?.parameters.jsCode === alertFile);
+  // A Gmail alert would fail on the same quota or token it is reporting.
+  check("alert goes out through Telegram", byName["Send Alert"]?.type === "n8n-nodes-base.telegram");
+  check("alert workflow has no error workflow of its own", !wf.settings?.errorWorkflow);
+  assertGraph(wf, ["Error Trigger"]);
 }
 
 // Both workflows call GitHub. A shared credential once sent the GitHub token
@@ -478,6 +518,7 @@ await build({ FEED_FIXTURE: "./sample-feed.json" });
 const fixture = await assertBuildOutput("Fixture build");
 const ingestWf = await assertIngestWorkflow();
 const syncWf = await assertSyncWorkflow();
+await assertAlertWorkflow();
 assertCredentials([ingestWf, syncWf]);
 
 // Known-good numbers for the checked-in fixture. If aggregation logic changes

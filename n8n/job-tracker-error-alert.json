@@ -1,0 +1,107 @@
+{
+  "name": "Job Tracker — Error alert",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "error-trigger",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Body of the \"Format Alert\" Code node (mode: runOnceForAllItems) in the\n// Error alert workflow. Source of truth: scripts/build-n8n.mjs inlines it and\n// verify.mjs fails on drift. Test with: node scripts/test-error-alert.mjs\n//\n// Input is n8n's Error Trigger payload. A failed execution carries `execution`;\n// a polling trigger that failed before any execution existed (an expired Gmail\n// token, a quota hit in Poll Gmail) carries only `trigger`. Returns one\n// { text } item for Telegram, or nothing when this error was already sent\n// within REPEAT_MS: the hourly stale-mail alarm once failed 135 times in a row,\n// which is spam, but a single alert for a 6-day outage is too quiet.\n\nconst REPEAT_MS = 6 * 3600e3;\nconst { workflow = {}, execution, trigger } = $input.first().json;\nconst err = execution?.error ?? trigger?.error ?? {};\nconst node = execution?.lastNodeExecuted ?? err.node?.name ?? 'trigger';\nconst message = String(err.message || err.description || 'Unknown error').slice(0, 300);\n\nconst tag = /reconnect|EAUTH|invalid_grant|\\b401\\b|requires authentication|unauthori[sz]ed/i.test(message)\n  ? 'CREDENTIAL — re-authenticate it in n8n (DEPLOY.md §3.5)'\n  : /quota|rate.?limit|\\b429\\b/i.test(message) ? 'QUOTA — Gmail will recover; rerun Backfill if mail is stuck'\n  : 'ERROR';\n\nconst seen = $getWorkflowStaticData('global');\nconst now = Date.now();\nfor (const k of Object.keys(seen)) if (now - seen[k] >= REPEAT_MS) delete seen[k];\nconst key = `${workflow.id}|${node}|${message.replace(/\\d+/g, '#')}`;\nif (seen[key]) return [];\nseen[key] = now;\n\nreturn [{ json: { text: [\n  `⚠️ ${workflow.name || 'n8n workflow'} failed`,\n  `${tag}`,\n  `Node: ${node}`,\n  message,\n  execution?.url || '',\n].filter(Boolean).join('\\n') } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "format-alert",
+      "name": "Format Alert"
+    },
+    {
+      "parameters": {
+        "chatId": "6432422052",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "send-alert",
+      "name": "Send Alert",
+      "webhookId": "job-tracker-error-alert",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_ME",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Error alert\nRuns for every failed execution of the Job Tracker ingest and Feed sync. Same error at most once per 6h. Logic: `n8n/error-alert.js` (tested). Source of truth: `scripts/build-n8n.mjs`.",
+        "width": 620,
+        "height": 140,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -200
+      ],
+      "id": "alert-sticky-3",
+      "name": "Note 3"
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Format Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Alert": {
+      "main": [
+        [
+          {
+            "node": "Send Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all"
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "job-tracker-dashboard"
+  },
+  "tags": []
+}
