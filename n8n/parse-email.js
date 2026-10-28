@@ -359,6 +359,12 @@ return {
     // needs-review is labelled that, whatever status was guessed.
     status_label: parsed ? (STATUS_LABELS[status] || 'Needs Review') : 'Needs Review',
     from_address: from,
+    // Who the application is with, when no company can be named: the sender,
+    // or for mail you sent, the recipient. A hiring manager writing from a
+    // gmail address ("send me your CV") names no employer, so llm-fallback.js
+    // files the application under this person instead. Not written to Airtable.
+    contact_name: String((isSent ? msg.to?.value?.[0]?.name : fromName) || '').replace(/\s+/g, ' ').trim(),
+    contact_address: (isSent ? to : from).replace(/^.*<([^>]+)>.*$/, '$1').toLowerCase().trim(),
     subject,
     parsed,
     confidence,

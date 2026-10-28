@@ -78,9 +78,22 @@ if (!parsed) {
     company = original.company || shown(guess?.company);
     // A job board is never the employer, whatever the model says.
     if (BOARD.test(company)) company = original.company;
-    job_title = original.job_title || shown(guess?.job_title);
+    // Last resort for the title: the subject line. Mail you send yourself, or
+    // a hiring manager's "send me your CV", often names the role only there.
+    const subjectTitle = String(original.subject || '')
+      .replace(/^(?:\s*(?:re|fwd?)\s*:\s*)+/i, '').replace(/\s+/g, ' ').trim().slice(0, 80);
+    job_title = original.job_title || shown(guess?.job_title) || subjectTitle;
 
-    const key = norm(company) + '|' + norm(job_title);
+    // No employer named anywhere: file it under the person instead
+    // ("Jane Doe <jane@gmail.com>"). The key uses the address, which stays the
+    // same when the display name doesn't. Never for job-board mail: every
+    // Indeed application would collapse into one "noreply@indeed.com" row.
+    const contact = String(original.contact_address || '');
+    const direct = original.job_platform === 'Company Website' || original.job_platform === 'Direct Email';
+    const byContact = !company && direct && /^[^@\s|]+@[^@\s|]+$/.test(contact);
+    if (byContact) company = original.contact_name ? `${original.contact_name} <${contact}>` : contact;
+
+    const key = norm(byContact ? contact : company) + '|' + norm(job_title);
     application_key = key.split('|').every(Boolean) ? key : '';
 
     // Same bar parse-email.js uses for `parsed`: a recognizable status and a
@@ -89,7 +102,8 @@ if (!parsed) {
       status = candidate;
       status_label = STATUS_LABELS[status];
       parsed = true;
-      confidence = 'medium';
+      // A person standing in for the employer is a weaker match than a name.
+      confidence = byContact ? 'low' : 'medium';
       // The model's own max_stage is ignored. merge-feed.js never lowers a
       // stage, so a wrong high guess would inflate the funnel for good.
       max_stage = Math.max(Number(original.max_stage) || 1, STAGE_OF_STATUS[status] || 1);

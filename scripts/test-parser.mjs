@@ -353,6 +353,25 @@ const cases = [
     want: { status: "applied", job_platform: "Direct Email", company: "Northwind" },
   },
   {
+    name: "contact is the recipient for mail you sent to a gmail hiring manager",
+    input: email({
+      subject: "Application for Virtual Assistant",
+      labelIds: ["SENT"],
+      from: { value: [{ address: "me@gmail.com", name: "Alex" }] },
+      to: { value: [{ address: "Jane.Doe@gmail.com", name: "Jane Doe" }] },
+    }),
+    want: { company: "", parsed: false, contact_name: "Jane Doe", contact_address: "jane.doe@gmail.com" },
+  },
+  {
+    name: "contact is the sender for a hiring manager's reply",
+    input: email({
+      subject: "Re: Virtual Assistant",
+      from: { value: [{ address: "jane.doe@gmail.com", name: "Jane Doe" }] },
+      text: "Hi, send me your CV and I'll take a look.",
+    }),
+    want: { contact_name: "Jane Doe", contact_address: "jane.doe@gmail.com" },
+  },
+  {
     name: "rejection in the subject",
     input: email({
       subject: "Your application for the Software Developer role was not selected.",

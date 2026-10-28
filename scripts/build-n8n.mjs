@@ -410,8 +410,10 @@ const nodes = [
       // typed by hand ("va masters | developer") differ from generated ones
       // ("va masters|developer") only in case and spacing, and an exact
       // comparison gave that application two Feed rows. "[|]" rather than
-      // "\\|" keeps backslashes out of the formula.
-      filterByFormula: ex(`{{ ${JSON.stringify(FEED_KEY_FORMULA + " = ")} + JSON.stringify($('Parse Job Email').item.json.application_key) }}`),
+      // "\\|" keeps backslashes out of the formula. The key comes from
+      // Classified?, after the LLM fallback: Parse Job Email's is still
+      // empty for an email the LLM completed.
+      filterByFormula: ex(`{{ ${JSON.stringify(FEED_KEY_FORMULA + " = ")} + JSON.stringify($('Classified?').item.json.application_key) }}`),
       returnAll: false,
       limit: 1,
       options: {},
@@ -447,16 +449,18 @@ const nodes = [
       // $json here is the Airtable API response, not the email — the message id
       // has to come from the parser explicitly. This is the single most common
       // way a workflow like this breaks after someone inserts a node.
-      messageId: ex("{{ $('Parse Job Email').item.json.message_id }}"),
+      // Classified?, not Parse Job Email, so an email the LLM completed gets
+      // its real status label instead of Needs Review.
+      messageId: ex("{{ $('Classified?').item.json.message_id }}"),
       // "Job Application" (so keyword-matched mail joins the label) — but
       // only for mail the parser recognised: a newsletter that happened to
       // say "thank you for applying" must not join a label you curate. Every
       // email gets "Job Application/Processed" (so it is never polled again)
       // and the status sub-label the parser chose.
       labelIds: [
-        ex(`{{ $('Parse Job Email').item.json.parsed ? ${JSON.stringify(LABELS.scope)} : ${JSON.stringify(LABELS.processed)} }}`),
+        ex(`{{ $('Classified?').item.json.parsed ? ${JSON.stringify(LABELS.scope)} : ${JSON.stringify(LABELS.processed)} }}`),
         LABELS.processed,
-        ex(`{{ (${JSON.stringify(LABELS.status)})[$('Parse Job Email').item.json.status_label] || ${JSON.stringify(LABELS.status["Needs Review"])} }}`),
+        ex(`{{ (${JSON.stringify(LABELS.status)})[$('Classified?').item.json.status_label] || ${JSON.stringify(LABELS.status["Needs Review"])} }}`),
       ],
     },
     type: "n8n-nodes-base.gmail",

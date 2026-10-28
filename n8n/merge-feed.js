@@ -4,8 +4,10 @@
 // scripts/verify.mjs fails if the two drift. Test with: node scripts/test-merge-feed.mjs
 //
 // Contract: $json is the Feed row "Find Feed Row" returned for this email's
-// application_key ({} when there is none); $('Parse Job Email').item.json is
-// the parsed email. Returns every Feed field the upsert writes, so the upsert
+// application_key ({} when there is none); $('Classified?').item.json is
+// the parsed email, after the LLM fallback. Not $('Parse Job Email'): that is
+// the row before the fallback, and an email the LLM completed would still
+// carry its empty company there. Returns every Feed field the upsert writes, so the upsert
 // never blanks a value it wasn't meant to touch.
 //
 // Emails arrive in any order and a person also edits Feed by hand, so the
@@ -13,7 +15,7 @@
 // status that doesn't slide back from "Interviewed" to "Applied" because a
 // late confirmation email turned up.
 
-const email = $('Parse Job Email').item.json;
+const email = $('Classified?').item.json;
 const row = ($json && ($json.fields || $json)) || {};
 
 const FEED_STATUS = {
