@@ -1,39 +1,39 @@
 {
-  "generatedAt": "2026-10-28T02:59:55.134Z",
-  "total": 206,
-  "sent": 206,
+  "generatedAt": "2026-10-28T04:14:44.558Z",
+  "total": 210,
+  "sent": 210,
   "unsent": 0,
-  "replied": 77,
-  "noReply": 129,
-  "open": 144,
-  "replyRate": 0.3737864077669903,
-  "interviewRate": 0.03398058252427184,
-  "ghostRate": 0.6262135922330098,
-  "rejected": 48,
-  "rejectionRate": 0.23300970873786409,
+  "replied": 80,
+  "noReply": 130,
+  "open": 141,
+  "replyRate": 0.38095238095238093,
+  "interviewRate": 0.04285714285714286,
+  "ghostRate": 0.6190476190476191,
+  "rejected": 51,
+  "rejectionRate": 0.24285714285714285,
   "reached": [
-    206,
-    59,
-    15,
-    7,
+    210,
+    61,
+    17,
+    9,
     0
   ],
   "atStage": [
-    147,
+    149,
     44,
     8,
-    7,
+    9,
     0
   ],
   "dropComposition": [
     [
       {
         "status": "Applied",
-        "count": 102
+        "count": 100
       },
       {
         "status": "Rejected",
-        "count": 33
+        "count": 35
       },
       {
         "status": "No Response",
@@ -41,7 +41,7 @@
       },
       {
         "status": "Closed / Expired",
-        "count": 4
+        "count": 6
       },
       {
         "status": "(blank)",
@@ -51,11 +51,11 @@
     [
       {
         "status": "Viewed by Employer",
-        "count": 14
+        "count": 13
       },
       {
         "status": "Applied",
-        "count": 12
+        "count": 11
       },
       {
         "status": "Rejected",
@@ -66,12 +66,12 @@
         "count": 5
       },
       {
-        "status": "No Response",
-        "count": 2
+        "status": "Closed / Expired",
+        "count": 3
       },
       {
-        "status": "Closed / Expired",
-        "count": 1
+        "status": "No Response",
+        "count": 2
       }
     ],
     [
@@ -87,11 +87,11 @@
     [
       {
         "status": "Rejected",
-        "count": 4
+        "count": 5
       },
       {
         "status": "Interviewed",
-        "count": 1
+        "count": 2
       },
       {
         "status": "In Review",
@@ -105,25 +105,29 @@
     []
   ],
   "rejectedAt": [
-    33,
+    35,
     10,
     1,
-    4,
+    5,
     0
   ],
   "usedExplicitStage": true,
   "byStatus": [
     {
       "status": "Applied",
-      "count": 115
+      "count": 112
     },
     {
       "status": "Rejected",
-      "count": 48
+      "count": 51
     },
     {
       "status": "Viewed by Employer",
-      "count": 14
+      "count": 13
+    },
+    {
+      "status": "Closed / Expired",
+      "count": 9
     },
     {
       "status": "No Response",
@@ -138,15 +142,11 @@
       "count": 6
     },
     {
-      "status": "Closed / Expired",
-      "count": 5
+      "status": "Interviewed",
+      "count": 2
     },
     {
       "status": "(blank)",
-      "count": 1
-    },
-    {
-      "status": "Interviewed",
       "count": 1
     }
   ],
@@ -154,37 +154,37 @@
     {
       "name": "Direct / Careers",
       "sent": 84,
-      "replied": 33,
+      "replied": 34,
       "unsent": 0,
-      "rate": 0.39285714285714285
+      "rate": 0.40476190476190477
     },
     {
       "name": "Jobstreet",
-      "sent": 54,
-      "replied": 15,
+      "sent": 55,
+      "replied": 13,
       "unsent": 0,
-      "rate": 0.2777777777777778
+      "rate": 0.23636363636363636
     },
     {
       "name": "LinkedIn",
       "sent": 32,
-      "replied": 17,
+      "replied": 18,
       "unsent": 0,
-      "rate": 0.53125
+      "rate": 0.5625
     },
     {
       "name": "Indeed",
-      "sent": 13,
-      "replied": 4,
+      "sent": 14,
+      "replied": 5,
       "unsent": 0,
-      "rate": 0.3076923076923077
+      "rate": 0.35714285714285715
     },
     {
       "name": "Direct Email",
-      "sent": 11,
-      "replied": 2,
+      "sent": 12,
+      "replied": 3,
       "unsent": 0,
-      "rate": 0.18181818181818182
+      "rate": 0.25
     },
     {
       "name": "Kalibrr",
@@ -209,6 +209,13 @@
     },
     {
       "name": "Koronadal City",
+      "sent": 1,
+      "replied": 1,
+      "unsent": 0,
+      "rate": 1
+    },
+    {
+      "name": "Direct / ATS",
       "sent": 1,
       "replied": 1,
       "unsent": 0,
@@ -270,13 +277,13 @@
     },
     {
       "month": "2026-10",
-      "count": 47
+      "count": 51
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 201
+      "count": 205
     },
     {
       "label": "Onsite",
@@ -294,11 +301,11 @@
     },
     {
       "label": "8–14d",
-      "count": 13
+      "count": 12
     },
     {
       "label": "15–30d",
-      "count": 24
+      "count": 22
     },
     {
       "label": "31–60d",
