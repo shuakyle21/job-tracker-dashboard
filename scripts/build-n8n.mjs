@@ -42,7 +42,10 @@ const JOB_MAIL_QUERY = "(label:job-application"
   + ' OR "thank you for applying" OR "thanks for applying" OR "application has been received"'
   + ' OR "received your application" OR "successfully submitted" OR "your application was sent"'
   + ' OR "application sent to" OR "has viewed your application" OR "your application was viewed"'
-  + ' OR "update on your application" OR subject:"your application" OR subject:"application received")'
+  + ' OR "update on your application" OR subject:"your application" OR subject:"application received"'
+  // Ashby's interview and outcome mail says neither "your application" nor
+  // any confirmation phrase, so without these it is never polled.
+  + ' OR subject:"interview confirmation" OR subject:"application update")'
   + " -label:job-application-processed -in:chats";
 
 // How long job mail may sit unprocessed before the watchdog calls it stuck.
