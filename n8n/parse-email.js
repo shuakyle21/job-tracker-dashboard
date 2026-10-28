@@ -25,7 +25,10 @@ const body = plain(msg.text || msg.textAsHtml || msg.snippet);
 
 // Subject carries the strongest signal and the least boilerplate, so weight it
 // by searching it first; fall back to the body only when the subject is mute.
-const hay = (subject + '\n' + body).toLowerCase();
+// Whitespace is collapsed because job boards hard-wrap their HTML mail: Indeed
+// split "move forward with\nother candidates" across lines, the rejection
+// rule missed it, and a later "future openings" filed it as Talent Pool.
+const hay = (subject + '\n' + body).toLowerCase().replace(/\s+/g, ' ');
 const subjectLower = subject.toLowerCase();
 
 function any(text, patterns) {
@@ -45,12 +48,13 @@ const RULES = [
   ]],
   ['rejected', [
     /\bunfortunately\b/, /\bregret to inform\b/, /\bnot (?:be )?moving forward\b/,
+    /\bwon['’]?t be moving forward\b/,
     /\bnot (?:been )?select(?:ed|ing)\b/, /\bdecided to (?:proceed|move forward) with (?:other|another)\b/,
     /\bposition has been filled\b/, /\bwe(?:'| ha)ve decided not to\b/,
     /\bno longer under consideration\b/, /\bwill not be proceeding\b/,
   ]],
   ['interview scheduled', [
-    /\binterview (?:is |has been )?(?:scheduled|confirmed|booked)\b/,
+    /\binterview (?:is |has been )?(?:scheduled|confirmed|booked)\b/, /\binterview confirmation\b/,
     /\binvit(?:ation|e|ing) (?:you )?(?:to|for) an? (?:interview|call|chat)\b/,
     /\bschedule (?:an?|your) (?:interview|call)\b/, /\bcalendly\.com\b/,
     /\bbook a time\b/, /\bpick a time\b/, /\bavailability for a (?:call|chat|interview)\b/,
@@ -146,13 +150,27 @@ let company = fromName
   .replace(/^[\s,.\-–—]+|[\s,.\-–—]+$/g, '')
   .trim();
 
+// Some ATSs send under their own brand ("Workable", "JOIN"). That names the
+// software, not the employer — a Feed row keyed "workable|..." collects every
+// Workable application into one.
+const ATS_NAMES = /^(?:workable|join|ashby|lever|greenhouse|bamboohr|teamtailor|manatal|smartrecruiters|workday|recruitee|breezy(?: hr)?|jazzhr)$/i;
+if (ATS_NAMES.test(company)) company = '';
+
+// Phrases like "joining our team" get read as an employer. A company named
+// "our team" is no company: leaving it empty sends the email to Needs Review.
+const isPlausibleCompany = (s) =>
+  !/^(?:our|the|this|us|we)(?:\s+(?:team|company|organi[sz]ation|firm))?(?:\s+and)?$/i.test(String(s).trim());
+
 // For mail you sent, the employer is the recipient, not you.
 const to = String(msg.to?.value?.[0]?.address || msg.to?.text || '');
 if (isSent) company = '';
 
 // Fall back to the sending domain, minus the ATS hosts that tell you nothing
 // about who the employer is.
-const ATS_DOMAINS = /^(?:.*\.)?(?:linkedin|indeed|greenhouse|lever|workday(?:day)?|myworkday|jobstreet|glassdoor|ziprecruiter|smartrecruiters|ashbyhq|workable|workablemail|bamboohr|teamtailor-mail|teamtailor|manatal|applytojob|appsheet|kalibrr|torre|onlinejobs|gmail|googlemail|outlook|yahoo)\./i;
+const ATS_DOMAINS = /^(?:.*\.)?(?:linkedin|indeed|greenhouse|lever|workday(?:day)?|myworkday|jobstreet|glassdoor|ziprecruiter|smartrecruiters|ashbyhq|workable|workablemail|bamboohr|teamtailor-mail|teamtailor|manatal|applytojob|appsheet|kalibrr|torre|onlinejobs|join|gmail|googlemail|outlook|yahoo)\./i;
+// First label of the sender's domain ("polaris" for jane@polaris.co.il), used
+// below to tell a company named in the subject from a recruiter's own name.
+const fromDomainLabel = ((from.split('@')[1] || '').toLowerCase().split('.')[0]) || '';
 if (!company) {
   const domain = ((isSent ? to : from).split('@')[1] || '').toLowerCase();
   if (domain && !ATS_DOMAINS.test(domain + '.')) {
@@ -194,7 +212,12 @@ if (atMatch) {
   // The right-hand side is usually the company; trust it over a stripped
   // display name, which is often just "Careers".
   const candidate = atMatch[2].replace(/[|()\[\]].*$/, '').trim();
-  if (candidate && candidate.length < 60 && (!company || /^careers?$/i.test(company))) {
+  // A recruiter writing as themself ("Jane Doe") from the company's domain:
+  // when the subject's company contains that domain, it is the better name.
+  const domainNamesCandidate = fromDomainLabel.length >= 3
+    && !ATS_DOMAINS.test(fromDomainLabel + '.')
+    && candidate.toLowerCase().includes(fromDomainLabel);
+  if (candidate && candidate.length < 60 && (!company || /^careers?$/i.test(company) || domainNamesCandidate)) {
     company = candidate;
   }
 }
@@ -212,6 +235,16 @@ const clean = (s) => String(s || '').replace(/\s+/g, ' ').trim()
 // stray "a"/"the" out of unrelated boilerplate, like a safety disclaimer.
 const isPlausibleTitle = (s) => !/^(?:a|an|the|this|that|it)$/i.test(s);
 const EXTRACTORS = [
+  // Ashby: "<C>: <T>: Application Update".
+  [subject, /^([^:]+):\s*([^:]+):\s*application update$/i, 2, 1],
+  // Workable: "Thanks for applying to <C>" (no title in the subject).
+  [subject, /^thank(?:s| you) for applying (?:to|at) ((?:(?!\s(?:at|@|-|–|—|\|)\s).)+?)!?$/i, 0, 1],
+  // JOIN: "We received your application for a position at <C>"; the body
+  // then says "... this position: <T>".
+  [subject, /application for (?:a|the|this) (?:position|role|job) at (.+)$/i, 0, 1],
+  [body, /this position:\s*([^\n]+)/i, 1, 0],
+  // Ashby interview mail: "your initial interview for the <T> at <C>."
+  [body, /interview for (?:the )?(.+?) (?:role |position )?at ([^\n.!,]+)/i, 1, 2],
   // JobStreet: "your application for <T> was successfully submitted to <C>".
   // A long title wraps onto a second line; allow one wrap, or the employer is
   // lost and the email stops at Needs Review.
@@ -247,9 +280,10 @@ for (const [text, re, ti, ci] of EXTRACTORS) {
   const m = String(text).match(re);
   if (!m) continue;
   if (ti && !gotTitle && clean(m[ti]) && isPlausibleTitle(clean(m[ti]))) { title = clean(m[ti]); gotTitle = true; }
-  if (ci && !gotCompany && clean(m[ci])) { company = clean(m[ci]); gotCompany = true; }
+  if (ci && !gotCompany && clean(m[ci]) && isPlausibleCompany(clean(m[ci]))) { company = clean(m[ci]); gotCompany = true; }
   if (gotTitle && gotCompany) break;
 }
+if (!isPlausibleCompany(company)) company = '';
 
 // --- job platform ---------------------------------------------------------
 // Where the application was made, for the Feed's Job Platform column. Job

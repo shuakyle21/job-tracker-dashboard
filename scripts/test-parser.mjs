@@ -379,6 +379,88 @@ const cases = [
     }),
     want: { status: "applied", job_title: "Technical Consultant", company: "DIRECO BUSINESS TECH INC.", job_platform: "Kalibrr", parsed: true },
   },
+  // --- misclassified in Oct 2026 (Feed rows fixed by hand on 2026-10-28) ---
+  {
+    // Workable sends as "Workable"; the employer is only in the subject.
+    name: "Workable confirmation names the employer, not Workable",
+    input: email({
+      subject: "Thanks for applying to Brightdesk",
+      from: { value: [{ address: "noreply@candidates.workablemail.com", name: "Workable" }] },
+      text: "Brightdesk\n\nYour application for the Forward Deployed Engineer (Remote | US Hours) job was submitted successfully. Here's a copy of your application data for safekeeping.",
+    }),
+    want: { status: "applied", company: "Brightdesk", job_title: "Forward Deployed Engineer (Remote | US Hours)", parsed: true },
+  },
+  {
+    // join.com: the subject's "a position at <C>" is not a job title.
+    name: "JOIN confirmation takes the employer from the subject",
+    input: email({
+      subject: "We received your application for a position at Scalewise",
+      from: { value: [{ address: "noreply@join.com", name: "JOIN" }] },
+      text: "Hi Joshua,\n\nThank you for your application for this position: Automation Engineer\n\nWe will get back to you soon.",
+    }),
+    want: { status: "applied", company: "Scalewise", job_title: "Automation Engineer", parsed: true },
+  },
+  {
+    // "interest in joining our team" names nobody. Better Needs Review than
+    // a Feed row keyed "our team|...".
+    name: "\"joining our team\" is not a company",
+    input: email({
+      subject: "Thank you for applying",
+      from: { value: [{ address: "noreply@candidates.workablemail.com", name: "Workable" }] },
+      text: "Thank you for your interest in joining our team, we have received your application for the Revenue Analyst role.",
+    }),
+    want: { company: "", parsed: false },
+  },
+  {
+    // A recruiter writing from the company domain under their own name:
+    // the subject's "@ <C>" matches the domain, so it beats the person's name.
+    name: "recruiter's own name loses to the subject's company",
+    input: email({
+      subject: "Update on Your Application – Developer @ Polaris Software & Beyond",
+      from: { value: [{ address: "jane@polaris.co.il", name: "Jane Doe" }] },
+      text: "Hi Joshua,\n\nThank you for your time. Unfortunately, we have decided not to move forward with your application.",
+    }),
+    want: { status: "rejected", company: "Polaris Software & Beyond", job_title: "Developer", parsed: true },
+  },
+  {
+    // Ashby: "<Company>: <Title>: Application Update".
+    name: "Ashby application update after an interview",
+    input: email({
+      subject: "Northgate Ventures: Operations Engineer: Application Update",
+      from: { value: [{ address: "talent@northgate.com", name: "Northgate Talent Engine" }] },
+      text: "Hey Joshua, thanks again for interviewing with us. After looping in the team, we've decided not to move forward.",
+    }),
+    want: { status: "rejected", company: "Northgate Ventures", job_title: "Operations Engineer", max_stage: 4, parsed: true },
+  },
+  {
+    name: "Ashby interview confirmation",
+    input: email({
+      subject: "Interview Confirmation - Northgate Ventures",
+      from: { value: [{ address: "no-reply@ashbyhq.com", name: "Northgate Ventures" }] },
+      text: "Hi Joshua, Sending here the new link for your initial interview for the Operations Engineer at Northgate Ventures. We're looking forward to connecting with you!",
+    }),
+    want: { status: "interview scheduled", company: "Northgate Ventures", job_title: "Operations Engineer", parsed: true },
+  },
+  {
+    // Indeed wraps its HTML at fixed widths, so a rejection phrase can be
+    // split across a line break. The later "future openings" must not win.
+    name: "rejection split across a line break beats \"future openings\"",
+    input: email({
+      subject: "An update on your application from Peoplewise",
+      from: { value: [{ address: "noreply@indeed.com", name: "Indeed" }] },
+      text: "Thank you for taking the time to apply for the AI Solutions Engineer position at Peoplewise.\n\nAfter carefully reviewing your application, we've decided to move forward with\nother candidates. While we won't be moving forward with your application for\nthis role, we encourage you to apply for future openings.",
+    }),
+    want: { status: "rejected", company: "Peoplewise", job_title: "AI Solutions Engineer", parsed: true },
+  },
+  {
+    name: "\"won't be moving forward\" alone is a rejection",
+    input: email({
+      subject: "Your application to Brightdesk",
+      from: { value: [{ address: "hr@brightdesk.io", name: "Brightdesk HR" }] },
+      text: "We won't be moving forward with your application at this time. We'll keep your details for future openings.",
+    }),
+    want: { status: "rejected" },
+  },
   {
     name: "unparsed mail is labelled Needs Review",
     input: email({
