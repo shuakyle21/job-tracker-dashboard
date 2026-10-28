@@ -1,39 +1,39 @@
 {
-  "generatedAt": "2026-10-28T05:48:35.732Z",
-  "total": 210,
-  "sent": 210,
+  "generatedAt": "2026-10-28T13:01:32.548Z",
+  "total": 230,
+  "sent": 230,
   "unsent": 0,
-  "replied": 80,
-  "noReply": 130,
-  "open": 141,
-  "replyRate": 0.38095238095238093,
-  "interviewRate": 0.04285714285714286,
-  "ghostRate": 0.6190476190476191,
-  "rejected": 51,
-  "rejectionRate": 0.24285714285714285,
+  "replied": 96,
+  "noReply": 134,
+  "open": 151,
+  "replyRate": 0.41739130434782606,
+  "interviewRate": 0.05217391304347826,
+  "ghostRate": 0.5826086956521739,
+  "rejected": 61,
+  "rejectionRate": 0.26521739130434785,
   "reached": [
-    210,
-    61,
-    17,
-    9,
+    230,
+    69,
+    21,
+    12,
     0
   ],
   "atStage": [
-    149,
-    44,
-    8,
+    161,
+    48,
     9,
+    12,
     0
   ],
   "dropComposition": [
     [
       {
         "status": "Applied",
-        "count": 100
+        "count": 102
       },
       {
         "status": "Rejected",
-        "count": 35
+        "count": 45
       },
       {
         "status": "No Response",
@@ -51,11 +51,11 @@
     [
       {
         "status": "Viewed by Employer",
-        "count": 13
+        "count": 15
       },
       {
         "status": "Applied",
-        "count": 11
+        "count": 13
       },
       {
         "status": "Rejected",
@@ -77,7 +77,7 @@
     [
       {
         "status": "Assessment",
-        "count": 7
+        "count": 8
       },
       {
         "status": "Rejected",
@@ -91,7 +91,11 @@
       },
       {
         "status": "Interviewed",
-        "count": 2
+        "count": 4
+      },
+      {
+        "status": "Assessment",
+        "count": 1
       },
       {
         "status": "In Review",
@@ -105,7 +109,7 @@
     []
   ],
   "rejectedAt": [
-    35,
+    45,
     10,
     1,
     5,
@@ -115,15 +119,15 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 112
+      "count": 116
     },
     {
       "status": "Rejected",
-      "count": 51
+      "count": 61
     },
     {
       "status": "Viewed by Employer",
-      "count": 13
+      "count": 15
     },
     {
       "status": "Closed / Expired",
@@ -135,7 +139,7 @@
     },
     {
       "status": "Assessment",
-      "count": 7
+      "count": 9
     },
     {
       "status": "In Review",
@@ -143,7 +147,7 @@
     },
     {
       "status": "Interviewed",
-      "count": 2
+      "count": 4
     },
     {
       "status": "(blank)",
@@ -153,24 +157,24 @@
   "channels": [
     {
       "name": "Direct / Careers",
-      "sent": 84,
-      "replied": 34,
+      "sent": 94,
+      "replied": 40,
       "unsent": 0,
-      "rate": 0.40476190476190477
+      "rate": 0.425531914893617
     },
     {
       "name": "Jobstreet",
-      "sent": 55,
-      "replied": 13,
+      "sent": 59,
+      "replied": 17,
       "unsent": 0,
-      "rate": 0.23636363636363636
+      "rate": 0.288135593220339
     },
     {
       "name": "LinkedIn",
-      "sent": 32,
-      "replied": 18,
+      "sent": 36,
+      "replied": 22,
       "unsent": 0,
-      "rate": 0.5625
+      "rate": 0.6111111111111112
     },
     {
       "name": "Indeed",
@@ -195,10 +199,17 @@
     },
     {
       "name": "Torre.ai",
-      "sent": 2,
-      "replied": 0,
+      "sent": 3,
+      "replied": 1,
       "unsent": 0,
-      "rate": 0
+      "rate": 0.3333333333333333
+    },
+    {
+      "name": "Online.jobs",
+      "sent": 2,
+      "replied": 1,
+      "unsent": 0,
+      "rate": 0.5
     },
     {
       "name": "(blank)",
@@ -220,13 +231,6 @@
       "replied": 1,
       "unsent": 0,
       "rate": 1
-    },
-    {
-      "name": "Online.jobs",
-      "sent": 1,
-      "replied": 0,
-      "unsent": 0,
-      "rate": 0
     },
     {
       "name": " DICT Digital Workforce Hub",
@@ -269,21 +273,21 @@
     },
     {
       "month": "2026-08",
-      "count": 78
+      "count": 86
     },
     {
       "month": "2026-09",
-      "count": 46
+      "count": 53
     },
     {
       "month": "2026-10",
-      "count": 51
+      "count": 56
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 205
+      "count": 225
     },
     {
       "label": "Onsite",
@@ -301,19 +305,19 @@
     },
     {
       "label": "8–14d",
-      "count": 12
+      "count": 11
     },
     {
       "label": "15–30d",
-      "count": 22
+      "count": 23
     },
     {
       "label": "31–60d",
-      "count": 33
+      "count": 41
     },
     {
       "label": "60d+",
-      "count": 65
+      "count": 67
     }
   ],
   "followUps": {
@@ -322,8 +326,8 @@
     "dueWeek": 0
   },
   "quality": {
-    "resume": 177,
+    "resume": 178,
     "cover": 7,
-    "tailored": 20
+    "tailored": 21
   }
 }
