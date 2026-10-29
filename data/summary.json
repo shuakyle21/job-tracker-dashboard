@@ -1,39 +1,39 @@
 {
-  "generatedAt": "2026-10-29T05:53:30.502Z",
-  "total": 230,
-  "sent": 230,
+  "generatedAt": "2026-10-29T13:09:16.076Z",
+  "total": 249,
+  "sent": 249,
   "unsent": 0,
-  "replied": 96,
-  "noReply": 134,
-  "open": 151,
-  "replyRate": 0.41739130434782606,
-  "interviewRate": 0.05217391304347826,
-  "ghostRate": 0.5826086956521739,
-  "rejected": 61,
-  "rejectionRate": 0.26521739130434785,
+  "replied": 108,
+  "noReply": 141,
+  "open": 164,
+  "replyRate": 0.43373493975903615,
+  "interviewRate": 0.06827309236947791,
+  "ghostRate": 0.5662650602409639,
+  "rejected": 65,
+  "rejectionRate": 0.26104417670682734,
   "reached": [
-    230,
-    69,
-    21,
-    12,
+    249,
+    86,
+    25,
+    17,
     0
   ],
   "atStage": [
-    161,
-    48,
-    9,
-    12,
+    163,
+    61,
+    8,
+    17,
     0
   ],
   "dropComposition": [
     [
       {
         "status": "Applied",
-        "count": 102
+        "count": 103
       },
       {
         "status": "Rejected",
-        "count": 45
+        "count": 44
       },
       {
         "status": "No Response",
@@ -45,25 +45,25 @@
       },
       {
         "status": "(blank)",
-        "count": 1
+        "count": 3
       }
     ],
     [
       {
-        "status": "Viewed by Employer",
-        "count": 15
+        "status": "Applied",
+        "count": 18
       },
       {
-        "status": "Applied",
-        "count": 13
+        "status": "Viewed by Employer",
+        "count": 16
       },
       {
         "status": "Rejected",
-        "count": 10
+        "count": 13
       },
       {
         "status": "In Review",
-        "count": 5
+        "count": 7
       },
       {
         "status": "Closed / Expired",
@@ -72,12 +72,16 @@
       {
         "status": "No Response",
         "count": 2
+      },
+      {
+        "status": "Talent Pool",
+        "count": 2
       }
     ],
     [
       {
         "status": "Assessment",
-        "count": 8
+        "count": 7
       },
       {
         "status": "Rejected",
@@ -87,47 +91,47 @@
     [
       {
         "status": "Rejected",
-        "count": 5
+        "count": 7
       },
       {
         "status": "Interviewed",
-        "count": 4
+        "count": 5
       },
       {
         "status": "Assessment",
-        "count": 1
-      },
-      {
-        "status": "In Review",
-        "count": 1
+        "count": 2
       },
       {
         "status": "Applied",
+        "count": 2
+      },
+      {
+        "status": "In Review",
         "count": 1
       }
     ],
     []
   ],
   "rejectedAt": [
-    45,
-    10,
+    44,
+    13,
     1,
-    5,
+    7,
     0
   ],
   "usedExplicitStage": true,
   "byStatus": [
     {
       "status": "Applied",
-      "count": 116
+      "count": 123
     },
     {
       "status": "Rejected",
-      "count": 61
+      "count": 65
     },
     {
       "status": "Viewed by Employer",
-      "count": 15
+      "count": 16
     },
     {
       "status": "Closed / Expired",
@@ -143,24 +147,28 @@
     },
     {
       "status": "In Review",
-      "count": 6
+      "count": 8
     },
     {
       "status": "Interviewed",
-      "count": 4
+      "count": 5
     },
     {
       "status": "(blank)",
-      "count": 1
+      "count": 3
+    },
+    {
+      "status": "Talent Pool",
+      "count": 2
     }
   ],
   "channels": [
     {
       "name": "Direct / Careers",
-      "sent": 94,
-      "replied": 40,
+      "sent": 108,
+      "replied": 49,
       "unsent": 0,
-      "rate": 0.425531914893617
+      "rate": 0.4537037037037037
     },
     {
       "name": "Jobstreet",
@@ -171,10 +179,10 @@
     },
     {
       "name": "LinkedIn",
-      "sent": 36,
-      "replied": 22,
+      "sent": 37,
+      "replied": 23,
       "unsent": 0,
-      "rate": 0.6111111111111112
+      "rate": 0.6216216216216216
     },
     {
       "name": "Indeed",
@@ -185,10 +193,10 @@
     },
     {
       "name": "Direct Email",
-      "sent": 12,
+      "sent": 14,
       "replied": 3,
       "unsent": 0,
-      "rate": 0.25
+      "rate": 0.21428571428571427
     },
     {
       "name": "Kalibrr",
@@ -196,6 +204,13 @@
       "replied": 2,
       "unsent": 0,
       "rate": 0.5
+    },
+    {
+      "name": "(blank)",
+      "sent": 3,
+      "replied": 3,
+      "unsent": 0,
+      "rate": 1
     },
     {
       "name": "Torre.ai",
@@ -210,13 +225,6 @@
       "replied": 1,
       "unsent": 0,
       "rate": 0.5
-    },
-    {
-      "name": "(blank)",
-      "sent": 1,
-      "replied": 1,
-      "unsent": 0,
-      "rate": 1
     },
     {
       "name": "Koronadal City",
@@ -273,7 +281,7 @@
     },
     {
       "month": "2026-08",
-      "count": 86
+      "count": 105
     },
     {
       "month": "2026-09",
@@ -281,13 +289,13 @@
     },
     {
       "month": "2026-10",
-      "count": 56
+      "count": 54
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 225
+      "count": 242
     },
     {
       "label": "Onsite",
@@ -295,7 +303,7 @@
     },
     {
       "label": "Unspecified",
-      "count": 1
+      "count": 3
     }
   ],
   "ageing": [
@@ -305,7 +313,7 @@
     },
     {
       "label": "8–14d",
-      "count": 15
+      "count": 13
     },
     {
       "label": "15–30d",
@@ -317,7 +325,7 @@
     },
     {
       "label": "60d+",
-      "count": 75
+      "count": 88
     }
   ],
   "followUps": {
