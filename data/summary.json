@@ -1,39 +1,39 @@
 {
-  "generatedAt": "2026-10-29T22:48:15.419Z",
-  "total": 249,
-  "sent": 249,
+  "generatedAt": "2026-10-30T05:55:01.382Z",
+  "total": 259,
+  "sent": 259,
   "unsent": 0,
-  "replied": 108,
-  "noReply": 141,
-  "open": 164,
-  "replyRate": 0.43373493975903615,
-  "interviewRate": 0.06827309236947791,
-  "ghostRate": 0.5662650602409639,
-  "rejected": 65,
-  "rejectionRate": 0.26104417670682734,
+  "replied": 113,
+  "noReply": 146,
+  "open": 172,
+  "replyRate": 0.4362934362934363,
+  "interviewRate": 0.07722007722007722,
+  "ghostRate": 0.5637065637065637,
+  "rejected": 67,
+  "rejectionRate": 0.25868725868725867,
   "reached": [
-    249,
-    86,
-    25,
-    17,
+    259,
+    93,
+    29,
+    20,
     0
   ],
   "atStage": [
-    163,
-    61,
-    8,
-    17,
+    166,
+    64,
+    9,
+    20,
     0
   ],
   "dropComposition": [
     [
       {
         "status": "Applied",
-        "count": 103
+        "count": 105
       },
       {
         "status": "Rejected",
-        "count": 44
+        "count": 45
       },
       {
         "status": "No Response",
@@ -51,11 +51,11 @@
     [
       {
         "status": "Applied",
-        "count": 18
+        "count": 20
       },
       {
         "status": "Viewed by Employer",
-        "count": 16
+        "count": 17
       },
       {
         "status": "Rejected",
@@ -81,7 +81,7 @@
     [
       {
         "status": "Assessment",
-        "count": 7
+        "count": 8
       },
       {
         "status": "Rejected",
@@ -91,7 +91,7 @@
     [
       {
         "status": "Rejected",
-        "count": 7
+        "count": 8
       },
       {
         "status": "Interviewed",
@@ -99,11 +99,11 @@
       },
       {
         "status": "Assessment",
-        "count": 2
+        "count": 3
       },
       {
         "status": "Applied",
-        "count": 2
+        "count": 3
       },
       {
         "status": "In Review",
@@ -113,25 +113,29 @@
     []
   ],
   "rejectedAt": [
-    44,
+    45,
     13,
     1,
-    7,
+    8,
     0
   ],
   "usedExplicitStage": true,
   "byStatus": [
     {
       "status": "Applied",
-      "count": 123
+      "count": 128
     },
     {
       "status": "Rejected",
-      "count": 65
+      "count": 67
     },
     {
       "status": "Viewed by Employer",
-      "count": 16
+      "count": 17
+    },
+    {
+      "status": "Assessment",
+      "count": 11
     },
     {
       "status": "Closed / Expired",
@@ -139,10 +143,6 @@
     },
     {
       "status": "No Response",
-      "count": 9
-    },
-    {
-      "status": "Assessment",
       "count": 9
     },
     {
@@ -165,10 +165,10 @@
   "channels": [
     {
       "name": "Direct / Careers",
-      "sent": 108,
-      "replied": 49,
+      "sent": 115,
+      "replied": 52,
       "unsent": 0,
-      "rate": 0.4537037037037037
+      "rate": 0.45217391304347826
     },
     {
       "name": "Jobstreet",
@@ -179,24 +179,24 @@
     },
     {
       "name": "LinkedIn",
-      "sent": 37,
-      "replied": 23,
+      "sent": 38,
+      "replied": 24,
       "unsent": 0,
-      "rate": 0.6216216216216216
+      "rate": 0.631578947368421
     },
     {
       "name": "Indeed",
-      "sent": 14,
-      "replied": 5,
+      "sent": 15,
+      "replied": 6,
       "unsent": 0,
-      "rate": 0.35714285714285715
+      "rate": 0.4
     },
     {
       "name": "Direct Email",
-      "sent": 14,
+      "sent": 15,
       "replied": 3,
       "unsent": 0,
-      "rate": 0.21428571428571427
+      "rate": 0.2
     },
     {
       "name": "Kalibrr",
@@ -281,7 +281,7 @@
     },
     {
       "month": "2026-08",
-      "count": 105
+      "count": 115
     },
     {
       "month": "2026-09",
@@ -295,7 +295,7 @@
   "workSetup": [
     {
       "label": "Remote",
-      "count": 242
+      "count": 252
     },
     {
       "label": "Onsite",
@@ -313,19 +313,19 @@
     },
     {
       "label": "8–14d",
-      "count": 13
+      "count": 7
     },
     {
       "label": "15–30d",
-      "count": 24
+      "count": 30
     },
     {
       "label": "31–60d",
-      "count": 34
+      "count": 32
     },
     {
       "label": "60d+",
-      "count": 88
+      "count": 98
     }
   ],
   "followUps": {
