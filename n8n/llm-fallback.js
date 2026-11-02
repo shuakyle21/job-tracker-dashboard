@@ -52,6 +52,11 @@ let max_stage = original.max_stage;
 // Same normalization as parse-email.js, so an agent-filled key lands on the
 // row a later rule-parsed email about the same job will target.
 const norm = (s) => String(s).toLowerCase().replace(/\s+/g, ' ').replace(/ ?\| ?/g, '|').trim();
+// Mirrors parse-email.js's BOILERPLATE_TITLE — scripts/verify.mjs checks the
+// two are identical. Subject boilerplate is no job title, from the subject or
+// from the model, and a key built on one starts a duplicate Feed row.
+const BOILERPLATE_TITLE = /\b(?:your application|application (?:received|update|status)|new application|we(?:'ve| have)? (?:got|received)|keep track|survey|stay connected|complete your profile)\b|^(?:thank(?:s| you)|hi|hello|dear|join|update)\b/i;
+const asTitle = (s) => (s && !BOILERPLATE_TITLE.test(s) ? s : '');
 // Matches a board's display names too ("Indeed Apply", "LinkedIn Jobs").
 const BOARD = /^(?:linkedin|indeed|jobstreet|kalibrr|onlinejobs(?:\.ph)?|torre)\b/i;
 
@@ -82,7 +87,7 @@ if (!parsed) {
     // a hiring manager's "send me your CV", often names the role only there.
     const subjectTitle = String(original.subject || '')
       .replace(/^(?:\s*(?:re|fwd?)\s*:\s*)+/i, '').replace(/\s+/g, ' ').trim().slice(0, 80);
-    job_title = original.job_title || shown(guess?.job_title) || subjectTitle;
+    job_title = original.job_title || asTitle(shown(guess?.job_title)) || asTitle(subjectTitle);
 
     // No employer named anywhere: file it under the person instead
     // ("Jane Doe <jane@gmail.com>"). The key uses the address, which stays the

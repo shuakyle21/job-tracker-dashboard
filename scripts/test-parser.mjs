@@ -43,7 +43,8 @@ const cases = [
     input: email({
       subject: "Your application was sent to Acme Robotics",
       from: { value: [{ address: "jobs-noreply@linkedin.com", name: "LinkedIn" }] },
-      text: "Your application was submitted to Acme Robotics for Backend Engineer.",
+      // LinkedIn's real layout: company, then the title on its own line.
+      text: "Your application was sent to Acme Robotics\n\nBackend Engineer\nAcme Robotics\nMandaluyong",
     }),
     want: { status: "applied", source: "LinkedIn", parsed: true, max_stage: 1 },
   },
@@ -488,6 +489,136 @@ const cases = [
       text: "Here are stories we think you will like.",
     }),
     want: { status_label: "Needs Review", job_platform: "Company Website" },
+  },
+  // The rest came from Feed duplicates: each of these once wrote a second row
+  // for an application that already had one, under a boilerplate "title".
+  {
+    // LinkedIn's "viewed" mail names no job. The subject is not a title, and a
+    // key built from it starts a row no other email about the job will match.
+    name: "LinkedIn viewed with no job named stays unparsed",
+    input: email({
+      subject: "Your application was viewed by Emerson",
+      from: { value: [{ address: "jobs-noreply@linkedin.com", name: "LinkedIn" }] },
+      text: "----------------------------------------\n\nThis email was intended for Joshua Klyne Pudadera",
+    }),
+    want: { job_title: "", parsed: false },
+  },
+  {
+    name: "SmartRecruiters 'the position of <T>'",
+    input: email({
+      subject: "Thank you for applying to Arch Global Services (Philippines) Inc.",
+      from: { value: [{ address: "notification@smartrecruiters.com", name: "Arch Global Services (Philippines) Inc. Hiring Team" }] },
+      text: "Dear Joshua Klyne,\n\nThank you for submitting your application for the position of 2026-7929 Data Engineer-Mid (Night Shift). Your application is queued for review and we will contact you shortly.",
+    }),
+    want: { application_key: "arch global services (philippines) inc.|2026-7929 data engineer-mid (night shift)" },
+  },
+  {
+    name: "Avature 'the role of <T>' under a survey subject",
+    input: email({
+      subject: "Thank you and Survey Request",
+      from: { value: [{ address: "talent@avature.lenovo.net", name: "Lenovo Talent" }] },
+      text: "Hello Joshua,\n\n Thank you for your application to Lenovo.\n\n We appreciate you applying for the role of Data Analyst Intern. Your application has been received.",
+    }),
+    want: { application_key: "lenovo|data analyst intern" },
+  },
+  {
+    name: "'New Application' subject, title in the body",
+    input: email({
+      subject: "New Application  |  Complete your profile now",
+      from: { value: [{ address: "lisa@people2people.com.au", name: "people2people" }] },
+      text: "Hi Joshua Klyne,\nThanks for applying for the position of Data Analyst. We'll review it and consider you for any other appropriate opportunities.",
+    }),
+    want: { application_key: "people2people|data analyst" },
+  },
+  {
+    name: "micro1 'Update about your application for <T>'",
+    input: email({
+      subject: "Update about your application for Data Entry Keyer",
+      from: { value: [{ address: "support@micro1.ai", name: "micro1" }] },
+      text: "Hi Joshua Klyne,\n Thank you for completing your Data Entry Keyer AI interview with micro1. After a thorough review of your interview, we found that your results did not align with our certification criteria at this time.",
+    }),
+    want: { job_title: "Data Entry Keyer" },
+  },
+  {
+    // A recruiter's own name as sender, a title hard-wrapped inside markdown.
+    name: "recruiter-sent confirmation names the employer from the domain",
+    input: email({
+      subject: "STAFFVIRTUAL Application Received (JOSHUA PUDADERA)",
+      from: { value: [{ address: "jessa@staffvirtual.com", name: "Jessa Grace Morelos" }] },
+      text: "Greetings from STAFFVIRTUAL!\n\nWe would like to inform you that we have received your application for\nthe *Sales\nSupport Specialist (Advanced Excel | VLOOKUP & Pivot Tables) - Remote\n*position.\nWe appreciate your interest in our organization",
+    }),
+    want: { company: "STAFFVIRTUAL", job_title: "Sales Support Specialist (Advanced Excel | VLOOKUP & Pivot Tables) - Remote" },
+  },
+  {
+    name: "Lever 'apply for the <T> at <C>!' and 'joining our team' is no employer",
+    input: email({
+      subject: "Thank you for your application to join Spreetail!",
+      from: { value: [{ address: "no-reply@hire.lever.co", name: "Spreetail" }] },
+      text: "Hi Joshua, \n\nThank you for taking the time to apply for the RPA & AI Automation Engineer at Spreetail! We appreciate your interest in joining our team and wanted to inform you your application is in the review stage.",
+    }),
+    want: { application_key: "spreetail|rpa & ai automation engineer" },
+  },
+  {
+    // "chosen to proceed with other candidates" is a rejection, however warmly
+    // it mentions the talent pool, and the company is not the job title.
+    name: "Emapta 'chosen to proceed with other candidates'",
+    input: email({
+      subject: "Thanks for Applying to Emapta - Let’s stay connected!",
+      from: { value: [{ address: "careers@emapta.com", name: "Emapta Careers" }] },
+      // As n8n receives it: Gmail's text part, hard-wrapped at ~78 columns.
+      text: "Thanks for Applying to Emapta - Let’s stay connected!\n\nDear Joshua Klyne Pudadera,\n\nThank you for expressing interest in the Analytics Engineer (Marketing\nAnalytics) | WFH | Night Shift | Day 1 HMO | Weekends Off role with us. We\ngenuinely appreciate the time and effort you have invested into your\napplication. However, after careful consideration, we've chosen to\nproceed with other candidates whose qualifications more closely align with the\nspecific requirements of the role at this time.\n\nAs we continuously cultivate our talent pool, we would like to retain your profile.",
+    }),
+    want: { status: "rejected", application_key: "emapta|analytics engineer (marketing analytics)|wfh|night shift|day 1 hmo|weekends off" },
+  },
+  {
+    // Hard-wrapped body, and a display name without the "Inc." the email uses.
+    name: "BambooHR wrapped body, company takes the email's legal name",
+    input: email({
+      subject: "Thank you for applying at Appficiency",
+      from: { value: [{ address: "notifications@app.bamboohr.com", name: "Appficiency" }] },
+      text: "Thanks Joshua Klyne!\n\nWe received your application.\n\nHi Joshua Klyne,\n\nThank you for your interest in Appficiency Inc. and for taking the time to apply\nfor the Junior Solutions Architect position. We just wanted to let you know that\nwe received your application.",
+    }),
+    want: { application_key: "appficiency inc.|junior solutions architect" },
+  },
+  {
+    name: "iCIMS 'application to the <T> position at <C>'",
+    input: email({
+      subject: "Thank You For Your Application",
+      from: { value: [{ address: "codev+autoreply@talent.icims.com", name: "CoDev @ icims" }] },
+      text: "Hi Joshua Klyne, \n\nThank you for your recent application to the Full Stack React Developer (2026-3066) position at CoDev.\n \nYour submission will be reviewed.",
+    }),
+    want: { application_key: "codev|full stack react developer (2026-3066)" },
+  },
+  {
+    // The title's own "–" is not the subject separator, and the only rejection
+    // signal is the template name in LinkedIn's tracking links.
+    name: "LinkedIn rejection 'Your application to <T> at <C>'",
+    input: email({
+      subject: "Your application to Venture Factory Software Engineer Level I – Java/Python/AI (Work From Home)  at Nelnet Philippines Inc",
+      from: { value: [{ address: "jobs-noreply@linkedin.com", name: "LinkedIn" }] },
+      text: "Your update from Nelnet Philippines Inc\n\n----\n\nLearn why we included this: https://www.linkedin.com/help/linkedin/answer/4788?lang=en&lipi=urn%3Ali%3Apage%3Aemail_email_jobs_application_rejected_01%3BOlxA",
+    }),
+    want: { status: "rejected", application_key: "nelnet philippines inc|venture factory software engineer level i – java/python/ai (work from home)" },
+  },
+  {
+    // A reply thread: the quoted history names the job in half-sentences, and
+    // the subject's title is cut at a bracket. Neither is a title.
+    name: "reply thread with quoted history stays unparsed",
+    input: email({
+      subject: "Re: [Applicant - IRDSS Project] Project Technical Assistant III_Pudadera",
+      from: { value: [{ address: "diwa.upmin@up.edu.ph", name: "Mindanao Center for Disease Watch and Analytics UP Mindanao" }] },
+      text: "Thank you for taking the time to apply at the DiWA Center.\n\nFollowing your non-attendance at the scheduled interview slot, we are\nmoving forward with other candidates.\n\nOn Wed, Jun 17, 2026 at 9:00 AM Joshua Klyne Pudadera <me@example.com>\nwrote:\n\n> I am applying for the Project Technical Assistant II for the project.",
+    }),
+    want: { status: "rejected", job_title: "", parsed: false },
+  },
+  {
+    name: "Teamtailor 'Name - Company' sender and 'the role of <T>'",
+    input: email({
+      subject: "Thank you for your application!",
+      from: { value: [{ address: "edgar.deocadiz@burt.teamtailor-mail.com", name: "Edgar Deocadiz - Burt Intelligence" }] },
+      text: "Thank you for sending in your application for the role of Solutions Engineer (Junior) Philippines. We're so happy that you're interested in Burt Intelligence!",
+    }),
+    want: { application_key: "burt intelligence|solutions engineer (junior) philippines" },
   },
   {
     name: "date is normalised to ISO",

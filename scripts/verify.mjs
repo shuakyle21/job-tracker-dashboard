@@ -244,6 +244,12 @@ async function assertIngestWorkflow() {
     Object.keys(parserStages).length > 0
       && JSON.stringify(parserStages) === JSON.stringify(stageBlock(llmFallbackFile)));
 
+  // The fallback's copy of BOILERPLATE_TITLE: if they drift, the fallback
+  // accepts a subject-line "title" the parser rejects, and duplicates return.
+  const boilerplate = (src) => src.match(/^const BOILERPLATE_TITLE = (.+);$/m)?.[1] ?? "";
+  check("LLM fallback BOILERPLATE_TITLE matches the parser's",
+    boilerplate(parserFile).length > 0 && boilerplate(parserFile) === boilerplate(llmFallbackFile));
+
   const markIds = byName["Mark Email Processed"]?.parameters.labelIds ?? [];
   check("processed email gets scope, processed and status labels",
     markIds[0]?.includes(labels.scope) && /\.parsed\b/.test(markIds[0])

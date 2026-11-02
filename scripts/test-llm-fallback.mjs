@@ -191,6 +191,25 @@ for (const [field, want] of Object.entries(unparsedRow())) {
 }
 
 {
+  // LinkedIn's "viewed" mail names no job. The subject is boilerplate, not a
+  // title: keyed on it, this email once started its own Feed row.
+  const row = unparsedRow({ company: "Emerson", job_title: "", application_key: "", job_platform: "LinkedIn",
+    subject: "Your application was viewed by Emerson", raw_text: "Your application was viewed by Emerson" });
+  const got = apply(agentReply({ status: "viewed by employer", company: "Emerson", job_title: null, max_stage: 2 }), row);
+  expect("boilerplate subject is not used as the title", got.job_title, "");
+  expect("boilerplate subject → stays at Needs Review", got.parsed, false);
+}
+
+{
+  // The model can quote boilerplate from the email too ("Hi Joshua Klyne, the
+  // Software Developer"); that is no title either.
+  const row = unparsedRow({ company: "HaloCheck Sdn Bhd", job_title: "", application_key: "", job_platform: "JobStreet",
+    subject: "Your application", raw_text: "Hi Joshua Klyne, the Software Developer role at HaloCheck Sdn Bhd" });
+  const got = apply(agentReply({ status: "applied", company: null, job_title: "Hi Joshua Klyne, the Software Developer", max_stage: 1 }), row);
+  expect("boilerplate model title is rejected", got.parsed, false);
+}
+
+{
   const row = unparsedRow({ company: "", application_key: "", job_platform: "Direct Email",
     contact_name: "", contact_address: "hiring.ph@gmail.com" });
   const got = apply(agentReply({ status: "applied", company: null, job_title: null, max_stage: 1 }), row);
