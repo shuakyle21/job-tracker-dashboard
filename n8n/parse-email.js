@@ -312,10 +312,8 @@ const EXTRACTORS = [
   [body, /this position:\s*([^\n]+)/i, 1, 0],
   // Ashby interview mail: "your initial interview for the <T> at <C>."
   [prose, /interview for (?:the )?((?:(?![.!]\s).)+?) (?:role |position )?at ([^\n.!,]+)/i, 1, 2],
-  // JobStreet: "your application for <T> was successfully submitted to <C>".
-  // A long title wraps onto a second line; allow one wrap, or the employer is
-  // lost and the email stops at Needs Review.
-  // Read unwrapped: JobStreet and SEEK wrap the employer onto the next line
+  // JobStreet and SEEK: "your application for <T> was successfully submitted
+  // to <C>". Read unwrapped: both wrap the title and the employer onto the next line
   // ("submitted to Digital\nRoom (Philippines) , Inc."). It ends where their
   // boilerplate starts, so the "Inc." keeps its period.
   [prose, /application for (.+?) was successfully submitted to (.+?)(?=\s*\n|\s+(?:each\b|view\b|%%|jobstreet\b)|\.\s+each\b|\.?\s*$)/i, 1, 2],
