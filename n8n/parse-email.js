@@ -199,8 +199,8 @@ const localPart = (from.split('@')[0] || '').toLowerCase();
 const firstName = company.toLowerCase().split(/\s+/)[0] || '';
 if (firstName.length >= 3 && localPart.includes(firstName) && fromDomainLabel.length >= 3
     && !ATS_DOMAINS.test(fromDomainLabel + '.') && !company.toLowerCase().includes(fromDomainLabel)) {
-  const prose = (subject + '\n' + body).replace(/\S*(?:https?:\/\/|www\.|@)\S*/g, ' ');
-  const named = prose.match(new RegExp('\\b' + fromDomainLabel + '\\b', 'i'));
+  const withoutUrls = (subject + '\n' + body).replace(/\S*(?:https?:\/\/|www\.|@)\S*/g, ' ');
+  const named = withoutUrls.match(new RegExp('\\b' + fromDomainLabel + '\\b', 'i'));
   if (named) company = named[0];
 }
 
