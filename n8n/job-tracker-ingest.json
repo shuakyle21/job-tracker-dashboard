@@ -1024,7 +1024,7 @@
       "main": [
         [
           {
-            "node": "Upsert Feed",
+            "node": "Mark Email Processed",
             "type": "main",
             "index": 0
           }
@@ -1053,7 +1053,7 @@
       "main": [
         [
           {
-            "node": "Loop Feed Rows",
+            "node": "Upsert Feed",
             "type": "main",
             "index": 0
           }
@@ -1064,7 +1064,7 @@
       "main": [
         [
           {
-            "node": "Mark Email Processed",
+            "node": "Loop Feed Rows",
             "type": "main",
             "index": 0
           }

@@ -592,13 +592,16 @@ const workflow = {
       ],
     },
     "Write to Inbox": { main: one("Loop Feed Rows") },
-    // Output 0 is "done" (every merged row, once the loop finishes) and
+    // Output 0 is "done" (every written row, once the loop finishes) and
     // output 1 is "loop" (the next single email to look up) — Loop Over
-    // Items always numbers them in that order.
-    "Loop Feed Rows": { main: [one("Upsert Feed")[0], one("Find Feed Row")[0]] },
+    // Items always numbers them in that order. The upsert is inside the loop
+    // so the next email's lookup sees this one's write: two emails about the
+    // same job in one run must merge into each other, not both into the row
+    // as it was before the run (the last write won, and rejections regressed).
+    "Loop Feed Rows": { main: [one("Mark Email Processed")[0], one("Find Feed Row")[0]] },
     "Find Feed Row": { main: one("Merge Into Feed") },
-    "Merge Into Feed": { main: one("Loop Feed Rows") },
-    "Upsert Feed": { main: one("Mark Email Processed") },
+    "Merge Into Feed": { main: one("Upsert Feed") },
+    "Upsert Feed": { main: one("Loop Feed Rows") },
     "Write to Needs Review": { main: one("Mark Email Processed") },
     "Ingest Backlog Check": { main: one("Find Stale Job Mail") },
     "Find Stale Job Mail": { main: one("Stale Job Mail Alarm") },
