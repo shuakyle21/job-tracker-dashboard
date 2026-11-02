@@ -244,6 +244,12 @@ async function assertIngestWorkflow() {
     Object.keys(parserStages).length > 0
       && JSON.stringify(parserStages) === JSON.stringify(stageBlock(llmFallbackFile)));
 
+  // The fallback's copy of BOILERPLATE_TITLE: if they drift, the fallback
+  // accepts a subject-line "title" the parser rejects, and duplicates return.
+  const boilerplate = (src) => src.match(/^const BOILERPLATE_TITLE = (.+);$/m)?.[1] ?? "";
+  check("LLM fallback BOILERPLATE_TITLE matches the parser's",
+    boilerplate(parserFile).length > 0 && boilerplate(parserFile) === boilerplate(llmFallbackFile));
+
   const markIds = byName["Mark Email Processed"]?.parameters.labelIds ?? [];
   check("processed email gets scope, processed and status labels",
     markIds[0]?.includes(labels.scope) && /\.parsed\b/.test(markIds[0])
@@ -251,13 +257,27 @@ async function assertIngestWorkflow() {
 
   // The label must be applied after the rows are written. Inverted, a crash
   // between the two consumes the email without producing its row. On the
-  // classified branch the last write is the Feed upsert.
+  // classified branch the last write is the Feed upsert, inside the loop, so
+  // the label hangs off the loop's "done" output.
   const labelSources = Object.entries(wf.connections)
     .filter(([, c]) => c.main.some((o) => o.some((t) => t.node === "Mark Email Processed")))
     .map(([s]) => s);
   check("label is applied after all Airtable writes",
-    labelSources.length === 2 && labelSources.includes("Upsert Feed") && labelSources.includes("Write to Needs Review"),
+    labelSources.length === 2 && labelSources.includes("Loop Feed Rows") && labelSources.includes("Write to Needs Review")
+      && wf.connections["Loop Feed Rows"]?.main[0]?.[0]?.node === "Mark Email Processed",
     labelSources.join(", "));
+
+  // Both parse paths must arrive at Classified? as one batch, or the slower
+  // LLM batch reaches Loop Feed Rows after it finished and Upsert Feed gets
+  // raw Airtable records with no Application Key.
+  const into = (n) => Object.entries(wf.connections)
+    .filter(([, c]) => c.main.some((o) => o.some((t) => t.node === n))).map(([src]) => src);
+  check("rules and LLM paths join before Classified?",
+    byName["Join Parsed Paths"]?.type === "n8n-nodes-base.merge"
+      && byName["Join Parsed Paths"]?.parameters.mode === "append"
+      && JSON.stringify(into("Classified?")) === JSON.stringify(["Join Parsed Paths"])
+      && into("Join Parsed Paths").sort().join() === "Apply LLM Fallback,Needs LLM Fallback?",
+    into("Classified?").join(", "));
 
   check("unclassified email has its own branch",
     wf.connections["Classified?"]?.main[1]?.[0]?.node === "Write to Needs Review");
@@ -294,14 +314,20 @@ async function assertIngestWorkflow() {
   // where every search misses collapses to one output item paired with every
   // input, which throws "Multiple matches" in Merge Into Feed (hit at 36
   // emails in production). Loop Feed Rows pins batch size to 1 so the
-  // collapse can't happen, done -> Upsert Feed and loop -> Find Feed Row.
-  check("Feed row lookup runs one email at a time",
+  // collapse can't happen.
+  //
+  // Each email's upsert also runs inside the loop, before the next lookup.
+  // With the upsert after the loop, two emails about one job in the same run
+  // (a confirmation and its rejection) both merged against the row as it was
+  // before the run, and the one written last won: seven rejections came back
+  // as "Applied" in one backfill.
+  check("Feed row lookup runs one email at a time, each written before the next is read",
     byName["Loop Feed Rows"]?.type === "n8n-nodes-base.splitInBatches"
       && byName["Loop Feed Rows"]?.parameters.batchSize === 1
       && wf.connections["Write to Inbox"]?.main[0]?.[0]?.node === "Loop Feed Rows"
-      && wf.connections["Loop Feed Rows"]?.main[0]?.[0]?.node === "Upsert Feed"
       && wf.connections["Loop Feed Rows"]?.main[1]?.[0]?.node === "Find Feed Row"
-      && wf.connections["Merge Into Feed"]?.main[0]?.[0]?.node === "Loop Feed Rows");
+      && wf.connections["Merge Into Feed"]?.main[0]?.[0]?.node === "Upsert Feed"
+      && wf.connections["Upsert Feed"]?.main[0]?.[0]?.node === "Loop Feed Rows");
 
   check("Inbox and Needs Review write to distinct Airtable tables",
     byName["Write to Inbox"]?.parameters.table?.value !== byName["Write to Needs Review"]?.parameters.table?.value);

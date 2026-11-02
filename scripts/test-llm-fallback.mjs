@@ -166,5 +166,69 @@ for (const [field, want] of Object.entries(unparsedRow())) {
   expect("job-board email without a company stays unparsed", got.parsed, false);
 }
 
+{
+  // The live failure (execution 2361): the rules missed the employer, the
+  // model found it in the body. The key must use the company, not the person.
+  const row = unparsedRow({ company: "", job_title: "Junior Software Engineer", application_key: "",
+    status: "rejected", contact_name: "Careers", contact_address: "careers@stayfinance.com.au",
+    raw_text: "Thank you for applying to Stay Finance Pty Ltd. Unfortunately ..." });
+  const got = apply(agentReply({ status: "rejected", company: "Stay Finance Pty Ltd", job_title: null, max_stage: 1 }), row);
+  expect("model-found company → key uses the company", got.application_key, "stay finance pty ltd|junior software engineer");
+  expect("model-found company → confidence medium", got.confidence, "medium");
+}
+
+{
+  // "Send me your CV": no employer anywhere, so the person stands in for it.
+  const row = unparsedRow({ company: "", job_title: "", application_key: "", job_platform: "Company Website",
+    contact_name: "Jane Doe", contact_address: "jane.doe@gmail.com",
+    subject: "Re: Virtual Assistant", raw_text: "Hi, send me your CV and I'll take a look." });
+  const got = apply(agentReply({ status: "applied", company: null, job_title: null, max_stage: 1 }), row);
+  expect("no company → company is the contact", got.company, "Jane Doe <jane.doe@gmail.com>");
+  expect("no company, no title → title from the subject", got.job_title, "Virtual Assistant");
+  expect("no company → key uses the address", got.application_key, "jane.doe@gmail.com|virtual assistant");
+  expect("no company → parsed", got.parsed, true);
+  expect("no company → confidence low", got.confidence, "low");
+}
+
+{
+  // LinkedIn's "viewed" mail names no job. The subject is boilerplate, not a
+  // title: keyed on it, this email once started its own Feed row.
+  const row = unparsedRow({ company: "Emerson", job_title: "", application_key: "", job_platform: "LinkedIn",
+    subject: "Your application was viewed by Emerson", raw_text: "Your application was viewed by Emerson" });
+  const got = apply(agentReply({ status: "viewed by employer", company: "Emerson", job_title: null, max_stage: 2 }), row);
+  expect("boilerplate subject is not used as the title", got.job_title, "");
+  expect("boilerplate subject → stays at Needs Review", got.parsed, false);
+}
+
+{
+  // The model can quote boilerplate from the email too ("Hi Joshua Klyne, the
+  // Software Developer"); that is no title either.
+  const row = unparsedRow({ company: "HaloCheck Sdn Bhd", job_title: "", application_key: "", job_platform: "JobStreet",
+    subject: "Your application", raw_text: "Hi Joshua Klyne, the Software Developer role at HaloCheck Sdn Bhd" });
+  const got = apply(agentReply({ status: "applied", company: null, job_title: "Hi Joshua Klyne, the Software Developer", max_stage: 1 }), row);
+  expect("boilerplate model title is rejected", got.parsed, false);
+}
+
+{
+  const row = unparsedRow({ company: "", application_key: "", job_platform: "Direct Email",
+    contact_name: "", contact_address: "hiring.ph@gmail.com" });
+  const got = apply(agentReply({ status: "applied", company: null, job_title: null, max_stage: 1 }), row);
+  expect("contact without a name → bare address", got.company, "hiring.ph@gmail.com");
+}
+
+{
+  // A newsletter: the model says it isn't job mail. A contact doesn't change that.
+  const row = unparsedRow({ company: "", application_key: "", contact_name: "Jane", contact_address: "jane@gmail.com" });
+  const got = apply(agentReply({ status: null, company: null, job_title: null, max_stage: 1 }), row);
+  expect("status null with a contact stays unparsed", got.parsed, false);
+}
+
+{
+  const boardOnly = unparsedRow({ company: "", job_platform: "Indeed", application_key: "",
+    contact_name: "Indeed Apply", contact_address: "indeedapply@indeed.com" });
+  const got = apply(agentReply({ status: "applied", company: null, job_title: null, max_stage: 1 }), boardOnly);
+  expect("job-board email with a contact still stays unparsed", got.parsed, false);
+}
+
 console.log(failures ? `\n${failures} check(s) failed\n` : "\nAll LLM fallback checks passed\n");
 process.exit(failures ? 1 : 0);

@@ -360,6 +360,20 @@ const nodes = [
     name: "Apply LLM Fallback",
   },
   {
+    // Rule-parsed and LLM-parsed emails must reach Classified? as one batch.
+    // Without this, the rules branch arrived first, Loop Feed Rows finished,
+    // and the LLM branch arrived minutes later (the Agent is slow): the loop
+    // passed that second batch's raw Airtable records straight to Upsert Feed,
+    // which failed with "Record must include columns to merge on". Append
+    // still runs when only one branch has items.
+    parameters: { mode: "append" },
+    type: "n8n-nodes-base.merge",
+    typeVersion: 3.2,
+    position: [960, 340],
+    id: "join-parsed",
+    name: "Join Parsed Paths",
+  },
+  {
     parameters: {
       conditions: {
         options: { caseSensitive: true, leftValue: "", typeValidation: "strict", version: 2 },
@@ -410,8 +424,10 @@ const nodes = [
       // typed by hand ("va masters | developer") differ from generated ones
       // ("va masters|developer") only in case and spacing, and an exact
       // comparison gave that application two Feed rows. "[|]" rather than
-      // "\\|" keeps backslashes out of the formula.
-      filterByFormula: ex(`{{ ${JSON.stringify(FEED_KEY_FORMULA + " = ")} + JSON.stringify($('Parse Job Email').item.json.application_key) }}`),
+      // "\\|" keeps backslashes out of the formula. The key comes from
+      // Classified?, after the LLM fallback: Parse Job Email's is still
+      // empty for an email the LLM completed.
+      filterByFormula: ex(`{{ ${JSON.stringify(FEED_KEY_FORMULA + " = ")} + JSON.stringify($('Classified?').item.json.application_key) }}`),
       returnAll: false,
       limit: 1,
       options: {},
@@ -447,16 +463,18 @@ const nodes = [
       // $json here is the Airtable API response, not the email — the message id
       // has to come from the parser explicitly. This is the single most common
       // way a workflow like this breaks after someone inserts a node.
-      messageId: ex("{{ $('Parse Job Email').item.json.message_id }}"),
+      // Classified?, not Parse Job Email, so an email the LLM completed gets
+      // its real status label instead of Needs Review.
+      messageId: ex("{{ $('Classified?').item.json.message_id }}"),
       // "Job Application" (so keyword-matched mail joins the label) — but
       // only for mail the parser recognised: a newsletter that happened to
       // say "thank you for applying" must not join a label you curate. Every
       // email gets "Job Application/Processed" (so it is never polled again)
       // and the status sub-label the parser chose.
       labelIds: [
-        ex(`{{ $('Parse Job Email').item.json.parsed ? ${JSON.stringify(LABELS.scope)} : ${JSON.stringify(LABELS.processed)} }}`),
+        ex(`{{ $('Classified?').item.json.parsed ? ${JSON.stringify(LABELS.scope)} : ${JSON.stringify(LABELS.processed)} }}`),
         LABELS.processed,
-        ex(`{{ (${JSON.stringify(LABELS.status)})[$('Parse Job Email').item.json.status_label] || ${JSON.stringify(LABELS.status["Needs Review"])} }}`),
+        ex(`{{ (${JSON.stringify(LABELS.status)})[$('Classified?').item.json.status_label] || ${JSON.stringify(LABELS.status["Needs Review"])} }}`),
       ],
     },
     type: "n8n-nodes-base.gmail",
@@ -561,11 +579,12 @@ const workflow = {
     "Needs LLM Fallback?": {
       main: [
         [{ node: "Classify With LLM", type: "main", index: 0 }],
-        [{ node: "Classified?", type: "main", index: 0 }],
+        [{ node: "Join Parsed Paths", type: "main", index: 0 }],
       ],
     },
     "Classify With LLM": { main: one("Apply LLM Fallback") },
-    "Apply LLM Fallback": { main: one("Classified?") },
+    "Apply LLM Fallback": { main: [[{ node: "Join Parsed Paths", type: "main", index: 1 }]] },
+    "Join Parsed Paths": { main: one("Classified?") },
     "Classified?": {
       main: [
         [{ node: "Write to Inbox", type: "main", index: 0 }],
@@ -573,13 +592,16 @@ const workflow = {
       ],
     },
     "Write to Inbox": { main: one("Loop Feed Rows") },
-    // Output 0 is "done" (every merged row, once the loop finishes) and
+    // Output 0 is "done" (every written row, once the loop finishes) and
     // output 1 is "loop" (the next single email to look up) — Loop Over
-    // Items always numbers them in that order.
-    "Loop Feed Rows": { main: [one("Upsert Feed")[0], one("Find Feed Row")[0]] },
+    // Items always numbers them in that order. The upsert is inside the loop
+    // so the next email's lookup sees this one's write: two emails about the
+    // same job in one run must merge into each other, not both into the row
+    // as it was before the run (the last write won, and rejections regressed).
+    "Loop Feed Rows": { main: [one("Mark Email Processed")[0], one("Find Feed Row")[0]] },
     "Find Feed Row": { main: one("Merge Into Feed") },
-    "Merge Into Feed": { main: one("Loop Feed Rows") },
-    "Upsert Feed": { main: one("Mark Email Processed") },
+    "Merge Into Feed": { main: one("Upsert Feed") },
+    "Upsert Feed": { main: one("Loop Feed Rows") },
     "Write to Needs Review": { main: one("Mark Email Processed") },
     "Ingest Backlog Check": { main: one("Find Stale Job Mail") },
     "Find Stale Job Mail": { main: one("Stale Job Mail Alarm") },

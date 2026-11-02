@@ -32,6 +32,15 @@ const email = (over = {}) => ({
 
 const cases = [
   {
+    // llm-fallback.js files a "send me your CV" email under the person.
+    name: "contact standing in for the company is written as-is",
+    row: {},
+    email: email({ company: "Jane Doe <jane.doe@gmail.com>", application_key: "jane.doe@gmail.com|virtual assistant",
+      job_title: "Virtual Assistant", job_platform: "Direct Email" }),
+    want: { "Company": "Jane Doe <jane.doe@gmail.com>", "Application Key": "jane.doe@gmail.com|virtual assistant",
+      "Source": "Direct Email" },
+  },
+  {
     name: "no existing row creates one",
     row: {},
     email: email(),
