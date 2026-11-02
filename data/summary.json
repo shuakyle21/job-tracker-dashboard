@@ -1,35 +1,35 @@
 {
-  "generatedAt": "2026-11-01T22:06:04.379Z",
-  "total": 260,
-  "sent": 260,
+  "generatedAt": "2026-11-02T04:24:09.673Z",
+  "total": 291,
+  "sent": 291,
   "unsent": 0,
-  "replied": 113,
-  "noReply": 147,
-  "open": 173,
-  "replyRate": 0.4346153846153846,
-  "interviewRate": 0.07692307692307693,
-  "ghostRate": 0.5653846153846154,
-  "rejected": 67,
-  "rejectionRate": 0.25769230769230766,
+  "replied": 129,
+  "noReply": 162,
+  "open": 187,
+  "replyRate": 0.44329896907216493,
+  "interviewRate": 0.0859106529209622,
+  "ghostRate": 0.5567010309278351,
+  "rejected": 86,
+  "rejectionRate": 0.29553264604810997,
   "reached": [
-    260,
-    93,
-    29,
-    20,
+    291,
+    126,
+    40,
+    25,
     0
   ],
   "atStage": [
-    167,
-    64,
-    9,
-    20,
+    165,
+    86,
+    15,
+    25,
     0
   ],
   "dropComposition": [
     [
       {
         "status": "Applied",
-        "count": 106
+        "count": 111
       },
       {
         "status": "Rejected",
@@ -37,180 +37,165 @@
       },
       {
         "status": "No Response",
-        "count": 7
+        "count": 5
       },
       {
         "status": "Closed / Expired",
-        "count": 6
-      },
-      {
-        "status": "(blank)",
-        "count": 3
+        "count": 4
       }
     ],
     [
       {
         "status": "Applied",
-        "count": 20
-      },
-      {
-        "status": "Viewed by Employer",
-        "count": 17
+        "count": 32
       },
       {
         "status": "Rejected",
-        "count": 13
+        "count": 27
+      },
+      {
+        "status": "Viewed by Employer",
+        "count": 11
       },
       {
         "status": "In Review",
         "count": 7
       },
       {
-        "status": "Closed / Expired",
-        "count": 3
+        "status": "Talent Pool",
+        "count": 5
       },
       {
         "status": "No Response",
         "count": 2
       },
       {
-        "status": "Talent Pool",
+        "status": "Closed / Expired",
         "count": 2
       }
     ],
     [
       {
         "status": "Assessment",
-        "count": 8
+        "count": 10
       },
       {
         "status": "Rejected",
-        "count": 1
+        "count": 5
       }
     ],
     [
       {
         "status": "Rejected",
-        "count": 8
+        "count": 9
+      },
+      {
+        "status": "Applied",
+        "count": 6
       },
       {
         "status": "Interviewed",
         "count": 5
       },
       {
-        "status": "Assessment",
-        "count": 3
-      },
-      {
-        "status": "Applied",
-        "count": 3
-      },
-      {
         "status": "In Review",
-        "count": 1
+        "count": 3
+      },
+      {
+        "status": "Assessment",
+        "count": 2
       }
     ],
     []
   ],
   "rejectedAt": [
     45,
-    13,
-    1,
-    8,
+    27,
+    5,
+    9,
     0
   ],
   "usedExplicitStage": true,
   "byStatus": [
     {
       "status": "Applied",
-      "count": 129
+      "count": 149
     },
     {
       "status": "Rejected",
-      "count": 67
-    },
-    {
-      "status": "Viewed by Employer",
-      "count": 17
+      "count": 86
     },
     {
       "status": "Assessment",
+      "count": 12
+    },
+    {
+      "status": "Viewed by Employer",
       "count": 11
     },
     {
-      "status": "Closed / Expired",
-      "count": 9
+      "status": "In Review",
+      "count": 10
     },
     {
       "status": "No Response",
-      "count": 9
+      "count": 7
     },
     {
-      "status": "In Review",
-      "count": 8
+      "status": "Closed / Expired",
+      "count": 6
     },
     {
       "status": "Interviewed",
       "count": 5
     },
     {
-      "status": "(blank)",
-      "count": 3
-    },
-    {
       "status": "Talent Pool",
-      "count": 2
+      "count": 5
     }
   ],
   "channels": [
     {
       "name": "Direct / Careers",
-      "sent": 115,
-      "replied": 52,
+      "sent": 138,
+      "replied": 66,
       "unsent": 0,
-      "rate": 0.45217391304347826
+      "rate": 0.4782608695652174
     },
     {
       "name": "Jobstreet",
-      "sent": 60,
-      "replied": 17,
+      "sent": 63,
+      "replied": 21,
       "unsent": 0,
-      "rate": 0.2833333333333333
+      "rate": 0.3333333333333333
     },
     {
       "name": "LinkedIn",
-      "sent": 38,
+      "sent": 48,
       "replied": 24,
-      "unsent": 0,
-      "rate": 0.631578947368421
-    },
-    {
-      "name": "Indeed",
-      "sent": 15,
-      "replied": 6,
-      "unsent": 0,
-      "rate": 0.4
-    },
-    {
-      "name": "Direct Email",
-      "sent": 15,
-      "replied": 3,
-      "unsent": 0,
-      "rate": 0.2
-    },
-    {
-      "name": "Kalibrr",
-      "sent": 4,
-      "replied": 2,
       "unsent": 0,
       "rate": 0.5
     },
     {
-      "name": "(blank)",
-      "sent": 3,
+      "name": "Indeed",
+      "sent": 16,
+      "replied": 7,
+      "unsent": 0,
+      "rate": 0.4375
+    },
+    {
+      "name": "Direct Email",
+      "sent": 11,
       "replied": 3,
       "unsent": 0,
-      "rate": 1
+      "rate": 0.2727272727272727
+    },
+    {
+      "name": "Kalibrr",
+      "sent": 5,
+      "replied": 2,
+      "unsent": 0,
+      "rate": 0.4
     },
     {
       "name": "Torre.ai",
@@ -264,46 +249,66 @@
   ],
   "monthly": [
     {
+      "month": "2025-06",
+      "count": 10
+    },
+    {
+      "month": "2025-07",
+      "count": 26
+    },
+    {
+      "month": "2025-08",
+      "count": 7
+    },
+    {
+      "month": "2025-09",
+      "count": 8
+    },
+    {
+      "month": "2025-10",
+      "count": 11
+    },
+    {
+      "month": "2025-11",
+      "count": 2
+    },
+    {
       "month": "2026-04",
       "count": 6
     },
     {
       "month": "2026-05",
-      "count": 13
+      "count": 14
     },
     {
       "month": "2026-06",
-      "count": 7
+      "count": 8
     },
     {
       "month": "2026-07",
-      "count": 7
+      "count": 8
     },
     {
       "month": "2026-08",
-      "count": 115
+      "count": 94
     },
     {
       "month": "2026-09",
-      "count": 53
+      "count": 48
     },
     {
       "month": "2026-10",
-      "count": 55
+      "count": 49
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 253
+      "count": 287
     },
     {
       "label": "Onsite",
       "count": 4
-    },
-    {
-      "label": "Unspecified",
-      "count": 3
     }
   ],
   "ageing": [
@@ -313,19 +318,19 @@
     },
     {
       "label": "8–14d",
-      "count": 8
+      "count": 7
     },
     {
       "label": "15–30d",
-      "count": 23
+      "count": 20
     },
     {
       "label": "31–60d",
-      "count": 33
+      "count": 25
     },
     {
       "label": "60d+",
-      "count": 104
+      "count": 134
     }
   ],
   "followUps": {
@@ -334,8 +339,8 @@
     "dueWeek": 0
   },
   "quality": {
-    "resume": 178,
+    "resume": 175,
     "cover": 7,
-    "tailored": 21
+    "tailored": 20
   }
 }
