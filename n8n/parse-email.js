@@ -186,10 +186,18 @@ const fromDomainLabel = ((from.split('@')[1] || '').toLowerCase().split('.')[0])
 if (!company) {
   const domain = ((isSent ? to : from).split('@')[1] || '').toLowerCase();
   if (domain && !ATS_DOMAINS.test(domain + '.')) {
-    company = domain.replace(/\.(?:com|net|org|io|co|ph|ai|dev|gov|edu)(?:\.[a-z]{2})?$/i, '');
+    const bare = domain.replace(/\.(?:com|net|org|io|co|ph|ai|dev|gov|edu)(?:\.[a-z]{2})?$/i, '');
+    // updates@notify.mindrift.ai is Mindrift: drop the sending subdomain. Only
+    // when a known TLD came off, so "remotely.works" stays whole.
+    company = bare !== domain ? bare.split('.').pop() : bare;
     company = company.charAt(0).toUpperCase() + company.slice(1);
   }
 }
+
+// Workday mails as <tenant>@myworkday.com with no display name; the tenant
+// ("8x8inc") is the employer. Its no-reply address names nobody.
+const tenant = (from.split('@')[0] || '').replace(/inc$/i, '');
+if (!company && /@myworkday\.com$/i.test(from) && !/^(?:no-?reply|do-?not-?reply|notifications?)$/i.test(tenant)) company = tenant;
 
 // A recruiter writing as themself ("Jessa Grace Morelos", jessa@staffvirtual.com):
 // the display name is a person, recognisable because the mailbox carries their
@@ -220,6 +228,9 @@ const LEAD_INS = [
   /^(?:next steps?|update|interview|assessment|invitation)\s*(?:on|for|regarding|about)?\s*(?:your )?(?:application)?\s*[:—–-]\s*/i,
   /^you(?:r)? (?:have )?applied (?:to|for)\s*[:—–-]?\s*/i,
   /^(?:an? )?update (?:about|on|regarding) your application (?:for|to)(?: the)?\s*/i,
+  /^(?:and )?next steps? for the\s*/i,
+  /^(?:to )?complete (?:the|your) application for\s*/i,
+  /^we(?:'|’)?ve received your application for\s*/i,
 ];
 
 let title = subject.trim();
@@ -254,8 +265,13 @@ title = title.replace(/\s*[|(].*$/, '').replace(/\s+(?:position|role)$/i, '').re
 // actually use, which name both the job and the employer. When one matches it
 // is more reliable than anything guessed from a display name, so it wins.
 // Company names end in "Inc." / "Ltd." — keep that period, drop a sentence one.
-const clean = (s) => String(s || '').replace(/\s+/g, ' ').trim()
-  .replace(/(?<!\b(?:inc|ltd|corp|co|llc))\.$/i, '').trim();
+// Markdown bold (**Intern/OJT**), emoji ("Hugging Face 🤗") and a closing
+// "!" ("at Emapta!") are decoration, not part of the name; so are quotes
+// around a title ('the "Coders - AI Training" role').
+const EMOJI = /\p{Extended_Pictographic}/gu;
+const clean = (s) => String(s || '').replace(/\*/g, '').replace(EMOJI, '').replace(/\s+/g, ' ').trim()
+  .replace(/!+$/, '').replace(/(?<!\b(?:inc|ltd|corp|co|llc))\.$/i, '').trim()
+  .replace(/^["“](.*)["”]$/, '$1').trim();
 // A real job title is never a bare article/pronoun. Extractors with no anchor
 // past their keyword (e.g. "...applying for <T> job") can otherwise pick up a
 // stray "a"/"the" out of unrelated boilerplate, like a safety disclaimer.
@@ -263,8 +279,11 @@ const clean = (s) => String(s || '').replace(/\s+/g, ' ').trim()
 // Application", "Thank you and Survey Request"): each such "title" started a
 // Feed row no other email about the same job could match. n8n/llm-fallback.js
 // keeps a copy; scripts/verify.mjs checks the two are identical.
-const BOILERPLATE_TITLE = /\b(?:your application|application (?:received|update|status)|new application|we(?:'ve| have)? (?:got|received)|keep track|survey|stay connected|complete your profile)\b|^(?:thank(?:s| you)|hi|hello|dear|join|update)\b/i;
-const isPlausibleTitle = (s) => !/^(?:a|an|the|this|that|it)$/i.test(s) && !BOILERPLATE_TITLE.test(s);
+const BOILERPLATE_TITLE = /\b(?:your application|application (?:received|update|status)|new application|we(?:'ve| have)? (?:got|received)|keep track|survey|stay connected|complete your profile|successfully submitted|thank(?:s| you) for applying)\b|^(?:thank(?:s| you)|hi|hello|dear|join|update|and|you (?:have|are))\b/i;
+// And a title has letters and starts like a name: "!" and ", Joshua Klyne"
+// are what was left of a subject after the lead-in came off.
+const isPlausibleTitle = (s) => !/^(?:a|an|the|this|that|it)$/i.test(s) && !BOILERPLATE_TITLE.test(s)
+  && /\p{L}/u.test(s) && !/^[^\p{L}\p{N}([]/u.test(s);
 // The careers-page patterns below read `prose`: the email's own text, without
 // the quoted history of a reply thread (whose old sentences named the job in
 // half-sentences and produced titles like "Assistant II for"), with hard-wrapped
@@ -279,6 +298,10 @@ const EXTRACTORS = [
   // " at ": the title's own dashes ("Engineer I – Java/Python") are not the
   // separator the generic subject split takes them for.
   [subject, /^your application to (.+)\s+at\s+(.+)$/i, 1, 2],
+  // Wellfound: "Application to <C> successfully submitted"; the body lists
+  // the job as "* <T>", a link, then "* <C> · Remote".
+  [subject, /^application to (.+?) successfully submitted$/i, 0, 1],
+  [body, /^\s*\*\s+(.+?)\s*\n<?https?:\/\/\S+\n\s*\*\s+[^·\n]+·/m, 1, 0],
   // Ashby: "<C>: <T>: Application Update".
   [subject, /^([^:]+):\s*([^:]+):\s*application update$/i, 2, 1],
   // Workable: "Thanks for applying to <C>" (no title in the subject).
@@ -288,11 +311,16 @@ const EXTRACTORS = [
   [subject, /application for (?:a|the|this) (?:position|role|job) at (.+)$/i, 0, 1],
   [body, /this position:\s*([^\n]+)/i, 1, 0],
   // Ashby interview mail: "your initial interview for the <T> at <C>."
-  [body, /interview for (?:the )?(.+?) (?:role |position )?at ([^\n.!,]+)/i, 1, 2],
+  [prose, /interview for (?:the )?((?:(?![.!]\s).)+?) (?:role |position )?at ([^\n.!,]+)/i, 1, 2],
   // JobStreet: "your application for <T> was successfully submitted to <C>".
   // A long title wraps onto a second line; allow one wrap, or the employer is
   // lost and the email stops at Needs Review.
-  [body, /application for (.+?(?:\n.+?)?) was successfully submitted to (.+?)(?=\s*(?:\n|jobstreet\b|$))/i, 1, 2],
+  // Read unwrapped: JobStreet and SEEK wrap the employer onto the next line
+  // ("submitted to Digital\nRoom (Philippines) , Inc."). It ends where their
+  // boilerplate starts, so the "Inc." keeps its period.
+  [prose, /application for (.+?) was successfully submitted to (.+?)(?=\s*\n|\s+(?:each\b|view\b|%%|jobstreet\b)|\.\s+each\b|\.?\s*$)/i, 1, 2],
+  // JobStreet rejection: "your application for <T> advertised by <C> is unlikely to progress".
+  [prose, /your application for (.+?) advertised by (.+?) is unlikely to progress/i, 1, 2],
   // JobStreet: "<C> has viewed your application for <T>"
   [subject, /^(.+?) has viewed your application for (.+)$/i, 2, 1],
   // LinkedIn: subject names the company; the body's next line is the title.
@@ -315,9 +343,12 @@ const EXTRACTORS = [
   // ATS / careers-page mail.
   // Titles stop at a sentence end: with wrapped lines joined, "(.+?)" would
   // otherwise run from one sentence's "interest in" to a later one's "role at".
-  [prose, /interest in (?:the )?((?:(?![.!]\s).)+?) (?:position|role|opportunity) at ([^\n!]+?)(?=[.!,]\s|[.!]?\s*$|\n)/i, 1, 2],
+  // The company ends at "and" + a sentence word ("at Sozoroad and for the
+  // time...", but not "Training and Marketing Professionals") or at a
+  // period with no space after it ("at Welo Data.We have received").
+  [prose, /interest in (?:the )?((?:(?![.!]\s).)+?) (?:position|role|opportunity)(?: here)? at ([^\n!]+?)(?=[.!,](?:\s|(?=[A-Z]))|\s+and\s+(?:for|we|our|look|thank|to|that|wish|hope)\b|[.!]?\s*$|\n)/i, 1, 2],
   // "...for the <T> role at <C>", and iCIMS's "application to the <T> position at <C>."
-  [prose, /(?:application|applying|apply) (?:for|to) (?:the )?((?:(?![.!]\s).)+?) (?:role|position|job|opportunity) at ([^\n!]+?)(?=[.!,]\s|[.!]?\s*$|\n)/i, 1, 2],
+  [prose, /(?:application|applying|apply) (?:for|to) (?:the )?((?:(?![.!]\s).)+?) (?:role|position|job|opportunity)(?: here)? at ([^\n!]+?)(?=[.!,](?:\s|(?=[A-Z]))|\s+and\s+(?:for|we|our|look|thank|to|that|wish|hope)\b|[.!]?\s*$|\n)/i, 1, 2],
   // Lever: "apply for the <T> at <C>!" — no "role"/"position" word. After the
   // line above, so "the <T> role at <C>" doesn't keep "role" in the title.
   [prose, /apply for the (.+?) at ([^\n!.,]+)[!.]/i, 1, 2],
@@ -330,7 +361,7 @@ const EXTRACTORS = [
   [prose, /interest in the ([^\n.!]{3,120}?) (?:role|position|opportunity)\b/i, 1, 0],
   // "your application for <T> was delivered" (Torre), "...for <T>, and" (Lever),
   // "...for <T> shortly" (Teamtailor), "...for <T>. If" (Manatal).
-  [prose, /your application for (?:the )?(.+?)(?= was\b| shortly\b| and\b|,|\.\s|\.?\n|\.?$)/i, 1, 0],
+  [prose, /your application for (?:the )?(.+?)(?= was\b| shortly\b| and\b| at\b|,|\.\s|\.?\n|\.?$)/i, 1, 0],
   // "Thank you for your interest in joining <C>, ..." — names the employer
   // when the sender is a person or an ATS.
   [prose, /interest in joining ([^,!.\n]+)/i, 0, 1],
@@ -352,14 +383,18 @@ if (company && !/\b(?:inc|ltd|llc|corp)\b\.?$/i.test(company)) {
   const full = prose.match(new RegExp('\\b' + esc + ',?\\s+(?:inc|ltd|llc|corp)\\b\\.?', 'i'));
   if (full) company = clean(full[0].replace(/\s+/g, ' ')).replace(/(\b(?:inc|ltd|corp))$/i, '$1.');
 }
-title = title.replace(/^(?:the\s+)?(?:position|role)\s+of\s+/i, '').trim();
+company = company.replace(EMOJI, '').trim();
+title = title.replace(/^(?:the\s+)?(?:position|role)\s+of\s+/i, '').replace(/^our\s+/i, '').trim();
 // Boilerplate left over from the subject, or a "title" that is just the
 // company ("Thanks for applying to Emapta"), names no job: leave it empty so
 // the email goes to Needs Review instead of starting a row of its own.
 // An unclosed bracket means the title was cut mid-way ("[Applicant",
 // "Associate Data Engineer (Work"): a truncation, not the job's name.
 const unbalanced = (s, open, close) => s.split(open).length !== s.split(close).length;
-if (!isPlausibleTitle(title) || title.toLowerCase() === company.toLowerCase()
+// The same goes for the company's name cut short ("Robert Bosch" of "Robert
+// Bosch (SEA) Pte Ltd"), which is all a "Thank you for applying to <C>"
+// subject leaves.
+if (!isPlausibleTitle(title) || (title && company.toLowerCase().startsWith(title.toLowerCase()))
     || unbalanced(title, '(', ')') || unbalanced(title, '[', ']')) title = '';
 
 // --- job platform ---------------------------------------------------------

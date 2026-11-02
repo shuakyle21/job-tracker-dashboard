@@ -55,7 +55,7 @@ const norm = (s) => String(s).toLowerCase().replace(/\s+/g, ' ').replace(/ ?\| ?
 // Mirrors parse-email.js's BOILERPLATE_TITLE — scripts/verify.mjs checks the
 // two are identical. Subject boilerplate is no job title, from the subject or
 // from the model, and a key built on one starts a duplicate Feed row.
-const BOILERPLATE_TITLE = /\b(?:your application|application (?:received|update|status)|new application|we(?:'ve| have)? (?:got|received)|keep track|survey|stay connected|complete your profile)\b|^(?:thank(?:s| you)|hi|hello|dear|join|update)\b/i;
+const BOILERPLATE_TITLE = /\b(?:your application|application (?:received|update|status)|new application|we(?:'ve| have)? (?:got|received)|keep track|survey|stay connected|complete your profile|successfully submitted|thank(?:s| you) for applying)\b|^(?:thank(?:s| you)|hi|hello|dear|join|update|and|you (?:have|are))\b/i;
 const asTitle = (s) => (s && !BOILERPLATE_TITLE.test(s) ? s : '');
 // Matches a board's display names too ("Indeed Apply", "LinkedIn Jobs").
 const BOARD = /^(?:linkedin|indeed|jobstreet|kalibrr|onlinejobs(?:\.ph)?|torre)\b/i;
