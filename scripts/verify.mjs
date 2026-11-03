@@ -250,6 +250,12 @@ async function assertIngestWorkflow() {
   check("LLM fallback BOILERPLATE_TITLE matches the parser's",
     boilerplate(parserFile).length > 0 && boilerplate(parserFile) === boilerplate(llmFallbackFile));
 
+  // Feed keys were migrated with canonTitle; a fallback copy that drifts keys
+  // LLM-parsed mail onto rows no rule-parsed email will find.
+  const canon = (src) => src.match(/^const canonTitle = \(t\) => \{[\s\S]*?^\};\nconst unbalancedParens = .*;$/m)?.[0] ?? "";
+  check("LLM fallback canonTitle matches the parser's",
+    canon(parserFile).length > 0 && canon(parserFile) === canon(llmFallbackFile));
+
   const markIds = byName["Mark Email Processed"]?.parameters.labelIds ?? [];
   check("processed email gets scope, processed and status labels",
     markIds[0]?.includes(labels.scope) && /\.parsed\b/.test(markIds[0])

@@ -189,9 +189,9 @@ const cases = [
         + "hear from them.\n\n"
         + "Never provide your bank or credit card details when applying for a job.\n",
     }),
-    want: { status: "applied", job_title: "Web Developer – AI & Automation Specialist | AU Client - WFH",
+    want: { status: "applied", job_title: "Web Developer – AI & Automation Specialist",
       company: "SourceU", job_platform: "JobStreet", status_label: "Applied", parsed: true,
-      application_key: "sourceu|web developer – ai & automation specialist|au client - wfh" },
+      application_key: "sourceu|web developer – ai & automation specialist" },
   },
   {
     name: "LinkedIn sent (title on the next line)",
@@ -200,7 +200,7 @@ const cases = [
       from: { value: [{ address: "jobs-noreply@linkedin.com", name: "LinkedIn" }] },
       text: "Your application was sent to Quikly Staffing\n\nBackend Software Developer (Remote)\nQuikly Staffing\nPhilippines\nView job: https://example.test",
     }),
-    want: { status: "applied", company: "Quikly Staffing", job_title: "Backend Software Developer (Remote)",
+    want: { status: "applied", company: "Quikly Staffing", job_title: "Backend Software Developer",
       job_platform: "LinkedIn", parsed: true },
   },
   {
@@ -274,7 +274,7 @@ const cases = [
       from: { value: [{ address: "noreply@e.jobstreet.com", name: "Jobstreet" }] },
       text: "Hi Alex, your application for AI Finance Support Specialist | WFH was successfully submitted to Intogreat Solutions\nView",
     }),
-    want: { application_key: "intogreat solutions|ai finance support specialist|wfh" },
+    want: { application_key: "intogreat solutions|ai finance support specialist" },
   },
   {
     name: "Workable ATS",
@@ -408,7 +408,7 @@ const cases = [
       from: { value: [{ address: "noreply@candidates.workablemail.com", name: "Workable" }] },
       text: "Brightdesk\n\nYour application for the Forward Deployed Engineer (Remote | US Hours) job was submitted successfully. Here's a copy of your application data for safekeeping.",
     }),
-    want: { status: "applied", company: "Brightdesk", job_title: "Forward Deployed Engineer (Remote | US Hours)", parsed: true },
+    want: { status: "applied", company: "Brightdesk", job_title: "Forward Deployed Engineer", parsed: true },
   },
   {
     // join.com: the subject's "a position at <C>" is not a job title.
@@ -510,7 +510,7 @@ const cases = [
       from: { value: [{ address: "notification@smartrecruiters.com", name: "Arch Global Services (Philippines) Inc. Hiring Team" }] },
       text: "Dear Joshua Klyne,\n\nThank you for submitting your application for the position of 2026-7929 Data Engineer-Mid (Night Shift). Your application is queued for review and we will contact you shortly.",
     }),
-    want: { application_key: "arch global services (philippines) inc.|2026-7929 data engineer-mid (night shift)" },
+    want: { application_key: "arch global services (philippines) inc.|data engineer-mid" },
   },
   {
     name: "Avature 'the role of <T>' under a survey subject",
@@ -547,7 +547,7 @@ const cases = [
       from: { value: [{ address: "jessa@staffvirtual.com", name: "Jessa Grace Morelos" }] },
       text: "Greetings from STAFFVIRTUAL!\n\nWe would like to inform you that we have received your application for\nthe *Sales\nSupport Specialist (Advanced Excel | VLOOKUP & Pivot Tables) - Remote\n*position.\nWe appreciate your interest in our organization",
     }),
-    want: { company: "STAFFVIRTUAL", job_title: "Sales Support Specialist (Advanced Excel | VLOOKUP & Pivot Tables) - Remote" },
+    want: { company: "STAFFVIRTUAL", job_title: "Sales Support Specialist (Advanced Excel | VLOOKUP & Pivot Tables)" },
   },
   {
     name: "Lever 'apply for the <T> at <C>!' and 'joining our team' is no employer",
@@ -568,7 +568,7 @@ const cases = [
       // As n8n receives it: Gmail's text part, hard-wrapped at ~78 columns.
       text: "Thanks for Applying to Emapta - Let’s stay connected!\n\nDear Joshua Klyne Pudadera,\n\nThank you for expressing interest in the Analytics Engineer (Marketing\nAnalytics) | WFH | Night Shift | Day 1 HMO | Weekends Off role with us. We\ngenuinely appreciate the time and effort you have invested into your\napplication. However, after careful consideration, we've chosen to\nproceed with other candidates whose qualifications more closely align with the\nspecific requirements of the role at this time.\n\nAs we continuously cultivate our talent pool, we would like to retain your profile.",
     }),
-    want: { status: "rejected", application_key: "emapta|analytics engineer (marketing analytics)|wfh|night shift|day 1 hmo|weekends off" },
+    want: { status: "rejected", application_key: "emapta|analytics engineer (marketing analytics)" },
   },
   {
     // Hard-wrapped body, and a display name without the "Inc." the email uses.
@@ -587,7 +587,7 @@ const cases = [
       from: { value: [{ address: "codev+autoreply@talent.icims.com", name: "CoDev @ icims" }] },
       text: "Hi Joshua Klyne, \n\nThank you for your recent application to the Full Stack React Developer (2026-3066) position at CoDev.\n \nYour submission will be reviewed.",
     }),
-    want: { application_key: "codev|full stack react developer (2026-3066)" },
+    want: { application_key: "codev|full stack react developer" },
   },
   {
     // The title's own "–" is not the subject separator, and the only rejection
@@ -598,7 +598,7 @@ const cases = [
       from: { value: [{ address: "jobs-noreply@linkedin.com", name: "LinkedIn" }] },
       text: "Your update from Nelnet Philippines Inc\n\n----\n\nLearn why we included this: https://www.linkedin.com/help/linkedin/answer/4788?lang=en&lipi=urn%3Ali%3Apage%3Aemail_email_jobs_application_rejected_01%3BOlxA",
     }),
-    want: { status: "rejected", application_key: "nelnet philippines inc|venture factory software engineer level i – java/python/ai (work from home)" },
+    want: { status: "rejected", application_key: "nelnet philippines inc|venture factory software engineer level i – java/python/ai" },
   },
   {
     // A reply thread: the quoted history names the job in half-sentences, and
@@ -638,7 +638,7 @@ const cases = [
       from: { value: [{ address: "noreply@e.jobstreet.com", name: "Jobstreet Applications" }] },
       text: "Hi Joshua Klyne, it appears your application for Python Developer (WFH)\nadvertised by ACCION LABS PHILIPPINES, INC. is unlikely to progress further\n%%str_to_replace_open_tracking%%\n\nHi Joshua Klyne,\nThank you for your interest in the Python Developer (WFH) job at ACCION LABS\nPHILIPPINES, INC.. Unfortunately, it looks unlikely that your application will\nprogress further.",
     }),
-    want: { status: "rejected", application_key: "accion labs philippines, inc.|python developer (wfh)" },
+    want: { status: "rejected", application_key: "accion labs philippines, inc.|python developer" },
   },
   {
     name: "SEEK confirmation names the employer, not SEEK",
@@ -720,7 +720,7 @@ const cases = [
       from: { value: [{ address: "samridhi.sharma@pricelabs.co", name: "Samridhi Sharma" }] },
       text: "Hi Joshua,\n\nThank you for taking the time to interview for the Graduate Programme -\nPhilippines (Remote) role at PriceLabs. We sincerely appreciate your interest in\nour team.\n\nAfter careful consideration, we’ve decided not to move forward with your\napplication at this time. Unfortunately, we were unable to find a perfect\nalignment.",
     }),
-    want: { status: "rejected", application_key: "pricelabs|graduate programme - philippines (remote)" },
+    want: { status: "rejected", application_key: "pricelabs|graduate programme - philippines" },
   },
   {
     name: "Emapta update: 'at EMAPTA' is not part of the title",
@@ -813,6 +813,108 @@ const cases = [
     name: "raw_text carries subject and body for the LLM fallback",
     input: email({ subject: "Application Update", text: "We wanted to give you an update." }),
     want: { raw_text: "Application Update\n\nWe wanted to give you an update." },
+  },
+  // Titles carry the ad's own noise (work setup, shift, pay, req ids). Each
+  // variant used to start its own Feed row, so the key drops it.
+  {
+    name: "title tail: JobStreet ' – Remote'",
+    input: email({
+      subject: "Your application was successfully submitted",
+      from: { value: [{ address: "noreply@e.jobstreet.com", name: "Jobstreet Applications" }] },
+      text: "Your application for Junior Data Assistant Internship – Remote was successfully submitted to Private Advertiser\n",
+    }),
+    want: { job_title: "Junior Data Assistant Internship", company: "Private Advertiser", parsed: true },
+  },
+  {
+    name: "title tail: pipe segments with WFH / shift / pay",
+    input: email({
+      subject: "Application update for AI Solutions Developer | WFH | A-MGT at Northwind Philippines, Inc.",
+      from: { value: [{ address: "noreply@e.jobstreet.com", name: "Jobstreet Applications" }] },
+      text: "Hi Alex, it appears your application for AI Solutions Developer | WFH |\nA-MGT advertised by Northwind Philippines, Inc. is unlikely to progress further\n",
+    }),
+    want: { job_title: "AI Solutions Developer", company: "Northwind Philippines, Inc." },
+  },
+  {
+    name: "title tail: pipe noise after a meaningful parenthetical",
+    input: email({
+      subject: "Thanks for Applying to Fabrikam - Let's stay connected!",
+      from: { value: [{ address: "careers@fabrikam.com", name: "" }] },
+      text: "Thank you for your application for the Analytics Engineer (Marketing Analytics) | WFH | Night Shift | Day 1 HMO | Weekends Off role.",
+    }),
+    want: { job_title: "Analytics Engineer (Marketing Analytics)" },
+  },
+  {
+    name: "title tail: parenthetical setup '(Remote | U.S. Business Hours)'",
+    input: email({
+      subject: "Thanks for applying to CentralCo",
+      from: { value: [{ address: "noreply@candidates.workablemail.com", name: "Workable" }] },
+      text: "Your application for the Forward Deployed Engr / AI Automation Specialist (Remote | U.S. Business Hours) job was submitted successfully.",
+    }),
+    want: { job_title: "Forward Deployed Engr / AI Automation Specialist", company: "CentralCo" },
+  },
+  {
+    name: "title: setup mid-title '(Remote) — X', '(WFH)', '(Work From Home)'",
+    input: email({
+      subject: "Application update for WordPress Developer (Remote) — Elementor & Gutenberg at Contoso Inc.",
+      from: { value: [{ address: "noreply@e.jobstreet.com", name: "Jobstreet Applications" }] },
+      text: "Hi Alex, it appears your application for WordPress Developer (Remote) — Elementor & Gutenberg advertised by Contoso Inc. is unlikely to progress further\n",
+    }),
+    want: { job_title: "WordPress Developer — Elementor & Gutenberg", company: "Contoso Inc." },
+  },
+  {
+    name: "title: requisition ids and 'Job Ad:' prefix",
+    input: email({
+      subject: "Contoso Group has viewed your application for Job Ad:Viber Coder and AI Automator",
+      from: { value: [{ address: "noreply@e.jobstreet.com", name: "Jobstreet Applications" }] },
+      text: "",
+    }),
+    want: { job_title: "Viber Coder and AI Automator", company: "Contoso Group" },
+  },
+  {
+    name: "title: '(2026-3066)' and leading '2026-7929 ' req ids",
+    input: email({
+      subject: "Thank you for applying to Tailspin (Philippines) Inc.",
+      from: { value: [{ address: "notification@smartrecruiters.com", name: "Tailspin (Philippines) Inc." }] },
+      text: "Thank you for applying for the position of 2026-7929 Data Engineer-Mid (Night Shift) (2026-3066).",
+    }),
+    want: { job_title: "Data Engineer-Mid" },
+  },
+  {
+    name: "title: keeps a parenthetical that names the job",
+    input: email({
+      subject: "Application update for AI Engineer (Junior to Mid-Level) at Contoso Inc.",
+      from: { value: [{ address: "noreply@e.jobstreet.com", name: "Jobstreet Applications" }] },
+      text: "Hi Alex, it appears your application for AI Engineer (Junior to Mid-Level) advertised by Contoso Inc. is unlikely to progress further\n",
+    }),
+    want: { job_title: "AI Engineer (Junior to Mid-Level)" },
+  },
+  {
+    name: "company ends at a dash aside ('at Rasaco – we really appreciate...')",
+    input: email({
+      subject: "We've Received Your Rasaco Application – Data Operations Specialist (m/f/d)",
+      from: { value: [{ address: "no-reply@ashbyhq.com", name: "Rasaco Hiring Team" }] },
+      text: "Hi Alex,\n\nThank you for applying for the Data Operations Specialist role at Rasaco – we really appreciate your interest in joining our team!",
+    }),
+    want: { company: "Rasaco", job_title: "Data Operations Specialist" },
+  },
+  {
+    name: "subject company keeps no closing '!'",
+    input: email({
+      subject: "We Have Received Your Application at Fabrikam!",
+      from: { value: [{ address: "careers@fabrikam.com", name: "" }] },
+      text: "We appreciate your recent job application for the Data and Research Analyst | Perm WFH | Shifting | Up to PHP85K role.",
+    }),
+    want: { company: "Fabrikam", job_title: "Data and Research Analyst" },
+  },
+  {
+    // ADP Workforce Now sends as <employer>.hr@adp.com: "Adp" is the software.
+    name: "ADP sender is not the employer",
+    input: email({
+      subject: "Thank you for your application, Alex",
+      from: { value: [{ address: "ContosoLLC.hr@adp.com", name: "" }] },
+      text: "Thank you for applying for the position of Junior Python Developer.",
+    }),
+    want: { company: "", parsed: false },
   },
 ];
 

@@ -106,6 +106,13 @@ for (const [field, want] of Object.entries(unparsedRow())) {
 }
 
 {
+  // The parser strips "(WFH)" from titles; a model's title must key the same row.
+  const row = unparsedRow({ job_title: "", application_key: "", raw_text: "Thanks for applying: Data Engineer (WFH) at Acme Robotics." });
+  const got = apply(agentReply({ status: "applied", company: "Acme Robotics", job_title: "Data Engineer (WFH)", max_stage: 1 }), row);
+  expect("model title loses work-setup padding → key", got.application_key, "acme robotics|data engineer");
+}
+
+{
   const row = unparsedRow({
     company: "", application_key: "",
     subject: "Update on your application", raw_text: "We have received your application.",

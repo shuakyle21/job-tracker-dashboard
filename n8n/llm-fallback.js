@@ -57,6 +57,20 @@ const norm = (s) => String(s).toLowerCase().replace(/\s+/g, ' ').replace(/ ?\| ?
 // from the model, and a key built on one starts a duplicate Feed row.
 const BOILERPLATE_TITLE = /\b(?:your application|application (?:received|update|status)|new application|we(?:'ve| have)? (?:got|received)|keep track|survey|stay connected|complete your profile|successfully submitted|thank(?:s| you) for applying)\b|^(?:thank(?:s| you)|hi|hello|dear|join|update|and|you (?:have|are))\b/i;
 const asTitle = (s) => (s && !BOILERPLATE_TITLE.test(s) ? s : '');
+// Copy of parse-email.js's canonTitle (verify.mjs checks they match): a model's
+// "Data Engineer (WFH)" must key the same row as the parser's "Data Engineer".
+const canonTitle = (t) => {
+  const PAD = /\b(?:remote|wfh|work[- ]from[- ]home|home[- ]?based|perm(?:anent)?|night[- ]?shift|day[- ]?shift|mid[- ]?shift|shifting|graveyard|hmo|weekends? off|up to|php ?\d[\d,.]*k?|\d+k|(?:au|us|uk) client|u\.?s\.? business hours|a-mgt)\b/i;
+  let s = String(t).replace(/^job ad\s*:\s*/i, '').replace(/^\d{4}-\d{3,}\s+/, '');
+  s = s.replace(/\s*[([](?:\d{4}-\d{3,}|[^()[\]]*)[)\]]/g, (m) => (/\d{4}-\d{3,}/.test(m) || PAD.test(m) ? '' : m));
+  const parts = s.split(/\s+\|\s+/);
+  const cut = parts.findIndex((p, i) => i > 0 && PAD.test(p));
+  if (cut > 0 && !unbalancedParens(parts.slice(0, cut).join(' | '))) s = parts.slice(0, cut).join(' | ');
+  // After the pipe cut: "Developer – Remote | Dayshift" leaves a dash tail behind.
+  s = s.replace(/\s+[-–—]\s+([^-–—|]+)$/, (m, seg) => (PAD.test(seg) ? '' : m));
+  return s.replace(/\s{2,}/g, ' ').trim();
+};
+const unbalancedParens = (s) => s.split('(').length !== s.split(')').length;
 // Matches a board's display names too ("Indeed Apply", "LinkedIn Jobs").
 const BOARD = /^(?:linkedin|indeed|jobstreet|kalibrr|onlinejobs(?:\.ph)?|torre)\b/i;
 
@@ -87,7 +101,7 @@ if (!parsed) {
     // a hiring manager's "send me your CV", often names the role only there.
     const subjectTitle = String(original.subject || '')
       .replace(/^(?:\s*(?:re|fwd?)\s*:\s*)+/i, '').replace(/\s+/g, ' ').trim().slice(0, 80);
-    job_title = original.job_title || asTitle(shown(guess?.job_title)) || asTitle(subjectTitle);
+    job_title = canonTitle(original.job_title || asTitle(shown(guess?.job_title)) || asTitle(subjectTitle));
 
     // No employer named anywhere: file it under the person instead
     // ("Jane Doe <jane@gmail.com>"). The key uses the address, which stays the

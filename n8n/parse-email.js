@@ -179,14 +179,14 @@ if (isSent) company = '';
 
 // Fall back to the sending domain, minus the ATS hosts that tell you nothing
 // about who the employer is.
-const ATS_DOMAINS = /^(?:.*\.)?(?:linkedin|indeed|greenhouse|lever|workday(?:day)?|myworkday|jobstreet|glassdoor|ziprecruiter|smartrecruiters|ashbyhq|workable|workablemail|bamboohr|teamtailor-mail|teamtailor|manatal|applytojob|appsheet|kalibrr|torre|onlinejobs|join|gmail|googlemail|outlook|yahoo)\./i;
+const ATS_DOMAINS = /^(?:.*\.)?(?:linkedin|indeed|greenhouse|lever|workday(?:day)?|myworkday|jobstreet|glassdoor|ziprecruiter|smartrecruiters|ashbyhq|workable|workablemail|bamboohr|teamtailor-mail|teamtailor|manatal|applytojob|appsheet|adp|kalibrr|torre|onlinejobs|join|gmail|googlemail|outlook|yahoo)\./i;
 // First label of the sender's domain ("polaris" for jane@polaris.co.il), used
 // below to tell a company named in the subject from a recruiter's own name.
 const fromDomainLabel = ((from.split('@')[1] || '').toLowerCase().split('.')[0]) || '';
 if (!company) {
   const domain = ((isSent ? to : from).split('@')[1] || '').toLowerCase();
   if (domain && !ATS_DOMAINS.test(domain + '.')) {
-    const bare = domain.replace(/\.(?:com|net|org|io|co|ph|ai|dev|gov|edu)(?:\.[a-z]{2})?$/i, '');
+    const bare = domain.replace(/\.(?:com|net|org|io|co|ph|ai|dev|gov|edu|jobs)(?:\.[a-z]{2})?$/i, '');
     // updates@notify.mindrift.ai is Mindrift: drop the sending subdomain. Only
     // when a known TLD came off, so "remotely.works" stays whole.
     company = bare !== domain ? bare.split('.').pop() : bare;
@@ -248,7 +248,7 @@ if (atMatch) {
   title = atMatch[1].trim();
   // The right-hand side is usually the company; trust it over a stripped
   // display name, which is often just "Careers".
-  const candidate = atMatch[2].replace(/[|()\[\]].*$/, '').trim();
+  const candidate = atMatch[2].replace(/[|()\[\]].*$/, '').replace(/!+$/, '').trim();
   // A recruiter writing as themself ("Jane Doe") from the company's domain:
   // when the subject's company contains that domain, it is the better name.
   const domainNamesCandidate = fromDomainLabel.length >= 3
@@ -344,9 +344,9 @@ const EXTRACTORS = [
   // The company ends at "and" + a sentence word ("at Sozoroad and for the
   // time...", but not "Training and Marketing Professionals") or at a
   // period with no space after it ("at Welo Data.We have received").
-  [prose, /interest in (?:the )?((?:(?![.!]\s).)+?) (?:position|role|opportunity)(?: here)? at ([^\n!]+?)(?=[.!,](?:\s|(?=[A-Z]))|\s+and\s+(?:for|we|our|look|thank|to|that|wish|hope)\b|[.!]?\s*$|\n)/i, 1, 2],
+  [prose, /interest in (?:the )?((?:(?![.!]\s).)+?) (?:position|role|opportunity)(?: here)? at ([^\n!]+?)(?=[.!,](?:\s|(?=[A-Z]))|\s+and\s+(?:for|we|our|look|thank|to|that|wish|hope)\b|\s+[–—-]\s|[.!]?\s*$|\n)/i, 1, 2],
   // "...for the <T> role at <C>", and iCIMS's "application to the <T> position at <C>."
-  [prose, /(?:application|applying|apply) (?:for|to) (?:the )?((?:(?![.!]\s).)+?) (?:role|position|job|opportunity)(?: here)? at ([^\n!]+?)(?=[.!,](?:\s|(?=[A-Z]))|\s+and\s+(?:for|we|our|look|thank|to|that|wish|hope)\b|[.!]?\s*$|\n)/i, 1, 2],
+  [prose, /(?:application|applying|apply) (?:for|to) (?:the )?((?:(?![.!]\s).)+?) (?:role|position|job|opportunity)(?: here)? at ([^\n!]+?)(?=[.!,](?:\s|(?=[A-Z]))|\s+and\s+(?:for|we|our|look|thank|to|that|wish|hope)\b|\s+[–—-]\s|[.!]?\s*$|\n)/i, 1, 2],
   // Lever: "apply for the <T> at <C>!" — no "role"/"position" word. After the
   // line above, so "the <T> role at <C>" doesn't keep "role" in the title.
   [prose, /apply for the (.+?) at ([^\n!.,]+)[!.]/i, 1, 2],
@@ -383,6 +383,26 @@ if (company && !/\b(?:inc|ltd|llc|corp)\b\.?$/i.test(company)) {
 }
 company = company.replace(EMOJI, '').trim();
 title = title.replace(/^(?:the\s+)?(?:position|role)\s+of\s+/i, '').replace(/^our\s+/i, '').trim();
+// Job ads pad the title with work setup, shift, pay and requisition ids
+// ("Data Engineer-Mid (Night Shift)", "AI Developer | WFH | Up to PHP85K",
+// "2026-7929 ..."). Each padding variant of one job used to key its own Feed
+// row, so it comes off. A segment goes only when it names such padding:
+// "(Marketing Analytics)" and "(Junior to Mid-Level)" are the job.
+// Feed keys were migrated with this exact function, so keep it pure and
+// idempotent; changing it means re-keying Feed the same way.
+const canonTitle = (t) => {
+  const PAD = /\b(?:remote|wfh|work[- ]from[- ]home|home[- ]?based|perm(?:anent)?|night[- ]?shift|day[- ]?shift|mid[- ]?shift|shifting|graveyard|hmo|weekends? off|up to|php ?\d[\d,.]*k?|\d+k|(?:au|us|uk) client|u\.?s\.? business hours|a-mgt)\b/i;
+  let s = String(t).replace(/^job ad\s*:\s*/i, '').replace(/^\d{4}-\d{3,}\s+/, '');
+  s = s.replace(/\s*[([](?:\d{4}-\d{3,}|[^()[\]]*)[)\]]/g, (m) => (/\d{4}-\d{3,}/.test(m) || PAD.test(m) ? '' : m));
+  const parts = s.split(/\s+\|\s+/);
+  const cut = parts.findIndex((p, i) => i > 0 && PAD.test(p));
+  if (cut > 0 && !unbalancedParens(parts.slice(0, cut).join(' | '))) s = parts.slice(0, cut).join(' | ');
+  // After the pipe cut: "Developer – Remote | Dayshift" leaves a dash tail behind.
+  s = s.replace(/\s+[-–—]\s+([^-–—|]+)$/, (m, seg) => (PAD.test(seg) ? '' : m));
+  return s.replace(/\s{2,}/g, ' ').trim();
+};
+const unbalancedParens = (s) => s.split('(').length !== s.split(')').length;
+title = canonTitle(title);
 // Boilerplate left over from the subject, or a "title" that is just the
 // company ("Thanks for applying to Emapta"), names no job: leave it empty so
 // the email goes to Needs Review instead of starting a row of its own.
