@@ -1,25 +1,25 @@
 {
-  "generatedAt": "2026-11-03T10:10:16.156Z",
-  "total": 284,
-  "sent": 284,
+  "generatedAt": "2026-11-03T11:50:03.538Z",
+  "total": 285,
+  "sent": 285,
   "unsent": 0,
-  "replied": 123,
+  "replied": 124,
   "noReply": 161,
-  "open": 182,
-  "replyRate": 0.43309859154929575,
-  "interviewRate": 0.07746478873239436,
-  "ghostRate": 0.5669014084507042,
+  "open": 183,
+  "replyRate": 0.43508771929824563,
+  "interviewRate": 0.07719298245614035,
+  "ghostRate": 0.5649122807017544,
   "rejected": 84,
-  "rejectionRate": 0.29577464788732394,
+  "rejectionRate": 0.29473684210526313,
   "reached": [
-    284,
+    285,
     123,
     37,
     22,
     0
   ],
   "atStage": [
-    161,
+    162,
     86,
     15,
     22,
@@ -42,6 +42,10 @@
       {
         "status": "Closed / Expired",
         "count": 4
+      },
+      {
+        "status": "(blank)",
+        "count": 1
       }
     ],
     [
@@ -150,6 +154,10 @@
       "count": 5
     },
     {
+      "status": "(blank)",
+      "count": 1
+    },
+    {
       "status": "Interviewed",
       "count": 1
     }
@@ -217,6 +225,13 @@
       "replied": 1,
       "unsent": 0,
       "rate": 0.5
+    },
+    {
+      "name": "(blank)",
+      "sent": 1,
+      "replied": 1,
+      "unsent": 0,
+      "rate": 1
     },
     {
       "name": "Koronadal City",
@@ -308,7 +323,7 @@
   "workSetup": [
     {
       "label": "Remote",
-      "count": 280
+      "count": 281
     },
     {
       "label": "Onsite",
