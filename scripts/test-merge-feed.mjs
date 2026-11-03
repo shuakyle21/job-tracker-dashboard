@@ -27,7 +27,7 @@ function expect(label, got, want) {
 
 const email = (over = {}) => ({
   application_key: "acme|backend engineer", job_title: "Backend Engineer", company: "Acme",
-  job_platform: "JobStreet", status: "applied", max_stage: 1, received_at: "2026-09-10", ...over,
+  job_platform: "JobStreet", status: "applied", max_stage: 1, received_at: "2026-09-10", message_id: "msg-1", ...over,
 });
 
 const cases = [
@@ -45,7 +45,13 @@ const cases = [
     row: {},
     email: email(),
     want: { "Status": "Applied", "Job Platform": "JobStreet", "Source": "Jobstreet",
-      "Date Applied": "2026-09-10", "Max Stage": 1, "Job Role": "Backend Engineer" },
+      "Date Applied": "2026-09-10", "Max Stage": 1, "Job Role": "Backend Engineer", "Source Email": "msg-1" },
+  },
+  {
+    name: "later email keeps the row's first Source Email",
+    row: { "Status": "Applied", "Source Email": "msg-first" },
+    email: email({ message_id: "msg-later", status: "rejected" }),
+    want: { "Source Email": "msg-first", "Status": "Rejected" },
   },
   {
     name: "later viewed email advances status and stage, keeps the date",

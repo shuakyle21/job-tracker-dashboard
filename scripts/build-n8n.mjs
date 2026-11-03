@@ -183,7 +183,7 @@ const FEED_KEY_FORMULA = 'REGEX_REPLACE(LOWER(TRIM({Application Key})), " *[|] *
 // never blanks a field by leaving it out.
 const FEED_FIELDS = [
   "Application Key", "Job Role", "Company", "Job Platform", "Source",
-  "Date Applied", "Status", "Max Stage",
+  "Date Applied", "Status", "Max Stage", "Source Email",
 ];
 
 function airtableNode(name, tableId, fields, position, key = "message_id") {

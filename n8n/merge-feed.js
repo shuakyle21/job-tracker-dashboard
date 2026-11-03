@@ -74,5 +74,7 @@ return {
     'Date Applied': dates[0] || '',
     'Status': status,
     'Max Stage': Math.max(Number(row['Max Stage']) || 0, Number(email.max_stage) || 1),
+    // The first email that made the row, so it can be opened in Gmail. Kept once set.
+    'Source Email': row['Source Email'] || email.message_id || '',
   },
 };
