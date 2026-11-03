@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-03T10:09:10.673Z",
+  "generatedAt": "2026-11-03T10:09:42.516Z",
   "total": 284,
   "sent": 284,
   "unsent": 0,
@@ -302,7 +302,7 @@
     },
     {
       "month": "2026-11",
-      "count": 3
+      "count": 4
     }
   ],
   "workSetup": [
@@ -318,7 +318,7 @@
   "ageing": [
     {
       "label": "0–7d",
-      "count": 3
+      "count": 4
     },
     {
       "label": "8–14d",
@@ -343,8 +343,8 @@
     "dueWeek": 0
   },
   "quality": {
-    "resume": 190,
+    "resume": 191,
     "cover": 8,
-    "tailored": 46
+    "tailored": 47
   }
 }
