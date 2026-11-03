@@ -1,25 +1,25 @@
 {
-  "generatedAt": "2026-11-03T03:13:44.346Z",
-  "total": 292,
-  "sent": 292,
+  "generatedAt": "2026-11-03T03:24:27.915Z",
+  "total": 293,
+  "sent": 293,
   "unsent": 0,
   "replied": 129,
-  "noReply": 163,
-  "open": 188,
-  "replyRate": 0.4417808219178082,
-  "interviewRate": 0.08561643835616438,
-  "ghostRate": 0.5582191780821918,
+  "noReply": 164,
+  "open": 189,
+  "replyRate": 0.4402730375426621,
+  "interviewRate": 0.08532423208191127,
+  "ghostRate": 0.5597269624573379,
   "rejected": 86,
-  "rejectionRate": 0.2945205479452055,
+  "rejectionRate": 0.2935153583617747,
   "reached": [
-    292,
+    293,
     127,
     40,
     25,
     0
   ],
   "atStage": [
-    165,
+    166,
     87,
     15,
     25,
@@ -29,7 +29,7 @@
     [
       {
         "status": "Applied",
-        "count": 111
+        "count": 112
       },
       {
         "status": "Rejected",
@@ -119,7 +119,7 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 150
+      "count": 151
     },
     {
       "status": "Rejected",
@@ -185,10 +185,10 @@
     },
     {
       "name": "Direct Email",
-      "sent": 11,
+      "sent": 12,
       "replied": 3,
       "unsent": 0,
-      "rate": 0.2727272727272727
+      "rate": 0.25
     },
     {
       "name": "Kalibrr",
@@ -302,13 +302,13 @@
     },
     {
       "month": "2026-11",
-      "count": 1
+      "count": 2
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 288
+      "count": 289
     },
     {
       "label": "Onsite",
@@ -318,7 +318,7 @@
   "ageing": [
     {
       "label": "0–7d",
-      "count": 2
+      "count": 3
     },
     {
       "label": "8–14d",
