@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-11-03T10:08:37.594Z",
+  "generatedAt": "2026-11-03T10:09:10.673Z",
   "total": 284,
   "sent": 284,
   "unsent": 0,
-  "replied": 124,
-  "noReply": 160,
+  "replied": 123,
+  "noReply": 161,
   "open": 182,
-  "replyRate": 0.43661971830985913,
+  "replyRate": 0.43309859154929575,
   "interviewRate": 0.07746478873239436,
-  "ghostRate": 0.5633802816901409,
+  "ghostRate": 0.5669014084507042,
   "rejected": 84,
   "rejectionRate": 0.29577464788732394,
   "reached": [
@@ -29,7 +29,7 @@
     [
       {
         "status": "Applied",
-        "count": 110
+        "count": 111
       },
       {
         "status": "Rejected",
@@ -42,10 +42,6 @@
       {
         "status": "Closed / Expired",
         "count": 4
-      },
-      {
-        "status": "(blank)",
-        "count": 1
       }
     ],
     [
@@ -123,7 +119,7 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 147
+      "count": 148
     },
     {
       "status": "Rejected",
@@ -155,10 +151,6 @@
     },
     {
       "status": "Interviewed",
-      "count": 1
-    },
-    {
-      "status": "(blank)",
       "count": 1
     }
   ],
@@ -220,6 +212,13 @@
       "rate": 0.5
     },
     {
+      "name": "Company/Career Site",
+      "sent": 2,
+      "replied": 1,
+      "unsent": 0,
+      "rate": 0.5
+    },
+    {
       "name": "Koronadal City",
       "sent": 1,
       "replied": 1,
@@ -235,20 +234,6 @@
     },
     {
       "name": " DICT Digital Workforce Hub",
-      "sent": 1,
-      "replied": 1,
-      "unsent": 0,
-      "rate": 1
-    },
-    {
-      "name": "Company/Career Site",
-      "sent": 1,
-      "replied": 1,
-      "unsent": 0,
-      "rate": 1
-    },
-    {
-      "name": "(blank)",
       "sent": 1,
       "replied": 1,
       "unsent": 0,
