@@ -1,28 +1,28 @@
 {
-  "generatedAt": "2026-11-03T03:25:17.626Z",
+  "generatedAt": "2026-11-03T03:25:51.280Z",
   "total": 293,
   "sent": 293,
   "unsent": 0,
   "replied": 129,
   "noReply": 164,
-  "open": 189,
+  "open": 188,
   "replyRate": 0.4402730375426621,
-  "interviewRate": 0.08532423208191127,
+  "interviewRate": 0.08191126279863481,
   "ghostRate": 0.5597269624573379,
-  "rejected": 86,
-  "rejectionRate": 0.2935153583617747,
+  "rejected": 87,
+  "rejectionRate": 0.29692832764505117,
   "reached": [
     293,
     127,
-    40,
-    25,
+    39,
+    24,
     0
   ],
   "atStage": [
     166,
-    87,
+    88,
     15,
-    25,
+    24,
     0
   ],
   "dropComposition": [
@@ -51,7 +51,7 @@
       },
       {
         "status": "Rejected",
-        "count": 27
+        "count": 28
       },
       {
         "status": "Viewed by Employer",
@@ -95,7 +95,7 @@
       },
       {
         "status": "Interviewed",
-        "count": 5
+        "count": 4
       },
       {
         "status": "In Review",
@@ -110,7 +110,7 @@
   ],
   "rejectedAt": [
     45,
-    27,
+    28,
     5,
     9,
     0
@@ -123,7 +123,7 @@
     },
     {
       "status": "Rejected",
-      "count": 86
+      "count": 87
     },
     {
       "status": "Assessment",
@@ -146,12 +146,12 @@
       "count": 6
     },
     {
-      "status": "Interviewed",
+      "status": "Talent Pool",
       "count": 5
     },
     {
-      "status": "Talent Pool",
-      "count": 5
+      "status": "Interviewed",
+      "count": 4
     }
   ],
   "channels": [
@@ -322,7 +322,7 @@
     },
     {
       "label": "8–14d",
-      "count": 7
+      "count": 6
     },
     {
       "label": "15–30d",
@@ -343,7 +343,7 @@
     "dueWeek": 0
   },
   "quality": {
-    "resume": 191,
+    "resume": 195,
     "cover": 8,
     "tailored": 20
   }
