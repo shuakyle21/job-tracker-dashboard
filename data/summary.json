@@ -1,26 +1,26 @@
 {
-  "generatedAt": "2026-11-03T03:45:53.197Z",
-  "total": 291,
-  "sent": 291,
+  "generatedAt": "2026-11-03T03:46:46.195Z",
+  "total": 283,
+  "sent": 283,
   "unsent": 0,
-  "replied": 127,
-  "noReply": 164,
-  "open": 186,
-  "replyRate": 0.436426116838488,
-  "interviewRate": 0.07560137457044673,
-  "ghostRate": 0.563573883161512,
-  "rejected": 87,
-  "rejectionRate": 0.29896907216494845,
+  "replied": 123,
+  "noReply": 160,
+  "open": 181,
+  "replyRate": 0.43462897526501765,
+  "interviewRate": 0.07773851590106007,
+  "ghostRate": 0.5653710247349824,
+  "rejected": 84,
+  "rejectionRate": 0.2968197879858657,
   "reached": [
-    291,
-    125,
+    283,
+    123,
     37,
     22,
     0
   ],
   "atStage": [
-    166,
-    88,
+    160,
+    86,
     15,
     22,
     0
@@ -29,11 +29,11 @@
     [
       {
         "status": "Applied",
-        "count": 112
+        "count": 110
       },
       {
         "status": "Rejected",
-        "count": 45
+        "count": 41
       },
       {
         "status": "No Response",
@@ -47,7 +47,7 @@
     [
       {
         "status": "Applied",
-        "count": 33
+        "count": 31
       },
       {
         "status": "Rejected",
@@ -87,7 +87,7 @@
     [
       {
         "status": "Rejected",
-        "count": 9
+        "count": 10
       },
       {
         "status": "Applied",
@@ -98,32 +98,32 @@
         "count": 3
       },
       {
-        "status": "Interviewed",
+        "status": "Assessment",
         "count": 2
       },
       {
-        "status": "Assessment",
-        "count": 2
+        "status": "Interviewed",
+        "count": 1
       }
     ],
     []
   ],
   "rejectedAt": [
-    45,
+    41,
     28,
     5,
-    9,
+    10,
     0
   ],
   "usedExplicitStage": true,
   "byStatus": [
     {
       "status": "Applied",
-      "count": 151
+      "count": 147
     },
     {
       "status": "Rejected",
-      "count": 87
+      "count": 84
     },
     {
       "status": "Assessment",
@@ -151,23 +151,23 @@
     },
     {
       "status": "Interviewed",
-      "count": 2
+      "count": 1
     }
   ],
   "channels": [
     {
       "name": "Direct / Careers",
-      "sent": 137,
-      "replied": 64,
+      "sent": 131,
+      "replied": 61,
       "unsent": 0,
-      "rate": 0.46715328467153283
+      "rate": 0.46564885496183206
     },
     {
       "name": "Jobstreet",
-      "sent": 63,
+      "sent": 62,
       "replied": 21,
       "unsent": 0,
-      "rate": 0.3333333333333333
+      "rate": 0.3387096774193548
     },
     {
       "name": "LinkedIn",
@@ -178,10 +178,10 @@
     },
     {
       "name": "Indeed",
-      "sent": 16,
-      "replied": 7,
+      "sent": 15,
+      "replied": 6,
       "unsent": 0,
-      "rate": 0.4375
+      "rate": 0.4
     },
     {
       "name": "Direct Email",
@@ -282,7 +282,7 @@
     },
     {
       "month": "2026-06",
-      "count": 8
+      "count": 7
     },
     {
       "month": "2026-07",
@@ -290,7 +290,7 @@
     },
     {
       "month": "2026-08",
-      "count": 94
+      "count": 91
     },
     {
       "month": "2026-09",
@@ -298,7 +298,7 @@
     },
     {
       "month": "2026-10",
-      "count": 47
+      "count": 43
     },
     {
       "month": "2026-11",
@@ -308,7 +308,7 @@
   "workSetup": [
     {
       "label": "Remote",
-      "count": 287
+      "count": 279
     },
     {
       "label": "Onsite",
@@ -318,7 +318,7 @@
   "ageing": [
     {
       "label": "0–7d",
-      "count": 3
+      "count": 2
     },
     {
       "label": "8–14d",
@@ -326,7 +326,7 @@
     },
     {
       "label": "15–30d",
-      "count": 18
+      "count": 16
     },
     {
       "label": "31–60d",
@@ -334,7 +334,7 @@
     },
     {
       "label": "60d+",
-      "count": 134
+      "count": 132
     }
   ],
   "followUps": {
@@ -343,8 +343,8 @@
     "dueWeek": 0
   },
   "quality": {
-    "resume": 194,
+    "resume": 190,
     "cover": 8,
-    "tailored": 20
+    "tailored": 19
   }
 }
