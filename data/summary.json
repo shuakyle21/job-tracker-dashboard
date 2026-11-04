@@ -1,25 +1,25 @@
 {
-  "generatedAt": "2026-11-04T03:28:06.977Z",
-  "total": 289,
-  "sent": 289,
+  "generatedAt": "2026-11-04T04:09:18.483Z",
+  "total": 290,
+  "sent": 290,
   "unsent": 0,
   "replied": 123,
-  "noReply": 166,
-  "open": 187,
-  "replyRate": 0.42560553633217996,
-  "interviewRate": 0.07612456747404844,
-  "ghostRate": 0.5743944636678201,
+  "noReply": 167,
+  "open": 188,
+  "replyRate": 0.4241379310344828,
+  "interviewRate": 0.07586206896551724,
+  "ghostRate": 0.5758620689655173,
   "rejected": 84,
-  "rejectionRate": 0.2906574394463668,
+  "rejectionRate": 0.2896551724137931,
   "reached": [
-    289,
+    290,
     125,
     37,
     22,
     0
   ],
   "atStage": [
-    164,
+    165,
     88,
     15,
     22,
@@ -29,7 +29,7 @@
     [
       {
         "status": "Applied",
-        "count": 114
+        "count": 115
       },
       {
         "status": "Rejected",
@@ -119,7 +119,7 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 153
+      "count": 154
     },
     {
       "status": "Rejected",
@@ -198,14 +198,14 @@
       "rate": 0.4
     },
     {
-      "name": "Torre.ai",
-      "sent": 3,
+      "name": "Online.jobs",
+      "sent": 4,
       "replied": 1,
       "unsent": 0,
-      "rate": 0.3333333333333333
+      "rate": 0.25
     },
     {
-      "name": "Online.jobs",
+      "name": "Torre.ai",
       "sent": 3,
       "replied": 1,
       "unsent": 0,
@@ -302,13 +302,13 @@
     },
     {
       "month": "2026-11",
-      "count": 9
+      "count": 10
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 285
+      "count": 286
     },
     {
       "label": "Onsite",
@@ -318,7 +318,7 @@
   "ageing": [
     {
       "label": "0–7d",
-      "count": 9
+      "count": 10
     },
     {
       "label": "8–14d",
