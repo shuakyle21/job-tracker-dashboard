@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-11-04T07:12:46.649Z",
+  "generatedAt": "2026-11-04T07:17:42.767Z",
   "total": 291,
   "sent": 291,
   "unsent": 0,
-  "replied": 124,
-  "noReply": 167,
+  "replied": 125,
+  "noReply": 166,
   "open": 189,
-  "replyRate": 0.4261168384879725,
+  "replyRate": 0.42955326460481097,
   "interviewRate": 0.07560137457044673,
-  "ghostRate": 0.5738831615120275,
+  "ghostRate": 0.570446735395189,
   "rejected": 84,
   "rejectionRate": 0.28865979381443296,
   "reached": [
@@ -29,7 +29,7 @@
     [
       {
         "status": "Applied",
-        "count": 115
+        "count": 114
       },
       {
         "status": "Rejected",
@@ -45,7 +45,7 @@
       },
       {
         "status": "(blank)",
-        "count": 1
+        "count": 2
       }
     ],
     [
@@ -123,7 +123,7 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 154
+      "count": 153
     },
     {
       "status": "Rejected",
@@ -154,11 +154,11 @@
       "count": 5
     },
     {
-      "status": "Interviewed",
-      "count": 1
+      "status": "(blank)",
+      "count": 2
     },
     {
-      "status": "(blank)",
+      "status": "Interviewed",
       "count": 1
     }
   ],
@@ -179,10 +179,10 @@
     },
     {
       "name": "LinkedIn",
-      "sent": 50,
+      "sent": 49,
       "replied": 24,
       "unsent": 0,
-      "rate": 0.48
+      "rate": 0.4897959183673469
     },
     {
       "name": "Indeed",
@@ -220,6 +220,13 @@
       "rate": 0.3333333333333333
     },
     {
+      "name": "(blank)",
+      "sent": 2,
+      "replied": 2,
+      "unsent": 0,
+      "rate": 1
+    },
+    {
       "name": "Koronadal City",
       "sent": 1,
       "replied": 1,
@@ -228,13 +235,6 @@
     },
     {
       "name": "Direct / ATS",
-      "sent": 1,
-      "replied": 1,
-      "unsent": 0,
-      "rate": 1
-    },
-    {
-      "name": "(blank)",
       "sent": 1,
       "replied": 1,
       "unsent": 0,
@@ -317,13 +317,13 @@
     },
     {
       "month": "2026-11",
-      "count": 10
+      "count": 9
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 286
+      "count": 285
     },
     {
       "label": "Onsite",
@@ -331,13 +331,13 @@
     },
     {
       "label": "Unspecified",
-      "count": 1
+      "count": 2
     }
   ],
   "ageing": [
     {
       "label": "0–7d",
-      "count": 10
+      "count": 9
     },
     {
       "label": "8–14d",
@@ -362,8 +362,8 @@
     "dueWeek": 0
   },
   "quality": {
-    "resume": 197,
+    "resume": 196,
     "cover": 8,
-    "tailored": 48
+    "tailored": 47
   }
 }
