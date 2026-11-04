@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-04T04:09:18.483Z",
+  "generatedAt": "2026-11-04T04:59:43.513Z",
   "total": 290,
   "sent": 290,
   "unsent": 0,
@@ -164,10 +164,10 @@
     },
     {
       "name": "Jobstreet",
-      "sent": 62,
-      "replied": 21,
+      "sent": 63,
+      "replied": 22,
       "unsent": 0,
-      "rate": 0.3387096774193548
+      "rate": 0.3492063492063492
     },
     {
       "name": "LinkedIn",
@@ -212,13 +212,6 @@
       "rate": 0.3333333333333333
     },
     {
-      "name": "Company/Career Site",
-      "sent": 2,
-      "replied": 1,
-      "unsent": 0,
-      "rate": 0.5
-    },
-    {
       "name": "Koronadal City",
       "sent": 1,
       "replied": 1,
@@ -238,6 +231,13 @@
       "replied": 1,
       "unsent": 0,
       "rate": 1
+    },
+    {
+      "name": "Company/Career Site",
+      "sent": 1,
+      "replied": 0,
+      "unsent": 0,
+      "rate": 0
     },
     {
       "name": "Platform",
