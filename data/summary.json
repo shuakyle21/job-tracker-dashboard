@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-11-04T06:32:14.831Z",
+  "generatedAt": "2026-11-04T07:12:46.649Z",
   "total": 291,
   "sent": 291,
   "unsent": 0,
-  "replied": 123,
-  "noReply": 168,
+  "replied": 124,
+  "noReply": 167,
   "open": 189,
-  "replyRate": 0.422680412371134,
+  "replyRate": 0.4261168384879725,
   "interviewRate": 0.07560137457044673,
-  "ghostRate": 0.5773195876288659,
+  "ghostRate": 0.5738831615120275,
   "rejected": 84,
   "rejectionRate": 0.28865979381443296,
   "reached": [
@@ -29,7 +29,7 @@
     [
       {
         "status": "Applied",
-        "count": 116
+        "count": 115
       },
       {
         "status": "Rejected",
@@ -42,6 +42,10 @@
       {
         "status": "Closed / Expired",
         "count": 4
+      },
+      {
+        "status": "(blank)",
+        "count": 1
       }
     ],
     [
@@ -119,7 +123,7 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 155
+      "count": 154
     },
     {
       "status": "Rejected",
@@ -151,6 +155,10 @@
     },
     {
       "status": "Interviewed",
+      "count": 1
+    },
+    {
+      "status": "(blank)",
       "count": 1
     }
   ],
@@ -226,11 +234,11 @@
       "rate": 1
     },
     {
-      "name": "Direct / Recruiter",
+      "name": "(blank)",
       "sent": 1,
-      "replied": 0,
+      "replied": 1,
       "unsent": 0,
-      "rate": 0
+      "rate": 1
     },
     {
       "name": " DICT Digital Workforce Hub",
@@ -309,23 +317,27 @@
     },
     {
       "month": "2026-11",
-      "count": 11
+      "count": 10
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 287
+      "count": 286
     },
     {
       "label": "Onsite",
       "count": 4
+    },
+    {
+      "label": "Unspecified",
+      "count": 1
     }
   ],
   "ageing": [
     {
       "label": "0–7d",
-      "count": 11
+      "count": 10
     },
     {
       "label": "8–14d",
@@ -350,7 +362,7 @@
     "dueWeek": 0
   },
   "quality": {
-    "resume": 192,
+    "resume": 197,
     "cover": 8,
     "tailored": 48
   }
