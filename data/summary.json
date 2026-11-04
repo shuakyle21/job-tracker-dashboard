@@ -1,25 +1,25 @@
 {
-  "generatedAt": "2026-11-04T04:59:43.513Z",
-  "total": 290,
-  "sent": 290,
+  "generatedAt": "2026-11-04T06:32:14.831Z",
+  "total": 291,
+  "sent": 291,
   "unsent": 0,
   "replied": 123,
-  "noReply": 167,
-  "open": 188,
-  "replyRate": 0.4241379310344828,
-  "interviewRate": 0.07586206896551724,
-  "ghostRate": 0.5758620689655173,
+  "noReply": 168,
+  "open": 189,
+  "replyRate": 0.422680412371134,
+  "interviewRate": 0.07560137457044673,
+  "ghostRate": 0.5773195876288659,
   "rejected": 84,
-  "rejectionRate": 0.2896551724137931,
+  "rejectionRate": 0.28865979381443296,
   "reached": [
-    290,
+    291,
     125,
     37,
     22,
     0
   ],
   "atStage": [
-    165,
+    166,
     88,
     15,
     22,
@@ -29,7 +29,7 @@
     [
       {
         "status": "Applied",
-        "count": 115
+        "count": 116
       },
       {
         "status": "Rejected",
@@ -119,7 +119,7 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 154
+      "count": 155
     },
     {
       "status": "Rejected",
@@ -226,6 +226,13 @@
       "rate": 1
     },
     {
+      "name": "Direct / Recruiter",
+      "sent": 1,
+      "replied": 0,
+      "unsent": 0,
+      "rate": 0
+    },
+    {
       "name": " DICT Digital Workforce Hub",
       "sent": 1,
       "replied": 1,
@@ -302,13 +309,13 @@
     },
     {
       "month": "2026-11",
-      "count": 10
+      "count": 11
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 286
+      "count": 287
     },
     {
       "label": "Onsite",
@@ -318,7 +325,7 @@
   "ageing": [
     {
       "label": "0–7d",
-      "count": 10
+      "count": 11
     },
     {
       "label": "8–14d",
