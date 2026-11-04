@@ -1,27 +1,27 @@
 {
-  "generatedAt": "2026-11-04T07:18:19.851Z",
+  "generatedAt": "2026-11-04T07:18:54.727Z",
   "total": 291,
   "sent": 291,
   "unsent": 0,
-  "replied": 125,
-  "noReply": 166,
+  "replied": 126,
+  "noReply": 165,
   "open": 189,
-  "replyRate": 0.42955326460481097,
+  "replyRate": 0.4329896907216495,
   "interviewRate": 0.07560137457044673,
-  "ghostRate": 0.570446735395189,
+  "ghostRate": 0.5670103092783505,
   "rejected": 84,
   "rejectionRate": 0.28865979381443296,
   "reached": [
     291,
-    125,
-    37,
+    126,
+    38,
     22,
     0
   ],
   "atStage": [
-    166,
+    165,
     88,
-    15,
+    16,
     22,
     0
   ],
@@ -29,7 +29,7 @@
     [
       {
         "status": "Applied",
-        "count": 114
+        "count": 113
       },
       {
         "status": "Rejected",
@@ -81,7 +81,7 @@
     [
       {
         "status": "Assessment",
-        "count": 10
+        "count": 11
       },
       {
         "status": "Rejected",
@@ -123,7 +123,7 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 153
+      "count": 152
     },
     {
       "status": "Rejected",
@@ -131,7 +131,7 @@
     },
     {
       "status": "Assessment",
-      "count": 12
+      "count": 13
     },
     {
       "status": "Viewed by Employer",
@@ -194,9 +194,9 @@
     {
       "name": "Direct Email",
       "sent": 12,
-      "replied": 3,
+      "replied": 4,
       "unsent": 0,
-      "rate": 0.25
+      "rate": 0.3333333333333333
     },
     {
       "name": "Kalibrr",
