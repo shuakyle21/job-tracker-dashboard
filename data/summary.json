@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-04T02:31:01.446Z",
+  "generatedAt": "2026-11-04T03:28:06.977Z",
   "total": 289,
   "sent": 289,
   "unsent": 0,
@@ -185,10 +185,10 @@
     },
     {
       "name": "Direct Email",
-      "sent": 13,
+      "sent": 12,
       "replied": 3,
       "unsent": 0,
-      "rate": 0.23076923076923078
+      "rate": 0.25
     },
     {
       "name": "Kalibrr",
@@ -206,10 +206,10 @@
     },
     {
       "name": "Online.jobs",
-      "sent": 2,
+      "sent": 3,
       "replied": 1,
       "unsent": 0,
-      "rate": 0.5
+      "rate": 0.3333333333333333
     },
     {
       "name": "Company/Career Site",
