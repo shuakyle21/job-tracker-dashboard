@@ -64,6 +64,8 @@ const RULES = [
     /\binvit(?:ation|e|ing) (?:you )?(?:to|for) an? (?:interview|call|chat)\b/,
     /\bschedule (?:an?|your) (?:interview|call)\b/, /\bcalendly\.com\b/,
     /\bbook a time\b/, /\bpick a time\b/, /\bavailability for a (?:call|chat|interview)\b/,
+    // Google Calendar: "Invitation: 2nd Interview: ..." / "Appointment booked: 1st Interview | ...".
+    /^(?:updated )?(?:invitation|appointment booked): [^@]*\binterview\b/,
   ]],
   ['assessment', [
     /\b(?:online |skills? |technical )?assessment\b/, /\btake[- ]home\b/,
@@ -190,6 +192,8 @@ const ATS_DOMAINS = /^(?:.*\.)?(?:linkedin|indeed|greenhouse|lever|workday(?:day
 // First label of the sender's domain ("polaris" for jane@polaris.co.il), used
 // below to tell a company named in the subject from a recruiter's own name.
 const fromDomainLabel = ((from.split('@')[1] || '').toLowerCase().split('.')[0]) || '';
+// A Google Calendar invite: the subject is "<prefix>: <event name> @ <date> (<guest>)".
+const isCalendar = /^(?:updated )?(?:invitation|appointment booked):/i.test(subject);
 if (!company) {
   const domain = ((isSent ? to : from).split('@')[1] || '').toLowerCase();
   if (domain && !ATS_DOMAINS.test(domain + '.')) {
@@ -217,6 +221,9 @@ if (firstName.length >= 3 && localPart.includes(firstName) && fromDomainLabel.le
   const withoutUrls = (subject + '\n' + body).replace(/\S*(?:https?:\/\/|www\.|@)\S*/g, ' ');
   const named = withoutUrls.match(new RegExp('\\b' + fromDomainLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i'));
   if (named) company = named[0];
+  // A calendar invite names the company nowhere but the organiser's address,
+  // and a person's name is no employer: take the domain.
+  else if (isCalendar) company = fromDomainLabel.charAt(0).toUpperCase() + fromDomainLabel.slice(1);
 }
 
 // --- job title ------------------------------------------------------------
@@ -302,6 +309,10 @@ const prose = body
   .split(/\n[ \t>]*On\b[^\n]*(?:\n[^\n]*)?\bwrote:/)[0]
   .replace(/[ \t]*\n(?![ \t]*\n)[ \t]*/g, ' ');
 const EXTRACTORS = [
+  // Google Calendar invites name the job in the event name, in one of two
+  // shapes: "1st Interview | <T> (<you>)" or "2nd Interview: <you> (<T>)".
+  [subject, /^(?:updated )?(?:invitation|appointment booked):[^|@]*?\binterview\s*\|\s*([^(@]+?)\s*\(/i, 1, 0],
+  [subject, /^(?:updated )?(?:invitation|appointment booked):[^@|]*?\binterview:[^(@]*\(([^)@]+)\)\s*@/i, 1, 0],
   // LinkedIn rejection: "Your application to <T> at <C>". Split at the last
   // " at ": the title's own dashes ("Engineer I – Java/Python") are not the
   // separator the generic subject split takes them for.

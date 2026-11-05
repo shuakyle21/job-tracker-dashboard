@@ -113,6 +113,13 @@ const cases = [
     email: email(),
     want: { "Status": "Withdrawn" },
   },
+  {
+    // Source already has "Online.jobs"; a second spelling splits the channel.
+    name: "OnlineJobs.ph files under the existing Online.jobs source",
+    row: {},
+    email: email({ job_platform: "OnlineJobs.ph" }),
+    want: { "Source": "Online.jobs" },
+  },
 ];
 
 console.log("Feed merge tests\n");

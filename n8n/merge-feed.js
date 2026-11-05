@@ -37,8 +37,8 @@ const RANK = {
 const SOURCE_OF_PLATFORM = {
   'JobStreet': 'Jobstreet', 'LinkedIn': 'LinkedIn', 'Indeed': 'Indeed', 'Kalibrr': 'Kalibrr',
   // Only choices Source already has: a new option would silently add a
-  // channel to the dashboard. OnlineJobs.ph has none, so it is a "Platform".
-  'OnlineJobs.ph': 'Platform', 'Torre': 'Torre.ai', 'Company Website': 'Direct / Careers',
+  // channel to the dashboard. OnlineJobs.ph is the existing "Online.jobs".
+  'OnlineJobs.ph': 'Online.jobs', 'Torre': 'Torre.ai', 'Company Website': 'Direct / Careers',
   'Direct Email': 'Direct Email',
 };
 
