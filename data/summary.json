@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-05T10:55:45.311Z",
+  "generatedAt": "2026-11-05T11:17:09.120Z",
   "total": 294,
   "sent": 294,
   "unsent": 0,
@@ -149,17 +149,17 @@
   "channels": [
     {
       "name": "Direct / Careers",
-      "sent": 133,
-      "replied": 61,
+      "sent": 135,
+      "replied": 62,
       "unsent": 0,
-      "rate": 0.45864661654135336
+      "rate": 0.45925925925925926
     },
     {
       "name": "Jobstreet",
-      "sent": 65,
+      "sent": 66,
       "replied": 22,
       "unsent": 0,
-      "rate": 0.3384615384615385
+      "rate": 0.3333333333333333
     },
     {
       "name": "LinkedIn",
@@ -177,10 +177,10 @@
     },
     {
       "name": "Direct Email",
-      "sent": 13,
-      "replied": 4,
+      "sent": 14,
+      "replied": 5,
       "unsent": 0,
-      "rate": 0.3076923076923077
+      "rate": 0.35714285714285715
     },
     {
       "name": "Kalibrr",
@@ -211,39 +211,11 @@
       "rate": 1
     },
     {
-      "name": "Koronadal City",
+      "name": "DICT Digital Workforce Hub",
       "sent": 1,
       "replied": 1,
       "unsent": 0,
       "rate": 1
-    },
-    {
-      "name": "Direct / ATS",
-      "sent": 1,
-      "replied": 1,
-      "unsent": 0,
-      "rate": 1
-    },
-    {
-      "name": " DICT Digital Workforce Hub",
-      "sent": 1,
-      "replied": 1,
-      "unsent": 0,
-      "rate": 1
-    },
-    {
-      "name": "Company/Career Site",
-      "sent": 1,
-      "replied": 0,
-      "unsent": 0,
-      "rate": 0
-    },
-    {
-      "name": "Platform",
-      "sent": 1,
-      "replied": 0,
-      "unsent": 0,
-      "rate": 0
     }
   ],
   "monthly": [
