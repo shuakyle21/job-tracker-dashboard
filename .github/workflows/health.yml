@@ -31,7 +31,7 @@ jobs:
           node-version: "20"
 
       # Active, published, matching the generated JSON, no shared GitHub
-      # credential, and no error executions in the last 150 minutes (the
+      # credential, and no error executions in the last 10 hours (the
       # ingest's hourly stale-mail alarm and the Feed webhook keep-alive both
       # fail that way).
       - name: Check live n8n against the repo

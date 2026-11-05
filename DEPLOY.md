@@ -350,8 +350,9 @@ outside n8n. A failed run means GitHub emails you. It fails when:
   credential types; positions and credential ids are ignored);
 - a credential attached to a GitHub dispatch is also attached to any other node;
 - the published (running) version differs from the draft;
-- either workflow had an error execution in the last 150 minutes (wider than the hourly
-  schedule, because Actions cron can run late; an error may be reported twice). That covers
+- either workflow had an error execution in the last 10 hours (wider than the real gap
+  between runs: the cron says hourly, but Actions has run it up to ~9h apart; an error may
+  be reported twice). That covers
   the ingest's hourly **Stale Job Mail Alarm** (job mail older than 2h still
   unprocessed), the Feed webhook keep-alive, a failed dispatch, and an expired Gmail or Airtable
   credential.

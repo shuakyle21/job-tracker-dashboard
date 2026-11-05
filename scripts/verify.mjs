@@ -47,10 +47,11 @@ async function build(overrides) {
 }
 
 async function assertBuildOutput(label) {
-  const summary = JSON.parse(await readFile(join(ROOT, "data/summary.json"), "utf8"));
+  // dist/, not data/: a fixture build no longer writes the committed summary.
+  const distSummaryRaw = await readFile(join(ROOT, "dist/data/summary.json"), "utf8");
+  const summary = JSON.parse(distSummaryRaw);
   const html = await readFile(join(ROOT, "dist/index.html"), "utf8");
   const artifact = await readFile(join(ROOT, "dist/artifact.html"), "utf8");
-  const distSummaryRaw = await readFile(join(ROOT, "dist/data/summary.json"), "utf8");
   const { reached, atStage, total, sent, unsent, replied, noReply } = summary;
 
   console.log(`\n${label}`);
@@ -89,7 +90,7 @@ async function assertBuildOutput(label) {
   // The Sankey's red branches are carved out of the drop-off buckets above, so
   // they must fit inside them and add up to every "Rejected" row.
   const rejectedRows = summary.byStatus
-    .filter(s => s.status.toLowerCase() === "rejected").reduce((a, s) => a + s.count, 0);
+    .filter(s => /^rejected\b/i.test(s.status)).reduce((a, s) => a + s.count, 0);
   check("rejections by stage sum to the Rejected status count",
     summary.rejectedAt.reduce((a, b) => a + b, 0) === rejectedRows && summary.rejected === rejectedRows,
     `${summary.rejectedAt.join("+")} vs ${rejectedRows}`);
@@ -117,8 +118,8 @@ async function assertBuildOutput(label) {
   // The live page fetches dist/data/summary.json to notice a newer build landed.
   // It must always match what's baked into this same build's HTML, or the banner
   // would fire (or stay silent) on a false signal.
-  check("dist/data/summary.json matches data/summary.json",
-    distSummaryRaw === JSON.stringify(summary, null, 2) + "\n");
+  check("dist/data/summary.json matches the data baked into the page",
+    html.includes(JSON.stringify(summary)));
 
   // --- the privacy boundary ------------------------------------------
   // The Feed table is de-identified by construction, but a widened feed would
@@ -546,6 +547,8 @@ function assertCredentials(workflows) {
 }
 
 console.log("Verifying build\n");
+// Fixture builds must leave the committed time series alone; checked at the end.
+const committedSummary = await readFile(join(ROOT, "data/summary.json"), "utf8").catch(() => null);
 await build({ FEED_FIXTURE: "./sample-feed.json" });
 const fixture = await assertBuildOutput("Fixture build");
 const ingestWf = await assertIngestWorkflow();
@@ -561,6 +564,10 @@ check("93 sent, 4 unsent", fixture.sent === 93 && fixture.unsent === 4);
 check("reply rate is 49.5%", Math.round(fixture.replyRate * 1000) === 495);
 check("five months of history", fixture.monthly.length === 5);
 check("rejected by stage is 15,2,0,2,0", fixture.rejectedAt.join(",") === "15,2,0,2,0", fixture.rejectedAt.join(","));
+// The donut's interview slices must be the rows the funnel counts at interview.
+const afterInterview = fixture.byStatus.find(s => s.status === "Rejected after interview")?.count ?? 0;
+check("status mix splits out the rejections after an interview",
+  afterInterview === fixture.rejectedAt[3] + fixture.rejectedAt[4], `${afterInterview} vs ${fixture.rejectedAt[3] + fixture.rejectedAt[4]}`);
 
 // Two rows the live base actually had: an empty Airtable line, and an
 // "Assessment" with a stale Max Stage of 1. The first must not count at all; the
@@ -570,6 +577,8 @@ console.log("\nEdge-case rows");
   const base = JSON.parse(await readFile(join(ROOT, "sample-feed.json"), "utf8"));
   base.records.push(
     { id: "recEdgeEmpty00001", createdTime: "2026-05-01T00:00:00.000Z", fields: {} },
+    // The live ghost rows: no Status, but not empty either.
+    { id: "recEdgeNoStatus01", createdTime: "2026-05-01T00:00:00.000Z", fields: { "Max Stage": 1 } },
     { id: "recEdgeLowStage01", createdTime: "2026-05-01T00:00:00.000Z",
       fields: { "Date Applied": "2026-05-01", Source: "Jobstreet", Status: "Assessment", "Max Stage": 1 } },
   );
@@ -577,15 +586,17 @@ console.log("\nEdge-case rows");
   const path = join(dir, "feed.json");
   await writeFile(path, JSON.stringify(base));
   await build({ FEED_FIXTURE: path });
-  const edge = JSON.parse(await readFile(join(ROOT, "data/summary.json"), "utf8"));
+  const edge = JSON.parse(await readFile(join(ROOT, "dist/data/summary.json"), "utf8"));
   await rm(dir, { recursive: true, force: true });
-  check("an empty Feed row is not counted", edge.total === fixture.total + 1, `${edge.total} vs ${fixture.total + 1}`);
+  check("empty and no-Status Feed rows are not counted", edge.total === fixture.total + 1, `${edge.total} vs ${fixture.total + 1}`);
   check("no (blank) status slice", !edge.byStatus.some(s => s.status === "(blank)"));
   check("Max Stage never pulls a row below its status",
     edge.reached[2] === fixture.reached[2] + 1, `${edge.reached[2]} vs ${fixture.reached[2] + 1}`);
-  // Restore the plain fixture build so dist/ and data/ stay deterministic.
+  // Restore the plain fixture build so dist/ stays deterministic.
   await build({ FEED_FIXTURE: "./sample-feed.json" });
 }
+check("fixture builds leave data/summary.json untouched",
+  (await readFile(join(ROOT, "data/summary.json"), "utf8").catch(() => null)) === committedSummary);
 
 if (process.argv.includes("--live")) {
   if (!process.env.AIRTABLE_API_KEY || !process.env.AIRTABLE_BASE_ID) {
