@@ -1,25 +1,25 @@
 {
-  "generatedAt": "2026-11-05T11:28:24.433Z",
-  "total": 303,
-  "sent": 303,
+  "generatedAt": "2026-11-05T11:32:19.822Z",
+  "total": 301,
+  "sent": 301,
   "unsent": 0,
-  "replied": 129,
+  "replied": 127,
   "noReply": 174,
-  "open": 198,
-  "replyRate": 0.42574257425742573,
-  "interviewRate": 0.036303630363036306,
-  "ghostRate": 0.5742574257425742,
+  "open": 196,
+  "replyRate": 0.4219269102990033,
+  "interviewRate": 0.036544850498338874,
+  "ghostRate": 0.5780730897009967,
   "rejected": 87,
-  "rejectionRate": 0.2871287128712871,
+  "rejectionRate": 0.28903654485049834,
   "reached": [
-    303,
+    301,
     87,
     29,
     11,
     0
   ],
   "atStage": [
-    216,
+    214,
     58,
     18,
     11,
@@ -42,10 +42,6 @@
       {
         "status": "Closed / Expired",
         "count": 4
-      },
-      {
-        "status": "(blank)",
-        "count": 2
       }
     ],
     [
@@ -111,7 +107,7 @@
     },
     {
       "status": "Rejected",
-      "count": 87
+      "count": 77
     },
     {
       "status": "Assessment",
@@ -126,6 +122,10 @@
       "count": 10
     },
     {
+      "status": "Rejected after interview",
+      "count": 10
+    },
+    {
       "status": "No Response",
       "count": 7
     },
@@ -136,10 +136,6 @@
     {
       "status": "Talent Pool",
       "count": 5
-    },
-    {
-      "status": "(blank)",
-      "count": 2
     },
     {
       "status": "Interviewed",
@@ -202,13 +198,6 @@
       "replied": 1,
       "unsent": 0,
       "rate": 0.3333333333333333
-    },
-    {
-      "name": "(blank)",
-      "sent": 2,
-      "replied": 2,
-      "unsent": 0,
-      "rate": 1
     },
     {
       "name": "DICT Digital Workforce Hub",
@@ -284,10 +273,6 @@
     {
       "label": "Onsite",
       "count": 4
-    },
-    {
-      "label": "Unspecified",
-      "count": 2
     }
   ],
   "ageing": [
