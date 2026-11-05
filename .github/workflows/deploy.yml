@@ -93,7 +93,9 @@ jobs:
       # runner uses, same category as the old pipeline's ssh/rsync, not something the
       # dashboard app depends on at runtime.
       - name: Install Vercel CLI
-        run: npm install --global vercel@latest
+        # Pinned: this step holds VERCEL_TOKEN, so a new release shouldn't run
+        # with it unreviewed, or break every deploy at once. Bump it on purpose.
+        run: npm install --global vercel@65.11.0
 
       # VERCEL_TOKEN/VERCEL_ORG_ID/VERCEL_PROJECT_ID as env vars is what lets the CLI
       # authenticate and deploy against the right project non-interactively, with no

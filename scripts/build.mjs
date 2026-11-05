@@ -8,7 +8,8 @@
  * Writes: dist/index.html  standalone page for GitHub Pages
  *         dist/artifact.html  same body, no <html>/<head> skeleton, for publishing
  *                             as a Claude artifact (the host supplies the skeleton)
- *         data/summary.json aggregate counts only, committed each run
+ *         data/summary.json aggregate counts only, committed each run; not written
+ *                             by a FEED_FIXTURE build
  *         dist/data/summary.json same aggregate, deploy-only, lets the live page
  *                             detect a newer build without a full redeploy
  *
@@ -204,9 +205,12 @@ function aggregate(records, today = new Date()) {
   const open    = records.filter(r => !DEAD_STATUSES.has(lc(r)) && !UNSENT_STATUSES.has(lc(r))).length;
 
   // --- status distribution -----------------------------------------
+  // A rejection after an interview gets its own slice. As plain "Rejected" the
+  // donut showed 1 interview beside a funnel that counted 11, and the two
+  // charts looked like they disagreed about the same rows.
   const statusMap = new Map();
   for (const r of records) {
-    const s = r.status || "(blank)";
+    const s = lc(r) === "rejected" && stageOf(r) >= 4 ? "Rejected after interview" : r.status;
     statusMap.set(s, (statusMap.get(s) ?? 0) + 1);
   }
   const byStatus = [...statusMap.entries()]
@@ -482,16 +486,18 @@ const FOOT = `
 async function main() {
   const all = await fetchFeedRecords();
 
-  // A row with no fields at all is an accidental blank line in Airtable, not an
-  // application. Counting it adds a "(blank)" slice, inflates Sent, and (since a
-  // blank status isn't "no reply") counts as a reply. Name it so it gets deleted.
-  const empty = all.filter(r => !r.fields || Object.keys(r.fields).length === 0);
-  for (const r of empty) console.warn(`  warn  skipping empty Feed row ${r.id} — delete it in Airtable`);
-  const raw = all.filter(r => !empty.includes(r));
+  // A row with no Status is an accidental blank line in Airtable, not an
+  // application, even when a checkbox or a default gave it some other field.
+  // Counting it adds a "(blank)" slice, inflates Sent, and (since a blank status
+  // isn't "no reply") counts as a reply. Name it so it gets deleted.
+  const blank = all.filter(r => !String(r.fields?.Status ?? "").trim());
+  for (const r of blank) console.warn(`  warn  skipping Feed row ${r.id} with no Status — delete it in Airtable`);
+  const raw = all.filter(r => !blank.includes(r));
 
-  if (!raw.length) throw new Error("Feed table returned zero records — check AIRTABLE_BASE_ID/AIRTABLE_TABLE_NAME.");
-  if (!("Status" in raw[0].fields)) {
-    throw new Error(`Feed table has no "Status" field. Fields found: ${Object.keys(raw[0].fields).join(", ")}`);
+  // Also what a renamed or missing Status field looks like: every row is blank.
+  if (!raw.length) {
+    throw new Error(`Feed table returned no rows with a Status (${all.length} rows in total) — `
+      + "check AIRTABLE_BASE_ID/AIRTABLE_TABLE_NAME and that the Status field exists.");
   }
 
   const records = toRecords(raw);
@@ -514,8 +520,14 @@ async function main() {
   // The artifact host wraps content in its own skeleton, so ship the body alone.
   await writeFile(join(ROOT, "dist/artifact.html"), body);
 
-  await mkdir(join(ROOT, "data"), { recursive: true });
-  await writeFile(join(ROOT, "data/summary.json"), JSON.stringify(agg, null, 2) + "\n");
+  // The committed time series. Only real data belongs in it: a fixture build
+  // (verify.mjs runs several) used to overwrite it with sample numbers. It keeps
+  // generatedAt, so every real run commits: that activity is what stops GitHub
+  // disabling the cron after 60 quiet days (README, "Scheduled runs stopped").
+  if (!process.env.FEED_FIXTURE) {
+    await mkdir(join(ROOT, "data"), { recursive: true });
+    await writeFile(join(ROOT, "data/summary.json"), JSON.stringify(agg, null, 2) + "\n");
+  }
 
   // Same aggregate, shipped inside dist/ so the deployed page can fetch it and
   // notice a newer build landed — data/summary.json above never reaches Vercel.

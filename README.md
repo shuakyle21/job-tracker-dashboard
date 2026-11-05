@@ -173,7 +173,7 @@ build is testable without touching the real base.
 | `n8n/job-tracker-ingest.json`, `n8n/job-tracker-feed-sync.json` | generated workflows to import; never hand-edit |
 | `templates/dashboard.html` | TailAdmin markup, Tailwind config, chart code |
 | `icons8.json` | locks the Icons8 pack and icon ids the dashboard uses |
-| `data/summary.json` | aggregate counts, committed every run; git history is the time series. Also shipped in `dist/` for the new-data banner |
+| `data/summary.json` | aggregate counts, committed every run; git history is the time series. Not written by fixture builds. Also shipped in `dist/` for the new-data banner |
 | `sample-feed.json` | de-identified fixture for local dev and CI |
 | `docs/system-overview.*` | the architecture diagram, source and rendered |
 | `.github/workflows/deploy.yml` | verify, build, commit the summary, deploy, smoke-test |

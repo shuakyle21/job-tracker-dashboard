@@ -198,11 +198,12 @@ async function main() {
     console.error(`N8N_API_URL must be the instance origin, e.g. https://n8n.example.com (got ${base})`);
     process.exit(1);
   }
-  // Wider than the hourly schedule on purpose: Actions cron is best-effort and
-  // a run can land an hour late, which would skip a one-shot failure (the
-  // daily keep-alive, a single failed dispatch) entirely. Reporting an error
-  // on two consecutive runs is the price of never missing one.
-  const windowMs = Number(process.env.CHECK_WINDOW_MINUTES || 150) * 60e3;
+  // Wider than the gap between runs on purpose: the cron says hourly, but
+  // Actions ran it 3.6-9.2h apart in Nov 2026, and a window shorter than the gap
+  // skips a one-shot failure (the daily keep-alive, a single failed dispatch)
+  // entirely. Reporting an error on two consecutive runs is the price of never
+  // missing one.
+  const windowMs = Number(process.env.CHECK_WINDOW_MINUTES || 600) * 60e3;
 
   async function api(path) {
     const res = await fetch(`${base}/api/v1${path}`, {
