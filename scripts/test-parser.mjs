@@ -986,6 +986,31 @@ const cases = [
       from: { value: [{ address: "hr@portcast.io", name: "Portcast" }] } }),
     want: { received_at: "2025-12-01" },
   },
+  // Google Calendar invites. The event name, between the "Invitation:" /
+  // "Appointment booked:" prefix and " @ <date>", names the job; the rest of the
+  // subject is noise. They used to land in Needs Review with no status and the
+  // event name as the title.
+  {
+    name: "calendar appointment: '<N> Interview | <T> (<you>)'",
+    input: email({
+      subject: "Appointment booked: 1st Interview | AI Automation & Integration Engineer (Ale... @ Fri Nov 6, 2026 12:40am - 12:55am (GMT+8) (me@example.com)",
+      from: { value: [{ address: "jobs@workspark.example", name: "Jobs Workspark" }] },
+      text: "1st Interview | AI Automation & Integration Engineer (Alex Doe)\nFriday Nov 6, 2026\n\nThank you for scheduling your 1st interview with us.",
+    }),
+    want: { status: "interview scheduled", max_stage: 4, company: "Workspark",
+      job_title: "AI Automation & Integration Engineer", parsed: true },
+  },
+  {
+    // Sent by a recruiter as themself: the organiser's name is a person, and the
+    // only place the company appears is their address, which is stripped.
+    name: "calendar invitation: '<N> Interview: <you> (<T>)' from a recruiter",
+    input: email({
+      subject: "Invitation: 2nd Interview: Alex Doe (AI Operator) @ Fri Oct 30 11pm - Sat Oct 31, 2026 12am (GMT+8) (me@example.com)",
+      from: { value: [{ address: "lalaine@spira.ai", name: "Lalaine Tapales" }] },
+      text: "2nd Interview: Alex Doe (AI Operator)\nFriday Oct 30\n\nOrganizer\nLalaine Tapales\nlalaine@spira.ai\n",
+    }),
+    want: { status: "interview scheduled", company: "Spira", job_title: "AI Operator", application_key: "spira|ai operator" },
+  },
 ];
 
 console.log("Parser tests\n");
