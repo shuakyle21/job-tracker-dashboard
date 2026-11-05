@@ -61,8 +61,12 @@
   .sk-node-rej { fill: var(--sk-rej) }
   .sk-num-rej { fill: var(--sk-rej-ink); font-size:13px; font-weight:700; font-variant-numeric:tabular-nums }
   .sk-node-win { fill: var(--sk-win) }
-  .sk path { transition: opacity .15s ease }
-  .sk-flow:hover { opacity:1 } .sk-loss:hover { opacity:.55 } .sk-rej:hover { opacity:.6 }
+  .sk path { transition: opacity .15s cubic-bezier(0.23, 1, 0.32, 1) }
+  /* Hover only where there is a real pointer: a tap on a phone would leave the
+     branch stuck highlighted. */
+  @media (hover: hover) and (pointer: fine) {
+    .sk-flow:hover { opacity:1 } .sk-loss:hover { opacity:.55 } .sk-rej:hover { opacity:.6 }
+  }
   .sk-key { display:inline-block; width:10px; height:10px; border-radius:2px; vertical-align:-1px }
   .sk-lab { fill: var(--sk-ink); font-size:12.5px; font-weight:500 }
   .sk-num { fill: var(--sk-ink); font-size:13px; font-weight:700; font-variant-numeric:tabular-nums }
@@ -80,7 +84,10 @@
   @media (max-width: 1023px) { main [id] { scroll-margin-top: 140px; } }
   /* Scrollspy state. Plain CSS, because the Tailwind CDN only generates classes it
      saw at load and would miss one added later by script. */
-  .nav-link:hover { background: #333A48; }
+  .nav-link, .chip { transition: background-color .15s ease, transform .16s cubic-bezier(0.23, 1, 0.32, 1); }
+  @media (hover: hover) and (pointer: fine) { .nav-link:hover { background: #333A48; } }
+  /* Press feedback: the page heard the tap before it scrolls. */
+  .nav-link:active, .chip:active, #themeBtn:active { transform: scale(0.97); }
   .nav-link.is-active { background: #333A48; color: #fff; box-shadow: inset 3px 0 0 #3C50E0; }
   .chip.is-active { background: #3C50E0; border-color: #3C50E0; color: #fff; }
   .no-scrollbar { scrollbar-width: none; } .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -168,7 +175,7 @@
             <div class="mt-4">
               <h4 class="text-2xl font-bold tabular-nums text-black dark:text-white" data-stat="sent">—</h4>
               <span class="text-sm font-medium">Applications sent</span>
-              <p class="mt-1 text-xs text-bodydark2" data-stat="unsentNote"></p>
+              <p class="mt-1 text-xs text-body dark:text-bodydark2" data-stat="unsentNote"></p>
             </div>
           </div>
           <div class="rounded-sm border border-stroke bg-white px-5 py-5 shadow-default dark:border-strokedark dark:bg-boxdark">
@@ -178,7 +185,7 @@
             <div class="mt-4">
               <h4 class="text-2xl font-bold tabular-nums text-black dark:text-white" data-stat="replyRate">—</h4>
               <span class="text-sm font-medium">Reply rate</span>
-              <p class="mt-1 text-xs text-bodydark2" data-stat="replyNote"></p>
+              <p class="mt-1 text-xs text-body dark:text-bodydark2" data-stat="replyNote"></p>
             </div>
           </div>
           <div class="rounded-sm border border-stroke bg-white px-5 py-5 shadow-default dark:border-strokedark dark:bg-boxdark">
@@ -188,7 +195,7 @@
             <div class="mt-4">
               <h4 class="text-2xl font-bold tabular-nums text-black dark:text-white" data-stat="interviews">—</h4>
               <span class="text-sm font-medium">Interviews reached</span>
-              <p class="mt-1 text-xs text-bodydark2" data-stat="interviewNote"></p>
+              <p class="mt-1 text-xs text-body dark:text-bodydark2" data-stat="interviewNote"></p>
             </div>
           </div>
           <div class="rounded-sm border border-stroke bg-white px-5 py-5 shadow-default dark:border-strokedark dark:bg-boxdark">
@@ -198,7 +205,7 @@
             <div class="mt-4">
               <h4 class="text-2xl font-bold tabular-nums text-black dark:text-white" data-stat="ghostRate">—</h4>
               <span class="text-sm font-medium">No reply at all</span>
-              <p class="mt-1 text-xs text-bodydark2" data-stat="ghostNote"></p>
+              <p class="mt-1 text-xs text-body dark:text-bodydark2" data-stat="ghostNote"></p>
             </div>
           </div>
         </section>
@@ -206,25 +213,25 @@
         <!-- secondary tiles -->
         <section class="mt-4 grid grid-cols-2 gap-4 md:gap-6 xl:grid-cols-5">
           <div class="rounded-sm border border-stroke bg-white px-5 py-4 shadow-default dark:border-strokedark dark:bg-boxdark">
-            <span class="text-xs font-semibold uppercase tracking-wider text-bodydark2">Still open</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-body dark:text-bodydark2">Still open</span>
             <h4 class="mt-1 text-xl font-bold tabular-nums text-black dark:text-white" data-stat="open">—</h4>
           </div>
           <div class="rounded-sm border border-stroke bg-white px-5 py-4 shadow-default dark:border-strokedark dark:bg-boxdark">
-            <span class="text-xs font-semibold uppercase tracking-wider text-bodydark2">Built, not sent</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-body dark:text-bodydark2">Built, not sent</span>
             <h4 class="mt-1 text-xl font-bold tabular-nums text-warning" data-stat="unsent">—</h4>
           </div>
           <div class="rounded-sm border border-stroke bg-white px-5 py-4 shadow-default dark:border-strokedark dark:bg-boxdark">
-            <span class="text-xs font-semibold uppercase tracking-wider text-bodydark2">Follow-ups overdue</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-body dark:text-bodydark2">Follow-ups overdue</span>
             <h4 class="mt-1 text-xl font-bold tabular-nums text-danger" data-stat="overdue">—</h4>
           </div>
           <div class="rounded-sm border border-stroke bg-white px-5 py-4 shadow-default dark:border-strokedark dark:bg-boxdark">
-            <span class="text-xs font-semibold uppercase tracking-wider text-bodydark2">Due within 7 days</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-body dark:text-bodydark2">Due within 7 days</span>
             <h4 class="mt-1 text-xl font-bold tabular-nums text-meta-5" data-stat="dueWeek">—</h4>
           </div>
           <div class="col-span-2 rounded-sm border border-stroke bg-white px-5 py-4 shadow-default dark:border-strokedark dark:bg-boxdark xl:col-span-1">
-            <span class="text-xs font-semibold uppercase tracking-wider text-bodydark2">Rejected</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-body dark:text-bodydark2">Rejected</span>
             <h4 class="mt-1 text-xl font-bold tabular-nums text-danger" data-stat="rejected">—</h4>
-            <p class="mt-0.5 text-xs text-bodydark2" data-stat="rejectedNote"></p>
+            <p class="mt-0.5 text-xs text-body dark:text-bodydark2" data-stat="rejectedNote"></p>
           </div>
         </section>
 
@@ -233,7 +240,7 @@
           <div class="mb-4 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
             <div>
               <h2 class="text-lg font-semibold text-black dark:text-white">Stage flow</h2>
-              <p class="mt-0.5 text-xs text-bodydark2">Where every application went. Hover a branch for its numbers.</p>
+              <p class="mt-0.5 text-xs text-body dark:text-bodydark2">Where every application went. Hover a branch for its numbers.</p>
             </div>
             <ul class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs font-medium">
               <li><span class="sk-key" style="background:var(--sk-flow)"></span> Moved forward</li>
@@ -293,7 +300,7 @@
           </div>
         </section>
 
-        <footer class="py-6 text-xs text-bodydark2">
+        <footer class="py-6 text-xs text-body dark:text-bodydark2">
           Built from the Airtable Feed table. Aggregates only — no company names, roles or contacts.
         </footer>
       </main>
@@ -438,6 +445,12 @@
   monthlyObserver.observe(monthlyScroll);
   monthlyObserver.observe(document.getElementById("chartMonthly"));
 
+  // Charts animate once, on first load, briefly: a professional dashboard should
+  // read crisp, not bouncy. A theme toggle redraws them, and replaying the
+  // entrance every time would make the toggle feel slow. ApexCharts animates in
+  // JS, so the CSS reduced-motion rule below never reached it.
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let firstRender = true;
   function renderAll() {
     monthlyRedrawing = true;
     charts.splice(0).forEach(c => c.destroy());
@@ -447,7 +460,8 @@
     const steps = dark ? P.stepsDark : P.steps;
 
     const base = {
-      chart: { fontFamily: '"Plus Jakarta Sans", sans-serif', foreColor: ink, toolbar: { show: false }, animations: { enabled: true, speed: 400 } },
+      chart: { fontFamily: '"Plus Jakarta Sans", sans-serif', foreColor: ink, toolbar: { show: false }, animations: { enabled: firstRender && !reduceMotion, speed: 200,
+        animateGradually: { enabled: false }, dynamicAnimation: { enabled: false } } },
       grid: { borderColor: grid, strokeDashArray: 4 },
       tooltip: { theme: dark ? "dark" : "light" },
       dataLabels: { enabled: false },
@@ -468,7 +482,7 @@
       legend: { show: false },
       dataLabels: {
         enabled: true, textAnchor: "start", offsetX: 8,
-        formatter: (v) => v + "  ·  " + (D.reached[0] ? (100 * v / D.reached[0]).toFixed(1) : 0) + "%",
+        formatter: (v) => v + "  ·  " + fmtPct(D.reached[0] ? v / D.reached[0] : null),
         style: { fontSize: "12px", fontWeight: 700, colors: [dark ? "#EDF1F7" : "#1C2434"] },
         background: { enabled: false },
       },
@@ -507,7 +521,7 @@
       tooltip: { ...base.tooltip, y: { formatter: (v, o) => {
         const c = ch[o.dataPointIndex];
         return o.seriesIndex === 0 && c.rate !== null
-          ? `${v} of ${c.sent}  (${Math.round(100 * c.rate)}%)`
+          ? `${v} of ${c.sent}  (${fmtPct(c.rate)})`
           : `${v} of ${c.sent}`;
       } } },
     });
@@ -591,11 +605,12 @@
       legend: { show: false },
       dataLabels: {
         enabled: true, textAnchor: "start", offsetX: 8,
-        formatter: (v) => `${v}  ·  ${D.total ? Math.round(100 * v / D.total) : 0}%`,
+        formatter: (v) => `${v}  ·  ${fmtPct(D.total ? v / D.total : null)}`,
         style: { fontSize: "12px", fontWeight: 700, colors: [dark ? "#EDF1F7" : "#1C2434"] },
       },
       tooltip: { ...base.tooltip, y: { formatter: (v) => `${v} of ${D.total} rows` } },
     });
+    firstRender = false;
   }
 
   syncClass();
