@@ -798,16 +798,18 @@ const cases = [
   },
   {
     name: "date is normalised to ISO",
+    // 22:45 UTC is 06:45 the next morning in Manila.
     input: email({ subject: "Thank you for applying to Portcast", date: "2026-08-03T22:45:10.000Z",
       from: { value: [{ address: "hr@portcast.io", name: "Portcast" }] } }),
-    want: { received_at: "2026-08-03" },
+    want: { received_at: "2026-08-04" },
   },
   {
     name: "epoch-millisecond internalDate is handled",
     input: email({ subject: "Thank you for applying to Portcast", date: undefined,
       internalDate: 1754260000000,
       from: { value: [{ address: "hr@portcast.io", name: "Portcast" }] } }),
-    want: { received_at: "2025-08-03" },
+    // 2025-08-03 22:26 UTC, 06:26 on the 4th in Manila.
+    want: { received_at: "2025-08-04" },
   },
   {
     name: "raw_text carries subject and body for the LLM fallback",
@@ -916,6 +918,74 @@ const cases = [
     }),
     want: { company: "", parsed: false },
   },
+  // Boilerplate that used to read as a status. Rejected and Offer outrank
+  // everything in merge-feed.js, so each of these stuck to the Feed row for good.
+  {
+    name: "confirmation's 'if you have not been selected' is not a rejection",
+    input: email({
+      subject: "Thank you for applying to Portcast",
+      from: { value: [{ address: "hr@portcast.io", name: "Portcast" }] },
+      text: "We have received your application for the Data Analyst role at Portcast. If you have not been selected within 30 days, please consider your application closed.",
+    }),
+    want: { status: "applied", max_stage: 1 },
+  },
+  {
+    name: "interview reschedule with 'unfortunately' is not a rejection",
+    input: email({
+      subject: "Interview for Data Analyst at Portcast",
+      from: { value: [{ address: "hr@portcast.io", name: "Portcast" }] },
+      text: "Unfortunately the interviewer is unavailable on Monday. Please pick a time on https://calendly.com/portcast/interview",
+    }),
+    want: { status: "interview scheduled", job_title: "Data Analyst", company: "Portcast" },
+  },
+  {
+    // "Assessment for <T> at <C>" kept "Assessment for" in the title, so the
+    // job got a second Feed row next to its Applied one.
+    name: "'Assessment for <T> at <C>' subject keys on the job title",
+    input: email({
+      subject: "Assessment for Data Analyst at Portcast",
+      from: { value: [{ address: "hr@portcast.io", name: "Portcast" }] },
+      text: "Please complete the online assessment within 48 hours.",
+    }),
+    want: { status: "assessment", job_title: "Data Analyst", application_key: "portcast|data analyst" },
+  },
+  {
+    name: "'Join our Talent Community' footer leaves a confirmation Applied",
+    input: email({
+      subject: "Thank you for applying to Portcast",
+      from: { value: [{ address: "hr@portcast.io", name: "Portcast" }] },
+      text: "We have received your application for the Data Analyst role at Portcast.\n\nJoin our Talent Community to hear about new roles.",
+    }),
+    want: { status: "applied", max_stage: 1 },
+  },
+  {
+    name: "'pleased to offer you a spot' in a talent community is no job offer",
+    input: email({
+      subject: "Thank you for applying to Portcast",
+      from: { value: [{ address: "hr@portcast.io", name: "Portcast" }] },
+      text: "We have received your application for the Data Analyst role at Portcast. We're pleased to offer you a spot in our talent community.",
+    }),
+    want: { status: "applied", max_stage: 1 },
+  },
+  {
+    // Stage evidence is for rejections, which say nothing about depth. In a
+    // confirmation "review" and "interview" are promises, not events: this
+    // used to give max_stage 4, and the dashboard funnel counted an interview.
+    name: "confirmation promising review and interview stays at stage 1",
+    input: email({
+      subject: "Thank you for applying to Portcast",
+      from: { value: [{ address: "hr@portcast.io", name: "Portcast" }] },
+      text: "We have received your application for the Data Analyst role at Portcast. Our team will review your application, and if you are shortlisted for an interview we will contact you.",
+    }),
+    want: { status: "applied", max_stage: 1 },
+  },
+  {
+    // Feed dates are Philippine dates (build.mjs reads them in Asia/Manila).
+    name: "morning mail in Manila is dated that Manila day",
+    input: email({ subject: "Thank you for applying to Portcast", date: "Mon, 01 Dec 2025 07:30:00 +0800",
+      from: { value: [{ address: "hr@portcast.io", name: "Portcast" }] } }),
+    want: { received_at: "2025-12-01" },
+  },
 ];
 
 console.log("Parser tests\n");
@@ -941,7 +1011,9 @@ for (const c of cases) {
 // The parser must never throw, whatever Gmail hands it. A missing field is a
 // needs-review row, not a failed execution that strands the email unlabelled.
 console.log("\nRobustness");
-for (const junk of [{}, { subject: null }, { from: {} }, { date: "not a date" }, { text: 12345 }]) {
+for (const junk of [{}, { subject: null }, { from: {} }, { date: "not a date" }, { text: 12345 },
+  // An address-literal domain once reached new RegExp unescaped and threw.
+  { from: { value: [{ address: "jane@[192.168.1.10]", name: "Jane Doe" }] }, text: "Hello" }]) {
   let threw = null;
   let out = null;
   try { out = parse({ id: "x", ...junk }).json; } catch (e) { threw = e; }

@@ -52,10 +52,17 @@ for (const [field, want] of Object.entries({
 }
 
 for (const [field, want] of Object.entries({
-  status: "offer", status_label: "Offer", parsed: true, confidence: "medium",
+  status: "rejected", status_label: "Rejected", parsed: true, confidence: "medium",
 })) {
-  const got = apply(agentReply(null, JSON.stringify({ status: "offer" })), unparsedRow());
+  const got = apply(agentReply(null, JSON.stringify({ status: "rejected" })), unparsedRow());
   expect(`structuredOutput null, JSON in text → ${field}`, got[field], want);
+}
+
+// An offer outranks every other status in merge-feed.js and never moves
+// again, so the model alone can't make one: a person confirms it.
+for (const [field, want] of Object.entries(unparsedRow())) {
+  const got = apply(agentReply({ status: "offer", company: null, job_title: null }), unparsedRow());
+  expect(`LLM "offer" stays at Needs Review → ${field}`, got[field], want);
 }
 
 {
@@ -161,8 +168,8 @@ for (const [field, want] of Object.entries(unparsedRow())) {
 }
 
 {
-  const got = apply(chatReply(JSON.stringify({ status: "offer" })), unparsedRow());
-  expect("status alone credits its stage (offer → 5)", got.max_stage, 5);
+  const got = apply(chatReply(JSON.stringify({ status: "interview scheduled" })), unparsedRow());
+  expect("status alone credits its stage (interview → 4)", got.max_stage, 4);
 }
 
 {

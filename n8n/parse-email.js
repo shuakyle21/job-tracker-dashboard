@@ -43,14 +43,16 @@ function any(text, patterns) {
 // collected separately below so the funnel still gets credit for the interview.
 const RULES = [
   ['offer', [
-    /\boffer of employment\b/, /\bpleased to offer\b/, /\bjob offer\b/,
+    /\boffer of employment\b/, /\bpleased to offer you (?:the|this|a|an) (?:position|role|job)\b/, /\bjob offer\b/,
     /\bwe(?:'| a)re offering you\b/, /\boffer letter\b/,
   ]],
   ['rejected', [
-    /\bunfortunately\b/, /\bregret to inform\b/, /\bnot (?:be )?moving forward\b/,
+    // Not a bare "unfortunately": reschedules and holiday notices say it too.
+    /\bregret to inform\b/, /\bnot (?:be )?moving forward\b/,
     /\bwon['’]?t be moving forward\b/,
-    /\bnot (?:been )?select(?:ed|ing)\b/, /\b(?:decided|chosen|chose) to (?:proceed|move forward) with (?:other|another)\b/,
-    /\bposition has been filled\b/, /\bwe(?:'| ha)ve decided not to\b/,
+    /(?<!\bif (?:(?:you|we)(?: have| are|'ve|'re)? )?)\bnot (?:been )?select(?:ed|ing)\b/, /\b(?:decided|chosen|chose) to (?:proceed|move forward) with (?:other|another)\b/,
+    /\bposition has been filled\b/, /\bwe(?:['’]| ha)ve decided not to\b/,
+    /\bunlikely (?:to|that your application will) progress\b/,
     /\bno longer under consideration\b/, /\bwill not be proceeding\b/,
     /\bmoving forward with other candidates\b/,
     // LinkedIn's rejection says only "Your update from <C>"; its own tracking
@@ -69,7 +71,7 @@ const RULES = [
     /\btestgorilla\b/, /\bcomplete (?:a|the|this) (?:short )?test\b/,
   ]],
   ['talent pool', [
-    /\btalent (?:pool|community|network)\b/, /\bkeep your (?:resume|cv|profile) on file\b/,
+    /\btalent pool\b/, /\b(?:added|welcomed?) (?:you )?to (?:our|the) talent (?:community|network)\b/, /\bkeep your (?:resume|cv|profile) on file\b/,
     /\bfuture (?:opportunities|openings|roles)\b/,
   ]],
   ['viewed by employer', [
@@ -80,7 +82,7 @@ const RULES = [
     /\bunder review\b/, /\breviewing your application\b/, /\bbeing reviewed\b/,
     // "You have been shortlisted", not "if shortlisted, we will call" — the
     // conditional is boilerplate in plain confirmations.
-    /\b(?:you(?:'ve| have)? been|you are|you're) shortlisted\b/, /\bmoved to the next (?:stage|round)\b/,
+    /(?<!\bif )\b(?:you(?:'ve| have)? been|you are|you're) shortlisted\b/, /\bmoved to the next (?:stage|round)\b/,
     /\bprogress(?:ed|ing) to\b/,
   ]],
   ['applied', [
@@ -126,11 +128,16 @@ const STAGE_OF_STATUS = {
   'assessment': 3, 'interview scheduled': 4, 'interviewed': 4, 'offer': 5,
 };
 
+// Only for rejections: every other status already names its stage, and in a
+// confirmation "we will review" and "if shortlisted for an interview" are
+// promises, not events. Reading them as evidence put plain Applied rows at
+// stage 4, and the dashboard funnel counted interviews that never happened.
 let stageEvidence = 1;
-if (any(hay, [/\breview(?:ed|ing)?\b/, /\bviewed\b/, /\bbeen shortlisted\b/])) stageEvidence = 2;
-if (any(hay, [/\bassessment\b/, /\btake[- ]home\b/, /\bcoding (?:challenge|test)\b/])) stageEvidence = 3;
-if (any(hay, [/\binterview(?:ed|ing)?\b/, /\bcalendly\b/])) stageEvidence = 4;
-if (any(hay, [/\boffer of employment\b/, /\boffer letter\b/])) stageEvidence = 5;
+if (status === 'rejected') {
+  if (any(hay, [/\breview(?:ed|ing)?\b/, /\bviewed\b/, /\bbeen shortlisted\b/])) stageEvidence = 2;
+  if (any(hay, [/\bassessment\b/, /\btake[- ]home\b/, /\bcoding (?:challenge|test)\b/])) stageEvidence = 3;
+  if (any(hay, [/\binterview(?:ed|ing)?\b/, /\bcalendly\b/])) stageEvidence = 4;
+}
 
 const maxStage = Math.max(STAGE_OF_STATUS[status] || 1, stageEvidence);
 
@@ -208,7 +215,7 @@ const firstName = company.toLowerCase().split(/\s+/)[0] || '';
 if (firstName.length >= 3 && localPart.includes(firstName) && fromDomainLabel.length >= 3
     && !ATS_DOMAINS.test(fromDomainLabel + '.') && !company.toLowerCase().includes(fromDomainLabel)) {
   const withoutUrls = (subject + '\n' + body).replace(/\S*(?:https?:\/\/|www\.|@)\S*/g, ' ');
-  const named = withoutUrls.match(new RegExp('\\b' + fromDomainLabel + '\\b', 'i'));
+  const named = withoutUrls.match(new RegExp('\\b' + fromDomainLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i'));
   if (named) company = named[0];
 }
 
@@ -225,6 +232,7 @@ const LEAD_INS = [
   /^invitation (?:to|for) (?:an? )?(?:interview|call|chat)\s*(?:for|with)?\s*[:—–-]?\s*/i,
   /^(?:your )?application (?:for|to|update(?: for)?|status(?: for)?|received(?: for)?|confirmation(?: for)?)\s*[:—–-]?\s*/i,
   /^thank(?:s| you) for (?:applying|your (?:application|interest))(?: (?:to|in|for|at))?\s*[:—–-]?\s*/i,
+  /^(?:interview|assessment)\s+for\s+(?:the\s+)?(?=\S)/i,
   /^(?:next steps?|update|interview|assessment|invitation)\s*(?:on|for|regarding|about)?\s*(?:your )?(?:application)?\s*[:—–-]\s*/i,
   /^you(?:r)? (?:have )?applied (?:to|for)\s*[:—–-]?\s*/i,
   /^(?:an? )?update (?:about|on|regarding) your application (?:for|to)(?: the)?\s*/i,
@@ -464,9 +472,10 @@ else if (status && (company || title)) confidence = 'medium';
 const receivedAt = msg.date || msg.internalDate;
 const stamp = /^\d+$/.test(String(receivedAt)) ? Number(receivedAt) : receivedAt;
 const asDate = receivedAt ? new Date(stamp) : new Date();
-const isoDate = Number.isNaN(asDate.getTime())
-  ? new Date().toISOString().slice(0, 10)
-  : asDate.toISOString().slice(0, 10);
+// The day in Manila, not UTC: mail from 00:00-08:00 local time otherwise
+// lands on the day before, and the merge keeps the earliest date it sees.
+const manilaDay = (d) => d.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+const isoDate = manilaDay(Number.isNaN(asDate.getTime()) ? new Date() : asDate);
 
 const threadId = String(msg.threadId || '');
 return {

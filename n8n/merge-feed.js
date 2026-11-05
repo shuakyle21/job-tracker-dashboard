@@ -30,7 +30,7 @@ const FEED_STATUS = {
 const RANK = {
   'Materials Ready — VERIFY': 0, 'Applied': 1, 'No Response': 1,
   'Viewed by Employer': 2, 'In Review': 2, 'Talent Pool': 3, 'Assessment': 3,
-  'Interviewed': 4, 'Closed / Expired': 5, 'Rejected': 5, 'Offer': 6,
+  'Interviewed': 4, 'Closed / Expired': 5, 'Rejected': 5, 'Withdrawn': 5, 'Offer': 6,
 };
 
 // Feed's Source select predates Job Platform and uses its own spellings.

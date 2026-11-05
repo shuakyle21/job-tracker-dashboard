@@ -117,7 +117,9 @@ if (!parsed) {
 
     // Same bar parse-email.js uses for `parsed`: a recognizable status and a
     // complete company|title key. Without both, the row stays at Needs Review.
-    if (Object.prototype.hasOwnProperty.call(STATUS_LABELS, candidate) && application_key) {
+    // Never "offer": it outranks every status in merge-feed.js and never moves
+    // again, so a person confirms it from Needs Review instead.
+    if (Object.prototype.hasOwnProperty.call(STATUS_LABELS, candidate) && candidate !== 'offer' && application_key) {
       status = candidate;
       status_label = STATUS_LABELS[status];
       parsed = true;

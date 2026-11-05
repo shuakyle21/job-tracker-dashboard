@@ -106,6 +106,13 @@ const cases = [
     email: email(),
     want: { "Application Key": "acme|backend engineer" },
   },
+  {
+    // Withdrawn is only ever set by hand, and hand edits win.
+    name: "a late confirmation doesn't reopen a withdrawn row",
+    row: { id: "rec1", fields: { "Application Key": "acme|backend engineer", "Status": "Withdrawn" } },
+    email: email(),
+    want: { "Status": "Withdrawn" },
+  },
 ];
 
 console.log("Feed merge tests\n");
