@@ -1,25 +1,25 @@
 {
-  "generatedAt": "2026-11-06T07:11:28.514Z",
-  "total": 306,
-  "sent": 306,
+  "generatedAt": "2026-11-06T07:12:08.338Z",
+  "total": 307,
+  "sent": 307,
   "unsent": 0,
   "replied": 132,
-  "noReply": 174,
-  "open": 89,
-  "replyRate": 0.43137254901960786,
-  "interviewRate": 0.042483660130718956,
-  "ghostRate": 0.5686274509803921,
+  "noReply": 175,
+  "open": 90,
+  "replyRate": 0.42996742671009774,
+  "interviewRate": 0.04234527687296417,
+  "ghostRate": 0.5700325732899023,
   "rejected": 88,
-  "rejectionRate": 0.2875816993464052,
+  "rejectionRate": 0.28664495114006516,
   "reached": [
-    306,
+    307,
     91,
     32,
     13,
     0
   ],
   "atStage": [
-    215,
+    216,
     59,
     19,
     13,
@@ -33,7 +33,7 @@
       },
       {
         "status": "Applied",
-        "count": 50
+        "count": 51
       },
       {
         "status": "Rejected",
@@ -111,7 +111,7 @@
     },
     {
       "status": "Applied",
-      "count": 50
+      "count": 51
     },
     {
       "status": "Assessment",
@@ -152,10 +152,10 @@
     },
     {
       "name": "Jobstreet",
-      "sent": 72,
+      "sent": 73,
       "replied": 22,
       "unsent": 0,
-      "rate": 0.3055555555555556
+      "rate": 0.3013698630136986
     },
     {
       "name": "LinkedIn",
@@ -269,13 +269,13 @@
     },
     {
       "month": "2026-11",
-      "count": 16
+      "count": 17
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 302
+      "count": 303
     },
     {
       "label": "Onsite",
@@ -285,7 +285,7 @@
   "ageing": [
     {
       "label": "0–7d",
-      "count": 15
+      "count": 16
     },
     {
       "label": "8–14d",
@@ -310,8 +310,8 @@
     "dueWeek": 0
   },
   "quality": {
-    "resume": 218,
+    "resume": 221,
     "cover": 8,
-    "tailored": 69
+    "tailored": 74
   }
 }
