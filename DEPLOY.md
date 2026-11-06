@@ -164,6 +164,10 @@ row that fills itself in. The merge (`n8n/merge-feed.js`, tested by
   "Rejected" outranks every status except "Offer".
 - `Job Platform`, `Company`, `Source` and `Job Role` are only filled when empty, so your edits
   win.
+- `Source` comes from `Job Platform` and is only ever set to a choice `Source` already has
+  (OnlineJobs.ph → `Online.jobs`, Torre → `Torre.ai`, Company Website → `Direct / Careers`), so a
+  new platform can't quietly add a channel to the dashboard. The map is `SOURCE_OF_PLATFORM` in
+  `n8n/merge-feed.js`.
 
 An email whose employer can't be read (Indeed confirmations never name one) is **not** written
 to Feed. It stops at Needs Review, because without a company there is no key that a later email

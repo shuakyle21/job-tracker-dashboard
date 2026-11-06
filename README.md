@@ -21,7 +21,8 @@ email. Every confirmation and status update that lands in Gmail under the `Job A
 label, or matches phrases like "thank you for applying," gets picked up by n8n on a 15-minute
 poll. n8n classifies the email with pattern rules, logs it, and upserts one row per application
 into an Airtable table called `Feed`, filling in the job platform, the status, and how far the
-application got. That last part used to be manual.
+application got. That last part used to be manual. Google Calendar interview invites count too:
+they're read as an interview scheduled, with the job title taken from the event name.
 
 When the rules can't classify an email, an LLM gets one try, through any OpenAI-compatible
 endpoint. Its answer is capped at medium confidence and can never override a rules match. A
