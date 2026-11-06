@@ -1,25 +1,25 @@
 {
-  "generatedAt": "2026-11-06T03:52:04.665Z",
-  "total": 304,
-  "sent": 304,
+  "generatedAt": "2026-11-06T03:52:39.942Z",
+  "total": 305,
+  "sent": 305,
   "unsent": 0,
   "replied": 131,
-  "noReply": 173,
+  "noReply": 174,
   "open": 198,
-  "replyRate": 0.4309210526315789,
-  "interviewRate": 0.04276315789473684,
-  "ghostRate": 0.569078947368421,
+  "replyRate": 0.42950819672131146,
+  "interviewRate": 0.04262295081967213,
+  "ghostRate": 0.5704918032786885,
   "rejected": 88,
-  "rejectionRate": 0.2894736842105263,
+  "rejectionRate": 0.28852459016393445,
   "reached": [
-    304,
+    305,
     90,
     31,
     13,
     0
   ],
   "atStage": [
-    214,
+    215,
     59,
     18,
     13,
@@ -37,7 +37,7 @@
       },
       {
         "status": "No Response",
-        "count": 5
+        "count": 6
       },
       {
         "status": "Closed / Expired",
@@ -127,7 +127,7 @@
     },
     {
       "status": "No Response",
-      "count": 7
+      "count": 8
     },
     {
       "status": "Closed / Expired",
@@ -200,6 +200,13 @@
       "rate": 0.3333333333333333
     },
     {
+      "name": "Company/Career Site",
+      "sent": 1,
+      "replied": 0,
+      "unsent": 0,
+      "rate": 0
+    },
+    {
       "name": "DICT Digital Workforce Hub",
       "sent": 1,
       "replied": 1,
@@ -268,7 +275,7 @@
   "workSetup": [
     {
       "label": "Remote",
-      "count": 300
+      "count": 301
     },
     {
       "label": "Onsite",
