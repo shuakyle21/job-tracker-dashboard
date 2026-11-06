@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-11-06T04:05:09.347Z",
+  "generatedAt": "2026-11-06T04:05:41.423Z",
   "total": 305,
   "sent": 305,
   "unsent": 0,
   "replied": 131,
   "noReply": 174,
-  "open": 146,
+  "open": 87,
   "replyRate": 0.42950819672131146,
   "interviewRate": 0.04262295081967213,
   "ghostRate": 0.5704918032786885,
@@ -28,12 +28,12 @@
   "dropComposition": [
     [
       {
-        "status": "Applied",
-        "count": 108
+        "status": "No Response",
+        "count": 117
       },
       {
-        "status": "No Response",
-        "count": 58
+        "status": "Applied",
+        "count": 49
       },
       {
         "status": "Rejected",
@@ -102,16 +102,16 @@
   "usedExplicitStage": true,
   "byStatus": [
     {
-      "status": "Applied",
-      "count": 108
+      "status": "No Response",
+      "count": 119
     },
     {
       "status": "Rejected",
       "count": 78
     },
     {
-      "status": "No Response",
-      "count": 60
+      "status": "Applied",
+      "count": 49
     },
     {
       "status": "Assessment",
@@ -301,7 +301,7 @@
     },
     {
       "label": "60d+",
-      "count": 82
+      "count": 23
     }
   ],
   "followUps": {
