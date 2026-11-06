@@ -1,26 +1,26 @@
 {
-  "generatedAt": "2026-11-06T14:01:09.630Z",
+  "generatedAt": "2026-11-06T15:45:58.944Z",
   "total": 308,
   "sent": 308,
   "unsent": 0,
-  "replied": 133,
-  "noReply": 175,
+  "replied": 134,
+  "noReply": 174,
   "open": 91,
-  "replyRate": 0.4318181818181818,
+  "replyRate": 0.43506493506493504,
   "interviewRate": 0.045454545454545456,
-  "ghostRate": 0.5681818181818182,
+  "ghostRate": 0.564935064935065,
   "rejected": 88,
   "rejectionRate": 0.2857142857142857,
   "reached": [
     308,
-    92,
+    93,
     33,
     14,
     0
   ],
   "atStage": [
-    216,
-    59,
+    215,
+    60,
     19,
     14,
     0
@@ -33,7 +33,7 @@
       },
       {
         "status": "Applied",
-        "count": 51
+        "count": 50
       },
       {
         "status": "Rejected",
@@ -50,11 +50,11 @@
         "count": 28
       },
       {
-        "status": "In Review",
-        "count": 11
+        "status": "Viewed by Employer",
+        "count": 12
       },
       {
-        "status": "Viewed by Employer",
+        "status": "In Review",
         "count": 11
       },
       {
@@ -111,18 +111,18 @@
     },
     {
       "status": "Applied",
-      "count": 51
+      "count": 50
     },
     {
       "status": "Assessment",
       "count": 14
     },
     {
-      "status": "In Review",
-      "count": 11
+      "status": "Viewed by Employer",
+      "count": 12
     },
     {
-      "status": "Viewed by Employer",
+      "status": "In Review",
       "count": 11
     },
     {
@@ -153,9 +153,9 @@
     {
       "name": "Jobstreet",
       "sent": 73,
-      "replied": 22,
+      "replied": 23,
       "unsent": 0,
-      "rate": 0.3013698630136986
+      "rate": 0.3150684931506849
     },
     {
       "name": "LinkedIn",
