@@ -1,35 +1,35 @@
 {
-  "generatedAt": "2026-11-06T02:52:07.706Z",
+  "generatedAt": "2026-11-06T02:55:04.062Z",
   "total": 304,
   "sent": 304,
   "unsent": 0,
-  "replied": 130,
-  "noReply": 174,
+  "replied": 131,
+  "noReply": 173,
   "open": 198,
-  "replyRate": 0.4276315789473684,
-  "interviewRate": 0.039473684210526314,
-  "ghostRate": 0.5723684210526315,
+  "replyRate": 0.4309210526315789,
+  "interviewRate": 0.04276315789473684,
+  "ghostRate": 0.569078947368421,
   "rejected": 88,
   "rejectionRate": 0.2894736842105263,
   "reached": [
     304,
-    89,
-    30,
-    12,
+    90,
+    31,
+    13,
     0
   ],
   "atStage": [
-    215,
+    214,
     59,
     18,
-    12,
+    13,
     0
   ],
   "dropComposition": [
     [
       {
         "status": "Applied",
-        "count": 161
+        "count": 160
       },
       {
         "status": "Rejected",
@@ -87,7 +87,7 @@
       },
       {
         "status": "Interviewed",
-        "count": 2
+        "count": 3
       }
     ],
     []
@@ -103,7 +103,7 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 161
+      "count": 160
     },
     {
       "status": "Rejected",
@@ -139,7 +139,7 @@
     },
     {
       "status": "Interviewed",
-      "count": 2
+      "count": 3
     }
   ],
   "channels": [
@@ -160,9 +160,9 @@
     {
       "name": "LinkedIn",
       "sent": 50,
-      "replied": 25,
+      "replied": 26,
       "unsent": 0,
-      "rate": 0.5
+      "rate": 0.52
     },
     {
       "name": "Indeed",
