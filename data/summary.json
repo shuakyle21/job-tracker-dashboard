@@ -1,26 +1,26 @@
 {
-  "generatedAt": "2026-11-06T15:45:58.944Z",
-  "total": 308,
-  "sent": 308,
+  "generatedAt": "2026-11-06T18:16:05.800Z",
+  "total": 309,
+  "sent": 309,
   "unsent": 0,
-  "replied": 134,
+  "replied": 135,
   "noReply": 174,
-  "open": 91,
-  "replyRate": 0.43506493506493504,
-  "interviewRate": 0.045454545454545456,
-  "ghostRate": 0.564935064935065,
+  "open": 92,
+  "replyRate": 0.4368932038834951,
+  "interviewRate": 0.045307443365695796,
+  "ghostRate": 0.5631067961165048,
   "rejected": 88,
-  "rejectionRate": 0.2857142857142857,
+  "rejectionRate": 0.284789644012945,
   "reached": [
-    308,
-    93,
+    309,
+    94,
     33,
     14,
     0
   ],
   "atStage": [
     215,
-    60,
+    61,
     19,
     14,
     0
@@ -50,12 +50,12 @@
         "count": 28
       },
       {
-        "status": "Viewed by Employer",
+        "status": "In Review",
         "count": 12
       },
       {
-        "status": "In Review",
-        "count": 11
+        "status": "Viewed by Employer",
+        "count": 12
       },
       {
         "status": "Talent Pool",
@@ -118,12 +118,12 @@
       "count": 14
     },
     {
-      "status": "Viewed by Employer",
+      "status": "In Review",
       "count": 12
     },
     {
-      "status": "In Review",
-      "count": 11
+      "status": "Viewed by Employer",
+      "count": 12
     },
     {
       "status": "Rejected after interview",
@@ -145,10 +145,10 @@
   "channels": [
     {
       "name": "Direct / Careers",
-      "sent": 141,
-      "replied": 69,
+      "sent": 142,
+      "replied": 70,
       "unsent": 0,
-      "rate": 0.48936170212765956
+      "rate": 0.49295774647887325
     },
     {
       "name": "Jobstreet",
@@ -269,13 +269,13 @@
     },
     {
       "month": "2026-11",
-      "count": 18
+      "count": 19
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 304
+      "count": 305
     },
     {
       "label": "Onsite",
