@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-11-06T03:54:10.413Z",
+  "generatedAt": "2026-11-06T04:02:51.577Z",
   "total": 305,
   "sent": 305,
   "unsent": 0,
   "replied": 131,
   "noReply": 174,
-  "open": 197,
+  "open": 196,
   "replyRate": 0.42950819672131146,
   "interviewRate": 0.04262295081967213,
   "ghostRate": 0.5704918032786885,
@@ -29,7 +29,7 @@
     [
       {
         "status": "Applied",
-        "count": 159
+        "count": 158
       },
       {
         "status": "Rejected",
@@ -37,7 +37,7 @@
       },
       {
         "status": "No Response",
-        "count": 7
+        "count": 8
       },
       {
         "status": "Closed / Expired",
@@ -103,7 +103,7 @@
   "byStatus": [
     {
       "status": "Applied",
-      "count": 159
+      "count": 158
     },
     {
       "status": "Rejected",
@@ -122,12 +122,12 @@
       "count": 11
     },
     {
-      "status": "Rejected after interview",
+      "status": "No Response",
       "count": 10
     },
     {
-      "status": "No Response",
-      "count": 9
+      "status": "Rejected after interview",
+      "count": 10
     },
     {
       "status": "Closed / Expired",
@@ -301,7 +301,7 @@
     },
     {
       "label": "60d+",
-      "count": 133
+      "count": 132
     }
   ],
   "followUps": {
