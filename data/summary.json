@@ -1,25 +1,25 @@
 {
-  "generatedAt": "2026-11-07T07:36:18.332Z",
-  "total": 309,
-  "sent": 309,
+  "generatedAt": "2026-11-07T07:37:23.100Z",
+  "total": 310,
+  "sent": 310,
   "unsent": 0,
   "replied": 133,
-  "noReply": 176,
-  "open": 91,
-  "replyRate": 0.43042071197411,
-  "interviewRate": 0.042071197411003236,
-  "ghostRate": 0.56957928802589,
+  "noReply": 177,
+  "open": 92,
+  "replyRate": 0.4290322580645161,
+  "interviewRate": 0.041935483870967745,
+  "ghostRate": 0.5709677419354838,
   "rejected": 88,
-  "rejectionRate": 0.284789644012945,
+  "rejectionRate": 0.2838709677419355,
   "reached": [
-    309,
+    310,
     93,
     33,
     13,
     0
   ],
   "atStage": [
-    216,
+    217,
     60,
     20,
     13,
@@ -33,7 +33,7 @@
       },
       {
         "status": "Applied",
-        "count": 51
+        "count": 52
       },
       {
         "status": "Rejected",
@@ -115,7 +115,7 @@
     },
     {
       "status": "Applied",
-      "count": 51
+      "count": 52
     },
     {
       "status": "Assessment",
@@ -205,7 +205,7 @@
     },
     {
       "name": "Company/Career Site",
-      "sent": 1,
+      "sent": 2,
       "replied": 0,
       "unsent": 0,
       "rate": 0
@@ -273,13 +273,13 @@
     },
     {
       "month": "2026-11",
-      "count": 19
+      "count": 20
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 305
+      "count": 306
     },
     {
       "label": "Onsite",
@@ -289,7 +289,7 @@
   "ageing": [
     {
       "label": "0–7d",
-      "count": 18
+      "count": 19
     },
     {
       "label": "8–14d",
@@ -314,8 +314,8 @@
     "dueWeek": 0
   },
   "quality": {
-    "resume": 222,
+    "resume": 224,
     "cover": 8,
-    "tailored": 75
+    "tailored": 77
   }
 }
