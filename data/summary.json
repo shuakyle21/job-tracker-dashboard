@@ -1,28 +1,28 @@
 {
-  "generatedAt": "2026-11-07T04:18:57.420Z",
-  "total": 309,
-  "sent": 309,
+  "generatedAt": "2026-11-07T04:26:47.581Z",
+  "total": 311,
+  "sent": 311,
   "unsent": 0,
-  "replied": 134,
-  "noReply": 175,
-  "open": 91,
-  "replyRate": 0.4336569579288026,
-  "interviewRate": 0.045307443365695796,
-  "ghostRate": 0.5663430420711975,
+  "replied": 135,
+  "noReply": 176,
+  "open": 93,
+  "replyRate": 0.4340836012861736,
+  "interviewRate": 0.04823151125401929,
+  "ghostRate": 0.5659163987138264,
   "rejected": 88,
-  "rejectionRate": 0.284789644012945,
+  "rejectionRate": 0.2829581993569132,
   "reached": [
-    309,
-    94,
-    33,
-    14,
+    311,
+    95,
+    34,
+    15,
     0
   ],
   "atStage": [
-    215,
+    216,
     61,
     19,
-    14,
+    15,
     0
   ],
   "dropComposition": [
@@ -33,7 +33,7 @@
       },
       {
         "status": "Applied",
-        "count": 50
+        "count": 51
       },
       {
         "status": "Rejected",
@@ -87,7 +87,7 @@
       },
       {
         "status": "Interviewed",
-        "count": 3
+        "count": 4
       },
       {
         "status": "No Response",
@@ -115,7 +115,7 @@
     },
     {
       "status": "Applied",
-      "count": 50
+      "count": 51
     },
     {
       "status": "Assessment",
@@ -143,16 +143,16 @@
     },
     {
       "status": "Interviewed",
-      "count": 3
+      "count": 4
     }
   ],
   "channels": [
     {
       "name": "Direct / Careers",
-      "sent": 142,
-      "replied": 69,
+      "sent": 143,
+      "replied": 70,
       "unsent": 0,
-      "rate": 0.4859154929577465
+      "rate": 0.48951048951048953
     },
     {
       "name": "Jobstreet",
@@ -169,18 +169,18 @@
       "rate": 0.52
     },
     {
+      "name": "Direct Email",
+      "sent": 16,
+      "replied": 5,
+      "unsent": 0,
+      "rate": 0.3125
+    },
+    {
       "name": "Indeed",
       "sent": 15,
       "replied": 6,
       "unsent": 0,
       "rate": 0.4
-    },
-    {
-      "name": "Direct Email",
-      "sent": 15,
-      "replied": 5,
-      "unsent": 0,
-      "rate": 0.3333333333333333
     },
     {
       "name": "Kalibrr",
@@ -273,13 +273,13 @@
     },
     {
       "month": "2026-11",
-      "count": 19
+      "count": 21
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 305
+      "count": 307
     },
     {
       "label": "Onsite",
@@ -289,7 +289,7 @@
   "ageing": [
     {
       "label": "0–7d",
-      "count": 18
+      "count": 20
     },
     {
       "label": "8–14d",
