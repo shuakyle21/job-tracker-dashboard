@@ -1,26 +1,26 @@
 {
-  "generatedAt": "2026-11-07T04:28:51.635Z",
+  "generatedAt": "2026-11-07T04:31:10.552Z",
   "total": 307,
   "sent": 307,
   "unsent": 0,
-  "replied": 132,
-  "noReply": 175,
+  "replied": 133,
+  "noReply": 174,
   "open": 89,
-  "replyRate": 0.42996742671009774,
+  "replyRate": 0.43322475570032576,
   "interviewRate": 0.04234527687296417,
-  "ghostRate": 0.5700325732899023,
+  "ghostRate": 0.5667752442996743,
   "rejected": 88,
   "rejectionRate": 0.28664495114006516,
   "reached": [
     307,
-    92,
+    93,
     33,
     13,
     0
   ],
   "atStage": [
-    215,
-    59,
+    214,
+    60,
     20,
     13,
     0
@@ -33,7 +33,7 @@
       },
       {
         "status": "Applied",
-        "count": 50
+        "count": 49
       },
       {
         "status": "Rejected",
@@ -55,7 +55,7 @@
       },
       {
         "status": "In Review",
-        "count": 10
+        "count": 11
       },
       {
         "status": "Talent Pool",
@@ -115,7 +115,7 @@
     },
     {
       "status": "Applied",
-      "count": 50
+      "count": 49
     },
     {
       "status": "Assessment",
@@ -127,7 +127,7 @@
     },
     {
       "status": "In Review",
-      "count": 10
+      "count": 11
     },
     {
       "status": "Rejected after interview",
@@ -150,9 +150,9 @@
     {
       "name": "Direct / Careers",
       "sent": 140,
-      "replied": 67,
+      "replied": 68,
       "unsent": 0,
-      "rate": 0.4785714285714286
+      "rate": 0.4857142857142857
     },
     {
       "name": "Jobstreet",
