@@ -1,28 +1,28 @@
 {
-  "generatedAt": "2026-11-09T20:59:27.846Z",
+  "generatedAt": "2026-11-09T21:15:44.706Z",
   "total": 317,
   "sent": 317,
   "unsent": 0,
   "replied": 135,
   "noReply": 182,
-  "open": 69,
+  "open": 68,
   "replyRate": 0.42586750788643535,
-  "interviewRate": 0.04416403785488959,
+  "interviewRate": 0.04100946372239748,
   "ghostRate": 0.5741324921135647,
-  "rejected": 90,
-  "rejectionRate": 0.28391167192429023,
+  "rejected": 91,
+  "rejectionRate": 0.2870662460567823,
   "reached": [
     317,
-    94,
-    34,
-    14,
+    93,
+    33,
+    13,
     0
   ],
   "atStage": [
-    223,
+    224,
     60,
     20,
-    14,
+    13,
     0
   ],
   "dropComposition": [
@@ -33,7 +33,7 @@
       },
       {
         "status": "Rejected",
-        "count": 46
+        "count": 47
       },
       {
         "status": "Applied",
@@ -87,7 +87,7 @@
       },
       {
         "status": "Interviewed",
-        "count": 3
+        "count": 2
       },
       {
         "status": "No Response",
@@ -97,7 +97,7 @@
     []
   ],
   "rejectedAt": [
-    46,
+    47,
     29,
     5,
     10,
@@ -111,7 +111,7 @@
     },
     {
       "status": "Rejected",
-      "count": 80
+      "count": 81
     },
     {
       "status": "Applied",
@@ -143,7 +143,7 @@
     },
     {
       "status": "Interviewed",
-      "count": 3
+      "count": 2
     }
   ],
   "channels": [
@@ -296,7 +296,7 @@
   "ageing": [
     {
       "label": "0–7d",
-      "count": 24
+      "count": 23
     },
     {
       "label": "8–14d",
