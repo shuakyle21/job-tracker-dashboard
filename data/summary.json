@@ -1,25 +1,25 @@
 {
-  "generatedAt": "2026-11-09T09:50:17.222Z",
-  "total": 316,
-  "sent": 316,
+  "generatedAt": "2026-11-09T10:28:10.790Z",
+  "total": 315,
+  "sent": 315,
   "unsent": 0,
-  "replied": 134,
-  "noReply": 182,
-  "open": 69,
-  "replyRate": 0.4240506329113924,
-  "interviewRate": 0.04113924050632911,
-  "ghostRate": 0.5759493670886076,
-  "rejected": 89,
-  "rejectionRate": 0.28164556962025317,
+  "replied": 135,
+  "noReply": 180,
+  "open": 67,
+  "replyRate": 0.42857142857142855,
+  "interviewRate": 0.04126984126984127,
+  "ghostRate": 0.5714285714285714,
+  "rejected": 90,
+  "rejectionRate": 0.2857142857142857,
   "reached": [
-    316,
+    315,
     94,
     34,
     13,
     0
   ],
   "atStage": [
-    222,
+    221,
     60,
     21,
     13,
@@ -33,11 +33,11 @@
       },
       {
         "status": "Rejected",
-        "count": 45
+        "count": 46
       },
       {
         "status": "Applied",
-        "count": 29
+        "count": 27
       },
       {
         "status": "Closed / Expired",
@@ -97,7 +97,7 @@
     []
   ],
   "rejectedAt": [
-    45,
+    46,
     29,
     5,
     10,
@@ -111,11 +111,11 @@
     },
     {
       "status": "Rejected",
-      "count": 79
+      "count": 80
     },
     {
       "status": "Applied",
-      "count": 29
+      "count": 27
     },
     {
       "status": "Assessment",
@@ -149,10 +149,10 @@
   "channels": [
     {
       "name": "Direct / Careers",
-      "sent": 146,
+      "sent": 145,
       "replied": 69,
       "unsent": 0,
-      "rate": 0.4726027397260274
+      "rate": 0.47586206896551725
     },
     {
       "name": "Jobstreet",
@@ -192,9 +192,9 @@
     {
       "name": "Online.jobs",
       "sent": 4,
-      "replied": 1,
+      "replied": 2,
       "unsent": 0,
-      "rate": 0.25
+      "rate": 0.5
     },
     {
       "name": "Torre.ai",
@@ -280,13 +280,13 @@
     },
     {
       "month": "2026-11",
-      "count": 26
+      "count": 25
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 312
+      "count": 311
     },
     {
       "label": "Onsite",
@@ -296,7 +296,7 @@
   "ageing": [
     {
       "label": "0–7d",
-      "count": 24
+      "count": 22
     },
     {
       "label": "8–14d",
@@ -321,8 +321,8 @@
     "dueWeek": 28
   },
   "quality": {
-    "resume": 246,
+    "resume": 245,
     "cover": 8,
-    "tailored": 83
+    "tailored": 82
   }
 }
