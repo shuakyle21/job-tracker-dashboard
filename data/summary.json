@@ -1,25 +1,25 @@
 {
-  "generatedAt": "2026-11-09T01:45:59.473Z",
-  "total": 314,
-  "sent": 314,
+  "generatedAt": "2026-11-09T05:01:06.627Z",
+  "total": 315,
+  "sent": 315,
   "unsent": 0,
   "replied": 134,
-  "noReply": 180,
-  "open": 95,
-  "replyRate": 0.4267515923566879,
-  "interviewRate": 0.041401273885350316,
-  "ghostRate": 0.5732484076433121,
+  "noReply": 181,
+  "open": 96,
+  "replyRate": 0.4253968253968254,
+  "interviewRate": 0.04126984126984127,
+  "ghostRate": 0.5746031746031746,
   "rejected": 89,
-  "rejectionRate": 0.28343949044585987,
+  "rejectionRate": 0.28253968253968254,
   "reached": [
-    314,
+    315,
     94,
     34,
     13,
     0
   ],
   "atStage": [
-    220,
+    221,
     60,
     21,
     13,
@@ -33,7 +33,7 @@
       },
       {
         "status": "Applied",
-        "count": 55
+        "count": 56
       },
       {
         "status": "Rejected",
@@ -115,7 +115,7 @@
     },
     {
       "status": "Applied",
-      "count": 55
+      "count": 56
     },
     {
       "status": "Assessment",
@@ -149,10 +149,10 @@
   "channels": [
     {
       "name": "Direct / Careers",
-      "sent": 144,
+      "sent": 145,
       "replied": 69,
       "unsent": 0,
-      "rate": 0.4791666666666667
+      "rate": 0.47586206896551725
     },
     {
       "name": "Jobstreet",
@@ -280,13 +280,13 @@
     },
     {
       "month": "2026-11",
-      "count": 24
+      "count": 25
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 310
+      "count": 311
     },
     {
       "label": "Onsite",
@@ -296,7 +296,7 @@
   "ageing": [
     {
       "label": "0–7d",
-      "count": 22
+      "count": 23
     },
     {
       "label": "8–14d",
