@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-09T08:16:07.990Z",
+  "generatedAt": "2026-11-09T09:30:00.024Z",
   "total": 316,
   "sent": 316,
   "unsent": 0,
@@ -321,7 +321,7 @@
     "dueWeek": 28
   },
   "quality": {
-    "resume": 241,
+    "resume": 246,
     "cover": 8,
     "tailored": 77
   }
