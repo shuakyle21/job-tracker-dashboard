@@ -1,79 +1,128 @@
 # Job Tracker
 
-Gmail receives an application confirmation, n8n reads it, and a dashboard on Vercel updates
-within minutes. No spreadsheet, no manual data entry beyond the parts that still need a person.
+Turns job-application emails into an analytics dashboard. Gmail receives a confirmation or
+status update, n8n classifies it and writes it to Airtable, and GitHub Actions rebuilds a static
+page on Vercel within minutes.
 
-![The n8n ingest workflow](n8n-workflow/n8n-workflow.png)
+![The n8n ingest workflow](n8n-workflow/n8n-workflow.webp)
 
-## Dashboard Preview
+## Dashboard preview
 
-![Dashboard preview](img/dashboard-html.png)
+![Dashboard preview](img/dashboard-html.webp)
 
+## Overview
 
-## About this project
+| Stage | Tool | What happens |
+|---|---|---|
+| Capture | Gmail | Application mail is labelled `Job Application` or matches a confirmation phrase |
+| Classify | n8n | Pattern rules read each email; an LLM is tried only when the rules fail |
+| Store | Airtable | One row per application in `Feed`; one row per email in `Inbox` or `Needs Review` |
+| Build | GitHub Actions | Reads nine non-identifying fields, aggregates them, renders the page |
+| Publish | Vercel | Serves the static dashboard |
+| Monitor | GitHub Actions, Telegram | Hourly check of the live n8n instance; a message on every failed execution |
 
-Job Tracker turns job-application emails into a private, automated analytics dashboard. Gmail and n8n capture and classify application updates, Airtable stores the structured feed, and GitHub Actions builds and deploys a static dashboard to Vercel. It is dependency-free, privacy-conscious, and designed to make the job search easier to understand without adding more manual tracking.
+The project has no dependencies: Node 20+, no `npm install`.
 
-## What it does
+## How it works
 
-You apply for jobs the way you always have: LinkedIn, JobStreet, company career pages, cold
-email. Every confirmation and status update that lands in Gmail under the `Job Application`
-label, or matches phrases like "thank you for applying," gets picked up by n8n on a 15-minute
-poll. n8n classifies the email with pattern rules, logs it, and upserts one row per application
-into an Airtable table called `Feed`, filling in the job platform, the status, and how far the
-application got. That last part used to be manual. Google Calendar interview invites count too:
-they're read as an interview scheduled, with the job title taken from the event name.
+### Ingest
 
-When the rules can't classify an email, an LLM gets one try, through any OpenAI-compatible
-endpoint. Its answer is capped at medium confidence and can never override a rules match. A
-malformed or unrecognized reply leaves the email unclassified. An email that's still
-unclassified, or that doesn't name the employer (Indeed confirmations never do), goes to a
-`Needs Review` table instead of `Feed`. Without a company there's no key that a later email
-about the same job could match.
+n8n polls Gmail every 15 minutes for mail under the `Job Application` label or matching phrases
+such as "thank you for applying". Each email is classified by the pattern rules in
+`n8n/parse-email.js`, logged, and upserted into `Feed` as one row per application, with the job
+platform, the status and the furthest stage reached. Google Calendar interview invites are read
+as an interview scheduled, with the job title taken from the event name. The job platform is
+mapped to the `Source` value the dashboard reports.
 
-The merge never overwrites a status you've corrected by hand, and it never regresses one either.
-A stray confirmation email that arrives after an interview invite won't knock a row back down to
-"Applied." Rows are matched on an `Application Key` (`company|job title`), ignoring case and
-spacing around the `|`, so a key you typed by hand and one n8n generated are the same
-application.
+### LLM fallback
 
-Any change to `Feed`, whether from n8n or from you editing it in Airtable, triggers an Airtable
-webhook. The webhook tells GitHub Actions to rebuild within seconds, and a 6-hourly schedule
-catches anything missed. The build reads nine fields and deploys a static dashboard to Vercel.
-An hourly health check compares the live n8n instance against this repo and emails you when
-anything is stuck, drifted or failing. You still do the applying. Everything after Gmail
-receives a reply runs on its own, short of the rare row you need to correct by hand.
+When the rules cannot classify an email, it is sent once to an n8n Agent
+("Job Email Classifier"). The Agent has no tools and no memory, because it reads untrusted email
+text. Its result is constrained:
 
-The dashboard shows a stage-flow Sankey that splits each stage's losses into stalled (no reply)
-and rejected. It also has per-stage conversion rates and monthly volume. If a tab has been open
-while a newer build shipped, it shows a banner to reload.
+- Confidence is capped at medium.
+- It never overrides a rules match.
+- A malformed reply or an unrecognized status leaves the email unclassified.
+
+The fallback can also fill in a missing company or job title. If neither the rules nor the LLM
+name an employer and the mail is not from a job board, the application is filed under the
+contact (the sender, or the recipient for mail you sent).
+
+### Needs Review
+
+An email goes to `Needs Review` instead of `Feed` when it is still unclassified, or when it has
+no employer to key on (Indeed confirmations, for example). Without a company there is no key
+that a later email about the same job could match.
+
+### Merge rules
+
+`n8n/merge-feed.js` only moves a row forward:
+
+- It keeps the earliest date and the highest stage.
+- A status never regresses. A late confirmation cannot set an interviewing application back to
+  "Applied". Rejected outranks everything except Offer.
+- Fields such as `Job Platform`, `Company` and `Source` are filled only when empty, so hand
+  edits are kept.
+
+Rows are matched on an `Application Key` (`company|job title`), ignoring case and spacing
+around the `|`, so a key typed by hand and one generated by n8n refer to the same application.
+
+### Rebuild and deploy
+
+Any change to `Feed`, from n8n or from a hand edit in Airtable, fires an Airtable webhook. The
+Feed sync workflow receives it and sends one `repository_dispatch` to GitHub Actions, which
+verifies, builds and deploys to Vercel, then smoke-tests the deployed URL. A 6-hourly schedule
+catches anything the webhook missed. Airtable webhooks expire 7 days after their last refresh,
+so the Feed sync workflow also runs a daily keep-alive.
+
+### Monitoring
+
+- **Health check.** `.github/workflows/health.yml` runs `scripts/check-live.mjs` every hour. It
+  fails when a live workflow differs from the generated JSON, is inactive or duplicated, shares
+  the GitHub credential with another node, or has recent error executions. GitHub emails you
+  when the run fails.
+- **Stale mail alarm.** The ingest raises an error execution when job mail is still unprocessed
+  after 2 hours, so a stuck Gmail trigger is distinguishable from a quiet inbox.
+- **Error alerts.** Every failed execution in the ingest or Feed sync workflow sends a Telegram
+  message naming the workflow, the failing node and the error. Repeats are de-duplicated.
+
+### Dashboard
+
+The page shows a stage-flow Sankey that splits each stage's losses into stalled (no reply) and
+rejected, per-stage conversion rates, the status mix and monthly volume. If a tab is open when
+a newer build ships, it shows a banner to reload.
 
 ## Workflow
 
 ![System overview: applications flow through Gmail, n8n, Airtable, and GitHub Actions to a public dashboard](docs/system-overview.png)
 
-The [interactive version](docs/system-overview.html) has guided views for the capture, automate,
-and publish stages, plus light/dark and pan/zoom. Open it if the picture above raises a question
-the summary below doesn't answer.
+The [interactive version](docs/system-overview.html) has guided views for the capture, automate
+and publish stages, plus light/dark and pan/zoom.
 
-Two tools split the work, and the seam between them is a single `repository_dispatch` call. n8n
-handles the Gmail hop, where OAuth, retries, and dedupe already have solved answers; GitHub Actions
-handles building and shipping a website, which n8n has no good answer for. Neither side
-has to fake competence it doesn't have. n8n runs two workflows, both generated from this repo:
-the ingest (Gmail → `Inbox`/`Needs Review`/`Feed`) and the Feed sync (Airtable webhook →
-`repository_dispatch`, plus a daily keep-alive, because Airtable expires webhooks after 7 days).
+n8n handles the Gmail side (OAuth, retries, dedupe). GitHub Actions handles building and
+deploying the site. The only connection between them is the `repository_dispatch` call. n8n runs
+three workflows, all generated from this repo by `scripts/build-n8n.mjs`:
 
-The privacy boundary is the build, not the base. `Feed` also stores `Company`, `Job Role` and
-`Application Key`, because n8n needs them to match emails to rows. `scripts/build.mjs` reads
-only the nine fields listed below, and `verify.mjs` fails if that list ever grows to include
-one of the identifying fields. It also searches the built `dist/` for company names and email
-addresses. That's why this repo, and the page, can be public. `Inbox` and `Needs Review` are
-the message-level log: one row per email. Keeping the log separate from the tracker means an
-automated write can never silently overwrite something you typed by hand.
+| Workflow | Purpose |
+|---|---|
+| `job-tracker-ingest.json` | Gmail → `Inbox` / `Needs Review` / `Feed` |
+| `job-tracker-feed-sync.json` | Airtable webhook → `repository_dispatch`, plus the daily keep-alive |
+| `job-tracker-error-alert.json` | Error Trigger → Telegram; the error workflow of the other two |
 
-Full setup, including the Gmail label scheme and the n8n import: [DEPLOY.md](DEPLOY.md).
+## Privacy
+
+The privacy boundary is the build, not the base. `Feed` stores `Company`, `Job Role` and
+`Application Key` because n8n needs them to match emails to rows. `scripts/build.mjs` reads only
+the nine fields listed under [Install](#1-create-the-airtable-base). `verify.mjs` fails if that
+list grows to include an identifying field, and it searches the built `dist/` for company names
+and email addresses. This is what allows the repo and the page to be public.
+
+`Inbox` and `Needs Review` are the message-level log, one row per email. They are separate from
+`Feed` so an automated write cannot overwrite a hand edit.
 
 ## Install
+
+Full setup, including the Gmail label scheme and the n8n import, is in [DEPLOY.md](DEPLOY.md).
 
 ### 1. Create the Airtable base
 
@@ -118,15 +167,19 @@ do. All seven are in [DEPLOY.md §2.5](DEPLOY.md).
 
 [DEPLOY.md §2](DEPLOY.md) covers creating the project, turning off Deployment Protection, and
 the access token. Then run **Actions → Build and deploy → Run workflow**. It ends by
-smoke-testing the URL of the deployment it just made, and fails if the page isn't actually up.
+smoke-testing the URL of the deployment it just made, and fails if the page is not up.
 
 ### 5. Wire up n8n
 
-[DEPLOY.md §3](DEPLOY.md) covers the Gmail labels, importing `n8n/job-tracker-ingest.json`, and
-running the one-off backfill over mail that predates the workflow. It also covers the
-credentials, including the LLM fallback's Bearer token. §3.6 adds
-`n8n/job-tracker-feed-sync.json`, which rebuilds the dashboard within seconds of any Feed
-change, from a hand edit in Airtable or from the ingest. §3.8 turns on the hourly health check.
+[DEPLOY.md §3](DEPLOY.md) covers each step:
+
+| Section | Step |
+|---|---|
+| §3.2–3.4 | Gmail labels, importing `n8n/job-tracker-ingest.json`, credentials, and the one-off backfill over older mail |
+| §3.3 | Publishing the "Job Email Classifier" Agent the LLM fallback calls. The workflow node itself holds no credential |
+| §3.6 | `n8n/job-tracker-feed-sync.json`, which rebuilds the dashboard after any Feed change |
+| §3.8 | The hourly health check |
+| §3.9 | `n8n/job-tracker-error-alert.json` and the Telegram chat it messages |
 
 ## Usage
 
@@ -142,20 +195,22 @@ AIRTABLE_API_KEY=pat... AIRTABLE_BASE_ID=app... node scripts/build.mjs
 node scripts/verify.mjs
 
 # the pieces it tests, one at a time
-node scripts/test-parser.mjs         # email classifier
-node scripts/test-merge-feed.mjs     # forward-only Feed merge
-node scripts/test-llm-fallback.mjs   # LLM fallback
+node scripts/test-parser.mjs            # email classifier
+node scripts/test-merge-feed.mjs        # forward-only Feed merge
+node scripts/test-llm-fallback.mjs      # LLM fallback
+node scripts/test-airtable-webhook.mjs  # Feed webhook keep-alive
+node scripts/test-check-live.mjs        # live drift detector
+node scripts/test-error-alert.mjs       # Telegram error alert
 
-# after editing anything in n8n/, regenerate both workflows, then re-import them
+# after editing anything in n8n/, regenerate all three workflows, then re-import them
 node scripts/build-n8n.mjs
 
 # compare the live n8n instance against the generated workflows
 N8N_API_URL=https://n8n.example.com N8N_API_KEY=... node scripts/check-live.mjs
 ```
 
-No `npm install`. Node 20+, zero dependencies. `sample-feed.json` is a de-identified snapshot
-(dates, sources, and statuses only), shaped like Airtable's list-records API response, so the
-build is testable without touching the real base.
+`sample-feed.json` is a de-identified snapshot (dates, sources and statuses only), shaped like
+Airtable's list-records API response, so the build is testable without touching the real base.
 
 ## Layout
 
@@ -163,15 +218,16 @@ build is testable without touching the real base.
 |---|---|
 | `scripts/build.mjs` | Airtable → aggregate → Sankey layout → fill the template |
 | `scripts/verify.mjs` | pre-deploy gate: funnel arithmetic, the privacy boundary, n8n invariants |
-| `scripts/build-n8n.mjs` | generates both n8n workflows from the code in `n8n/*.js` |
+| `scripts/build-n8n.mjs` | generates the three n8n workflows from the code in `n8n/*.js` |
 | `scripts/check-live.mjs` | compares the running n8n instance to the generated workflows |
-| `scripts/test-*.mjs` | run the classifier, Feed merge, LLM fallback, webhook keep-alive and live check outside n8n |
+| `scripts/test-*.mjs` | run the classifier, Feed merge, LLM fallback, webhook keep-alive, live check and error alert outside n8n |
 | `n8n/parse-email.js` | the email classifier (edit this, never the generated JSON) |
 | `n8n/llm-fallback.js` | LLM classification for emails the rules couldn't parse |
 | `n8n/merge-feed.js` | merges a parsed email into its `Feed` row, forward only |
 | `n8n/airtable-webhook.js` | the Feed webhook keep-alive's decision: create, refresh or re-enable |
+| `n8n/error-alert.js` | formats and de-duplicates failure alerts |
 | `n8n/gmail-labels.json` | Gmail label IDs the workflow applies |
-| `n8n/job-tracker-ingest.json`, `n8n/job-tracker-feed-sync.json` | generated workflows to import; never hand-edit |
+| `n8n/job-tracker-ingest.json`, `n8n/job-tracker-feed-sync.json`, `n8n/job-tracker-error-alert.json` | generated workflows to import; never hand-edit |
 | `templates/dashboard.html` | TailAdmin markup, Tailwind config, chart code |
 | `icons8.json` | locks the Icons8 pack and icon ids the dashboard uses |
 | `data/summary.json` | aggregate counts, committed every run; git history is the time series. Not written by fixture builds. Also shipped in `dist/` for the new-data banner |
@@ -212,6 +268,10 @@ executions, and that n8n's Airtable token has `webhook:manage`
 differs from the repo, is inactive or duplicated, or had error executions. That includes the
 ingest's **Stale Job Mail Alarm**, which fires when job mail is still unprocessed after 2h. For
 drift, regenerate and re-import ([DEPLOY.md §3.7](DEPLOY.md)); don't patch it in the n8n UI.
+
+**No Telegram message arrived for a failed execution.** Check that the Error alert workflow is
+active and that the ingest and Feed sync workflows name it as their error workflow
+([DEPLOY.md §3.9](DEPLOY.md)).
 
 **The same application has two `Feed` rows.** Their `Application Key`s differ by more than case
 and spacing around `|`, for example `Acme Corporation` vs `Acme`. Fix one key by hand to match
