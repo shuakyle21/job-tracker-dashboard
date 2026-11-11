@@ -1,25 +1,25 @@
 {
-  "generatedAt": "2026-11-10T19:47:51.968Z",
-  "total": 320,
-  "sent": 320,
+  "generatedAt": "2026-11-11T03:02:43.163Z",
+  "total": 319,
+  "sent": 319,
   "unsent": 0,
-  "replied": 135,
-  "noReply": 185,
-  "open": 71,
-  "replyRate": 0.421875,
-  "interviewRate": 0.040625,
-  "ghostRate": 0.578125,
-  "rejected": 91,
-  "rejectionRate": 0.284375,
+  "replied": 136,
+  "noReply": 183,
+  "open": 69,
+  "replyRate": 0.4263322884012539,
+  "interviewRate": 0.04075235109717868,
+  "ghostRate": 0.5736677115987461,
+  "rejected": 92,
+  "rejectionRate": 0.2884012539184953,
   "reached": [
-    320,
+    319,
     93,
     33,
     13,
     0
   ],
   "atStage": [
-    227,
+    226,
     60,
     20,
     13,
@@ -33,11 +33,11 @@
       },
       {
         "status": "Rejected",
-        "count": 47
+        "count": 48
       },
       {
         "status": "Applied",
-        "count": 32
+        "count": 30
       },
       {
         "status": "Closed / Expired",
@@ -97,7 +97,7 @@
     []
   ],
   "rejectedAt": [
-    47,
+    48,
     29,
     5,
     10,
@@ -111,11 +111,11 @@
     },
     {
       "status": "Rejected",
-      "count": 81
+      "count": 82
     },
     {
       "status": "Applied",
-      "count": 32
+      "count": 30
     },
     {
       "status": "Assessment",
@@ -149,10 +149,10 @@
   "channels": [
     {
       "name": "Direct / Careers",
-      "sent": 147,
-      "replied": 69,
+      "sent": 146,
+      "replied": 70,
       "unsent": 0,
-      "rate": 0.46938775510204084
+      "rate": 0.4794520547945205
     },
     {
       "name": "Jobstreet",
@@ -280,13 +280,13 @@
     },
     {
       "month": "2026-11",
-      "count": 30
+      "count": 29
     }
   ],
   "workSetup": [
     {
       "label": "Remote",
-      "count": 316
+      "count": 315
     },
     {
       "label": "Onsite",
@@ -296,19 +296,19 @@
   "ageing": [
     {
       "label": "0–7d",
-      "count": 24
+      "count": 21
     },
     {
       "label": "8–14d",
-      "count": 1
+      "count": 4
     },
     {
       "label": "15–30d",
-      "count": 16
+      "count": 14
     },
     {
       "label": "31–60d",
-      "count": 5
+      "count": 6
     },
     {
       "label": "60d+",
