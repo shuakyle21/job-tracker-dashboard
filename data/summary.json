@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-11T03:02:43.163Z",
+  "generatedAt": "2026-11-11T03:04:46.585Z",
   "total": 319,
   "sent": 319,
   "unsent": 0,
@@ -7,7 +7,7 @@
   "noReply": 183,
   "open": 69,
   "replyRate": 0.4263322884012539,
-  "interviewRate": 0.04075235109717868,
+  "interviewRate": 0.0438871473354232,
   "ghostRate": 0.5736677115987461,
   "rejected": 92,
   "rejectionRate": 0.2884012539184953,
@@ -15,14 +15,14 @@
     319,
     93,
     33,
-    13,
+    14,
     0
   ],
   "atStage": [
     226,
     60,
-    20,
-    13,
+    19,
+    14,
     0
   ],
   "dropComposition": [
@@ -73,7 +73,7 @@
     [
       {
         "status": "Assessment",
-        "count": 15
+        "count": 14
       },
       {
         "status": "Rejected",
@@ -87,7 +87,7 @@
       },
       {
         "status": "Interviewed",
-        "count": 2
+        "count": 3
       },
       {
         "status": "No Response",
@@ -119,7 +119,7 @@
     },
     {
       "status": "Assessment",
-      "count": 15
+      "count": 14
     },
     {
       "status": "In Review",
@@ -143,7 +143,7 @@
     },
     {
       "status": "Interviewed",
-      "count": 2
+      "count": 3
     }
   ],
   "channels": [
@@ -321,8 +321,8 @@
     "dueWeek": 28
   },
   "quality": {
-    "resume": 248,
+    "resume": 249,
     "cover": 8,
-    "tailored": 85
+    "tailored": 86
   }
 }
