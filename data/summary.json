@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-11-12T19:59:08.946Z",
+  "generatedAt": "2026-11-13T01:03:36.518Z",
   "total": 320,
   "sent": 320,
   "unsent": 0,
   "replied": 138,
   "noReply": 182,
-  "open": 69,
+  "open": 68,
   "replyRate": 0.43125,
   "interviewRate": 0.046875,
   "ghostRate": 0.56875,
@@ -29,7 +29,7 @@
     [
       {
         "status": "No Response",
-        "count": 144
+        "count": 145
       },
       {
         "status": "Rejected",
@@ -37,7 +37,7 @@
       },
       {
         "status": "Applied",
-        "count": 29
+        "count": 28
       },
       {
         "status": "Closed / Expired",
@@ -107,7 +107,7 @@
   "byStatus": [
     {
       "status": "No Response",
-      "count": 147
+      "count": 148
     },
     {
       "status": "Rejected",
@@ -115,7 +115,7 @@
     },
     {
       "status": "Applied",
-      "count": 29
+      "count": 28
     },
     {
       "status": "Assessment",
@@ -296,11 +296,11 @@
   "ageing": [
     {
       "label": "0–7d",
-      "count": 18
+      "count": 16
     },
     {
       "label": "8–14d",
-      "count": 7
+      "count": 9
     },
     {
       "label": "15–30d",
@@ -308,7 +308,7 @@
     },
     {
       "label": "31–60d",
-      "count": 7
+      "count": 6
     },
     {
       "label": "60d+",
@@ -318,7 +318,7 @@
   "followUps": {
     "overdue": 0,
     "dueToday": 0,
-    "dueWeek": 28
+    "dueWeek": 29
   },
   "quality": {
     "resume": 249,
